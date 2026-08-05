@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bộ Điều Khiển Trò Chơi Trực Tiếp</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+        }
+        body {
+            background-color: #f7ebd0;
+            color: #333;
+            overflow-x: hidden;
+            user-select: none;
+        }
+        /* Navigation Bar */
+        .navbar {
+            display: flex;
+            background-color: #e6e6e6;
+            border-bottom: 1px solid #ccc;
+            height: 41px;
+        }
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            line-height: 40px;
+            border-right: 1px solid #ccc;
+            cursor: pointer;
+            font-weight: bold;
+            color: #444;
+            transition: all 0.2s ease;
+        }
+        .nav-item:hover {
+            background-color: #f0f0f0;
+        }
+        .nav-item.active {
+            background-color: #fff;
+            border-bottom: 2px solid #0056b3;
+            color: #0056b3;
+        }
+        
+        /* Main Container */
+        .tab-content {
+            display: none;
+            height: calc(100vh - 41px);
+            width: 100%;
+        }
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* PPT Slide Control Floating Popup Window Styles */
+        .ppt-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10000;
+        }
+        .ppt-modal-overlay.active {
+            display: block;
+        }
+        .ppt-modal-container {
+            pointer-events: auto;
+            position: fixed;
+            top: 70px;
+            left: calc(50vw - 430px);
+            width: 860px;
+            max-width: 96vw;
+            background-color: #ededed;
+            border: 1px solid #1a5fb4;
+            border-radius: 8px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            max-height: 88vh;
+            overflow: hidden;
+            resize: both;
+            min-width: 550px;
+            min-height: 250px;
+        }
+        .ppt-window-header {
+            background: linear-gradient(180deg, #1b497d 0%, #0f2d52 100%);
+            color: #ffffff;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: move;
+            user-select: none;
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .ppt-window-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .ppt-window-title small {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.8;
+            background: rgba(255,255,255,0.15);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .ppt-window-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ppt-win-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .ppt-win-btn:hover {
+            background: rgba(255,255,255,0.35);
+        }
+        .ppt-win-btn.close-btn:hover {
+            background: #e02424;
+        }
+
+        /* Audio Sound Control Floating Window Styles */
+        .audio-window-container {
+            left: calc(100vw - 310px);
+            top: 70px;
+            width: 270px;
+            min-width: 230px;
+            min-height: 200px;
+            max-height: 88vh;
+        }
+        .audio-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 4px 6px 12px 6px;
+        }
+        .audio-list-header {
+            display: grid;
+            grid-template-columns: 26px 1fr 50px;
+            gap: 6px;
+            align-items: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 2px;
+            padding-right: 4px;
+        }
+        .audio-row {
+            display: grid;
+            grid-template-columns: 26px 1fr 50px;
+            gap: 6px;
+            align-items: center;
+        }
+        .audio-idx {
+            font-size: 12px;
+            color: #222;
+            text-align: center;
+        }
+        .audio-play-btn {
+            background-color: #ffffff;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #111;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+            transition: all 0.12s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .audio-play-btn:hover {
+            background-color: #e8f2ff;
+            border-color: #0066cc;
+            color: #0056b3;
+        }
+        .audio-play-btn:active {
+            background-color: #d0e4ff;
+        }
+        .audio-play-btn.stop-btn {
+            background-color: #ffffff;
+            border-color: #c0c0c0;
+        }
+        .audio-play-btn.stop-btn:hover {
+            background-color: #ffe6e6;
+            border-color: #d00000;
+            color: #c00000;
+        }
+        .audio-shortcut {
+            font-size: 12px;
+            color: #333;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .ppt-modal-body {
+            padding: 12px 16px 16px 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .ppt-modal-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 2px;
+        }
+        .ppt-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .ppt-col-title {
+            font-weight: bold;
+            font-style: italic;
+            text-align: center;
+            font-size: 13px;
+            color: #111;
+            margin-bottom: 4px;
+        }
+        .ppt-btn {
+            width: 100%;
+            background-color: #ffffff;
+            border: 1px solid #d4d4d4;
+            border-radius: 4px;
+            padding: 5px 6px;
+            font-size: 12px;
+            font-family: inherit;
+            color: #222;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.12s ease-in-out;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ppt-btn:hover {
+            background-color: #e8f2ff;
+            border-color: #0066cc;
+            color: #0056b3;
+        }
+        .ppt-btn:active {
+            background-color: #d0e4ff;
+        }
+        .ppt-divider {
+            width: 75%;
+            height: 1px;
+            background-color: #aaaaaa;
+            margin: 4px 0;
+        }
+        .ppt-modal-footer {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 14px;
+            padding-top: 8px;
+            border-top: 1px solid #dddddd;
+        }
+        .ppt-nav-btn {
+            background-color: #ffffff;
+            border: 1px solid #bebebe;
+            border-radius: 4px;
+            padding: 6px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #222;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.12s ease;
+        }
+        .ppt-nav-btn:hover {
+            background-color: #e8f2ff;
+            border-color: #0066cc;
+            color: #0056b3;
+        }
+
+        /* Common Elements */
+        .btn {
+            padding: 4px 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.15s;
+        }
+        .btn:hover {
+            background-color: #e2e6ea;
+        }
+
+        /* Student Card Component */
+        .kd-students-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 32%;
+            min-width: 280px;
+        }
+        .kd-student-row {
+            display: flex;
+            align-items: center;
+            height: 48px;
+        }
+        .kd-score-box {
+            position: relative;
+            width: 80px;
+            height: 48px;
+            background-color: #fff;
+            border: 2px solid red;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+        }
+        .kd-score-box input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            background: transparent;
+        }
+        .kd-edit-icon {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .kd-info-bars {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 48px;
+        }
+        .kd-bar-top {
+            background-color: #f1a80a;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            font-weight: bold;
+            color: #000;
+        }
+        .kd-bar-top input {
+            width: 33.33%;
+            padding: 1px 4px;
+            border: 1px solid #ccc;
+            text-align: center;
+            background: #fff;
+        }
+        .kd-bar-bottom {
+            background-color: #008000;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: #fff;
+            font-size: 11px;
+        }
+
+        /* Toolbar and Bottom Controls */
+        .kd-control-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .kd-progress-bar {
+            flex: 1;
+            background-color: #5599d4;
+            height: 28px;
+            border: 1px solid #3c7cb8;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: #fff;
+            font-weight: bold;
+        }
+        .kd-action-btn {
+            background-color: #e2e2e2;
+            border: 1px solid #bbb;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 2px;
+        }
+        .kd-action-btn:hover {
+            background-color: #d0d0d0;
+        }
+
+        .kd-bottom-nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2px;
+        }
+        .kd-slide-controls {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .kd-slide-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(255,255,255,0.5);
+            padding: 6px 8px;
+            border: 1px solid #e0d0b0;
+            border-radius: 4px;
+        }
+        .kd-slide-group span {
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .kd-rule-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(255,255,255,0.5);
+            padding: 6px 8px;
+            border: 1px solid #e0d0b0;
+            border-radius: 4px;
+        }
+        .kd-action-buttons-row {
+            display: flex;
+            gap: 6px;
+        }
+        .kd-main-btn {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 6px 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            min-width: 75px;
+            text-align: center;
+        }
+        .kd-main-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* TAB 0: HỆ THỐNG Specific Styles */
+        .sys-container {
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+            width: 100%;
+        }
+        .sys-left-col {
+            flex: 1.1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .panel {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .conn-top {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .conn-top input[type="text"] {
+            padding: 3px 5px;
+            border: 1px solid #ccc;
+            width: 100px;
+        }
+        .conn-top select {
+            padding: 3px;
+            border: 1px solid #ccc;
+        }
+        .conn-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        .conn-table td {
+            padding: 4px;
+            border-bottom: 1px solid #eee;
+        }
+        .conn-table input[type="text"] {
+            width: 100%;
+            padding: 3px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+        }
+        .conn-bottom {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .conn-bottom input[type="text"] {
+            flex: 1;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+        .section-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+        .process-box {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .process-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 15px;
+            margin-top: 5px;
+        }
+        .red-x {
+            color: red;
+            font-weight: bold;
+        }
+        .sys-right-col {
+            flex: 1.2;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+        }
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .question-header input[type="text"] {
+            flex: 1;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+        .sub-section-title {
+            font-style: italic;
+            margin: 15px 0 5px 0;
+            color: #555;
+            font-weight: bold;
+        }
+        .kd-tabs {
+            display: flex;
+            background-color: #e6e6e6;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            overflow-x: auto;
+            margin-top: 5px;
+        }
+        .kd-tab {
+            padding: 6px 14px;
+            text-align: center;
+            border-right: 1px solid #ccc;
+            cursor: pointer;
+            color: #444;
+            white-space: nowrap;
+        }
+        .kd-tab.active {
+            background-color: #fff;
+            font-weight: bold;
+            color: #000;
+        }
+        .kd-tab-controls {
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            background: #f0f0f0;
+            border-right: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .kd-container {
+            border: 1px solid #ccc;
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .kd-header-row, .kd-row {
+            display: grid;
+            grid-template-columns: 70px 1fr 200px;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .kd-header-row {
+            font-weight: bold;
+            color: #555;
+        }
+        .kd-row input[type="text"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+        .vcnv-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .vcnv-row input[type="text"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+        .vcnv-center-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 150px;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .vcnv-center-row input[type="text"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+        .grid-boxes {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin: 8px 0;
+        }
+        .grid-row-boxes {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .box-cell {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #aaa;
+            background: #fff;
+            display: inline-block;
+        }
+        .char-count {
+            margin-left: 10px;
+            color: #555;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .q-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .q-row input[type="text"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+        .media-btn-group {
+            display: flex;
+            gap: 5px;
+            margin-top: 3px;
+        }
+        .media-btn-group input[type="text"] {
+            flex: 1;
+        }
+        .packages {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .footer-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        /* Layouts for Tabs 1-5 */
+        .game-main-layout {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 41px);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* TAB 1: KHỞI ĐỘNG */
+        .kd-right-sidebar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .kd-side-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #7ab8f5;
+            color: #fff;
+            border: 1px solid #5a9ce3;
+            padding: 8px 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .kd-side-badge {
+            background-color: #ccc;
+            color: #333;
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 2px;
+        }
+        .kd-bottom-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+        .kd-question-preview {
+            display: flex;
+            gap: 10px;
+            height: 150px;
+        }
+        .kd-preview-main {
+            flex: 3;
+            background-color: #5599d4;
+            border: 1px solid #3c7cb8;
+            border-radius: 2px;
+        }
+        .kd-preview-side {
+            flex: 1;
+            background-color: #5599d4;
+            border: 1px solid #3c7cb8;
+            border-radius: 2px;
+        }
+
+        /* TAB 2: VCNV */
+        .vcnv-top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .vcnv-center-preview {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 110px 110px;
+            gap: 2px;
+            background-color: #1a4a75;
+            border: 1px solid #103554;
+            position: relative;
+            max-width: 460px;
+            height: 224px;
+        }
+        .vcnv-grid-item {
+            background-color: #113659;
+            border: 1px solid #2a659c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .vcnv-center-box {
+            position: absolute;
+            top: 55px;
+            left: 115px;
+            right: 115px;
+            bottom: 55px;
+            background-color: #113659;
+            border: 1px solid #4a8bc9;
+            z-index: 2;
+        }
+        .vcnv-right-sidebar {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .vcnv-side-row {
+            display: flex;
+            align-items: center;
+            background-color: #7ab8f5;
+            border: 1px solid #5a9ce3;
+            padding: 6px 10px;
+            gap: 6px;
+        }
+        .vcnv-side-row input[type="text"] {
+            flex: 1;
+            padding: 3px;
+            border: 1px solid #ccc;
+            background: #fff;
+            text-align: center;
+        }
+        .vcnv-side-badge {
+            background-color: #008000;
+            color: #fff;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 2px;
+        }
+        .vcnv-keyword-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #7ab8f5;
+            border: 1px solid #5a9ce3;
+            padding: 8px 10px;
+            color: #fff;
+            font-weight: bold;
+        }
+        .vcnv-bottom-display {
+            display: flex;
+            gap: 10px;
+            height: 110px;
+        }
+        .vcnv-preview-main {
+            flex: 4;
+            background-color: #5599d4;
+            border: 1px solid #3c7cb8;
+            border-radius: 2px;
+        }
+        .vcnv-preview-side {
+            flex: 1;
+            background-color: #5599d4;
+            border: 1px solid #3c7cb8;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* TAB 3: TĂNG TỐC */
+        .tt-top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .tt-right-sidebar {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .tt-side-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #7ab8f5;
+            border: 1px solid #5a9ce3;
+            padding: 10px 12px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .tt-side-badge {
+            background-color: #008000;
+            color: #fff;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 2px;
+        }
+
+        /* TAB 4: VỀ ĐÍCH */
+        .vd-top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .vd-center-panel {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.4);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            position: relative;
+            max-width: 650px;
+        }
+        .vd-center-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .vd-choose-btn {
+            display: block;
+            margin: 0 auto 15px auto;
+            padding: 6px 24px;
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .vd-choose-mode {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .vd-question-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 8px 12px;
+            border-radius: 3px;
+        }
+        .vd-question-row span {
+            font-weight: bold;
+            width: 50px;
+        }
+        .vd-question-options {
+            display: flex;
+            gap: 30px;
+        }
+        .vd-option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .vd-sub-options {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #555;
+            margin-top: 2px;
+        }
+        .vd-right-sidebar {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .vd-package-box {
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            border-radius: 2px;
+        }
+        .vd-side-row {
+            display: flex;
+            align-items: center;
+            background-color: #7ab8f5;
+            border: 1px solid #5a9ce3;
+            padding: 10px 12px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            justify-content: space-between;
+        }
+        .vd-side-indicator {
+            width: 25px;
+            height: 20px;
+            background-color: #ccc;
+            border-radius: 2px;
+        }
+        .vd-star-icon {
+            text-align: center;
+            font-size: 28px;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        /* TAB 5: CÂU HỎI PHỤ */
+        .chp-pagination {
+            display: flex;
+            justify-content: flex-end;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .chp-page-btn {
+            padding: 3px 8px;
+            background-color: #e2e2e2;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+            border-radius: 2px;
+        }
+        .chp-page-btn.active {
+            background-color: #fff;
+            border-color: #999;
+        }
+        .chp-score-table {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .chp-score-header {
+            display: grid;
+            grid-template-columns: 200px 80px 80px;
+            gap: 20px;
+            justify-content: flex-end;
+            font-weight: bold;
+            text-align: center;
+        }
+        .chp-score-row {
+            display: grid;
+            grid-template-columns: 200px 80px 80px;
+            gap: 20px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .chp-note {
+            font-style: italic;
+            font-size: 11px;
+            color: #444;
+            margin-top: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+        <div class="nav-item active" onclick="switchTab(0)">HỆ THỐNG</div>
+        <div class="nav-item" onclick="switchTab(1)">XUẤT PHÁT</div>
+        <div class="nav-item" onclick="switchTab(2)">RA KHƠI</div>
+        <div class="nav-item" onclick="switchTab(3)">VƯỢT SÓNG</div>
+        <div class="nav-item" onclick="switchTab(4)">VINH QUANG</div>
+        <div class="nav-item" onclick="switchTab(5)">CÂU HỎI PHỤ</div>
+        <div class="nav-item" onclick="openProjectorWindow()" style="background-color: #0056b3; color: white;" title="Mở Màn Hình Trình Chiếu Projector">🖥 MÁY CHIẾU</div>
+    </div>
+
+    <!-- TAB 0: HỆ THỐNG -->
+    <div class="tab-content active">
+        <div class="sys-container">
+            <!-- Left Column -->
+            <div class="sys-left-col">
+                <div class="panel">
+                    <div class="conn-top">
+                        <span>IP</span>
+                        <select><option>26.184.196.13</option></select>
+                        <span>Port</span>
+                        <input type="text" value="88">
+                        <button class="btn">Tạo kết nối</button>
+                        <span>Trạng thái</span>
+                        <span style="color: #007bff; cursor: pointer;">ℹ️</span>
+                    </div>
+
+                    <table class="conn-table">
+                        <tr>
+                            <td style="width: 90px; color: #666;">Chưa kết nối</td>
+                            <td style="width: 110px;"><input type="text" value="Thí sinh 1" class="ts-input-name" data-ts="1"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #666;">Chưa kết nối</td>
+                            <td><input type="text" value="Thí sinh 2" class="ts-input-name" data-ts="2"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #666;">Chưa kết nối</td>
+                            <td><input type="text" value="Thí sinh 3" class="ts-input-name" data-ts="3"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #666;">Chưa kết nối</td>
+                            <td><input type="text" value="Thí sinh 4" class="ts-input-name" data-ts="4"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #666;">Chưa kết nối</td>
+                            <td><input type="text" value="Thí sinh 5" class="ts-input-name" data-ts="5"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #666;">Chưa kết nối</td>
+                            <td><input type="text" value="Máy MC"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #666;">Chưa kết nối</td>
+                            <td><input type="text" value="Máy Chiếu"></td>
+                            <td><input type="text"></td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-bottom: 8px;">
+                        <label><input type="checkbox"> Khóa kết nối Máy MC</label>
+                    </div>
+
+                    <div class="conn-bottom">
+                        <button class="btn">▼</button>
+                        <button class="btn">📁</button>
+                        <button class="btn" onclick="updateStudentNames()">Cập nhật tên thí sinh</button>
+                        <input type="text">
+                        <button class="btn">Gửi</button>
+                        <button class="btn">Kiểm tra kết nối</button>
+                    </div>
+                </div>
+
+                <div class="panel section-control">
+                    <div style="font-weight: bold; margin-bottom: 3px;">Phần thi</div>
+                    <div class="btn-row">
+                        <button class="btn">Chuyển slide PowerPoint</button>
+                        <button class="btn">Phát âm thanh</button>
+                        <button class="btn">Thiết lập lại dữ liệu</button>
+                        <button class="btn" style="background-color: #f1f1f1;">Cài đặt</button>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn">Chuyển video, hình ảnh</button>
+                        <button class="btn">Giải mã</button>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" checked> Máy Chiếu</label>
+                            <label><input type="checkbox" checked> Máy MC</label>
+                            <span>Máy Thí sinh</span>
+                            <label><input type="checkbox" checked> 1</label>
+                            <label><input type="checkbox" checked> 2</label>
+                            <label><input type="checkbox" checked> 3</label>
+                            <label><input type="checkbox" checked> 4</label>
+                            <label><input type="checkbox" checked> 5</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel process-box">
+                    <div style="font-weight: bold; margin-bottom: 5px;">Quy trình:</div>
+                    <div class="process-grid">
+                        <div>BƯỚC 1,2: Tạo và kiểm tra kết nối <span class="red-x">❌</span></div>
+                        <div>BƯỚC 3: Cập nhật tên thí sinh <span class="red-x">❌</span></div>
+                        <div>BƯỚC 4: Nhập dữ liệu câu hỏi <span class="red-x">❌</span></div>
+                        <div>BƯỚC 5: Nhập dữ liệu file PowerPoint <span class="red-x">❌</span></div>
+                        <div style="grid-column: span 2;">
+                            BƯỚC 6: Chọn video, hình ảnh câu hỏi các phần thi <span class="red-x">❌</span>
+                            <div style="padding-left: 15px; margin-top: 3px; color: #555;">
+                                + Hình ảnh Chướng ngại vật: 0/1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + Đáp án Tăng tốc: 0<br>
+                                + Video, hình ảnh câu hỏi Tăng tốc: 0/4<br>
+                                + Video, hình ảnh câu hỏi Về đích: 0
+                            </div>
+                        </div>
+                        <div>BƯỚC 7: Chuyển video, hình ảnh câu hỏi <span class="red-x">❌</span></div>
+                        <div>BƯỚC 8: Giải mã video, hình ảnh câu hỏi <span class="red-x">❌</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="sys-right-col">
+                <div style="font-weight: bold; margin-bottom: 8px;">Câu hỏi</div>
+                
+                <div class="question-header">
+                    <span>Nhập dữ liệu câu hỏi từ file</span>
+                    <button class="btn">Chọn file</button>
+                    <input type="text">
+                </div>
+
+                <div class="sub-section-title" style="margin-top: 5px;">... Phần thi Xuất Phát ...</div>
+                <div class="kd-tabs">
+                    <div class="kd-tab active" onclick="switchKdTab(this, 1)">Bộ đề 1</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 2)">Bộ đề 2</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 3)">Bộ đề 3</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 4)">Bộ đề 4</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 5)">Bộ đề 5</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 6)">Bộ đề 6</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 7)">Bộ đề 7</div>
+                    <div class="kd-tab" onclick="switchKdTab(this, 8)">Bộ đề 8</div>
+                    <div class="kd-tab-controls">◄</div>
+                    <div class="kd-tab-controls">►</div>
+                </div>
+                <div class="kd-container">
+                    <div class="kd-header-row">
+                        <span></span>
+                        <span>Câu hỏi</span>
+                        <span>Đáp án</span>
+                    </div>
+                    <div class="kd-row"><span>Câu 1</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 2</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 3</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 4</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 5</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 6</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 7</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 8</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 9</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 10</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 11</span><input type="text"><input type="text"></div>
+                    <div class="kd-row"><span>Câu 12</span><input type="text"><input type="text"></div>
+                </div>
+
+                <div class="sub-section-title" style="margin-top: 5px;">... Phần thi Vượt Sóng ...</div>
+                <div style="font-weight: bold; margin-bottom: 6px;">* Câu hỏi</div>
+
+                <div class="vcnv-row"><span>Hàng 1</span><input type="text" oninput="updateBoxes(0, this.value)"></div>
+                <div class="vcnv-row"><span>Hàng 2</span><input type="text" oninput="updateBoxes(1, this.value)"></div>
+                <div class="vcnv-row"><span>Hàng 3</span><input type="text" oninput="updateBoxes(2, this.value)"></div>
+                <div class="vcnv-row"><span>Hàng 4</span><input type="text" oninput="updateBoxes(3, this.value)"></div>
+                <div class="vcnv-row"><span>Đáp án vòng thi</span><input type="text" placeholder="Nhập đáp án chung vòng thi Vượt Sóng..." oninput="updateBoxes(4, this.value)"></div>
+                <div class="vcnv-center-row">
+                    <span>Trung tâm</span>
+                    <input type="text">
+                    <input type="text">
+                </div>
+
+                <div style="font-weight: bold; margin: 10px 0 5px 0;">* Ô chữ</div>
+                <div class="grid-boxes">
+                    <div class="grid-row-boxes">
+                        <div class="box-container" id="box-row-0" style="display: flex; gap: 3px;">
+                            <span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span>
+                        </div>
+                        <span class="char-count" id="count-row-0">0 kí tự</span>
+                    </div>
+                    <div class="grid-row-boxes">
+                        <div class="box-container" id="box-row-1" style="display: flex; gap: 3px;">
+                            <span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span>
+                        </div>
+                        <span class="char-count" id="count-row-1">0 kí tự</span>
+                    </div>
+                    <div class="grid-row-boxes">
+                        <div class="box-container" id="box-row-2" style="display: flex; gap: 3px;">
+                            <span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span>
+                        </div>
+                        <span class="char-count" id="count-row-2">0 kí tự</span>
+                    </div>
+                    <div class="grid-row-boxes">
+                        <div class="box-container" id="box-row-3" style="display: flex; gap: 3px;">
+                            <span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span>
+                        </div>
+                        <span class="char-count" id="count-row-3">0 kí tự</span>
+                    </div>
+                    <div class="grid-row-boxes">
+                        <div class="box-container" id="box-row-4" style="display: flex; gap: 3px;">
+                            <span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span><span class="box-cell"></span>
+                        </div>
+                        <span class="char-count" id="count-row-4">0 kí tự</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                    <span style="font-weight: bold;">* Hình ảnh</span>
+                    <button class="btn">Chọn ảnh</button>
+                    <span style="font-weight: bold; margin-left: 10px;">* Từ khóa Vượt Sóng</span>
+                    <input type="text" style="flex: 1; padding: 4px; border: 1px solid #ccc;" oninput="document.getElementById('cnv-key-count').innerText = this.value.length + ' kí tự'">
+                    <span class="char-count" id="cnv-key-count">0 kí tự</span>
+                </div>
+
+                <div class="sub-section-title">... Phần thi Ra Khơi (4 câu hỏi băng hình) ...</div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; color: #555; margin-bottom: 5px;">
+                    <span>Câu hỏi Băng hình</span>
+                    <span>Đáp án</span>
+                </div>
+
+                <div class="q-row">
+                    <span>Câu 1 (10s)</span>
+                    <div><input type="text" placeholder="Nội dung câu hỏi 1..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn băng hình (Video/Ảnh)</button><input type="text" value="..."></div></div>
+                    <div><input type="text" placeholder="Đáp án câu 1..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh đáp án</button><input type="text" value="..."></div></div>
+                </div>
+                <div class="q-row">
+                    <span>Câu 2 (20s)</span>
+                    <div><input type="text" placeholder="Nội dung câu hỏi 2..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn băng hình (Video/Ảnh)</button><input type="text" value="..."></div></div>
+                    <div><input type="text" placeholder="Đáp án câu 2..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh đáp án</button><input type="text" value="..."></div></div>
+                </div>
+                <div class="q-row">
+                    <span>Câu 3 (30s)</span>
+                    <div><input type="text" placeholder="Nội dung câu hỏi 3..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn băng hình (Video/Ảnh)</button><input type="text" value="..."></div></div>
+                    <div><input type="text" placeholder="Đáp án câu 3..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh đáp án</button><input type="text" value="..."></div></div>
+                </div>
+                <div class="q-row">
+                    <span>Câu 4 (40s)</span>
+                    <div><input type="text" placeholder="Nội dung câu hỏi 4..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn băng hình (Video/Ảnh)</button><input type="text" value="..."></div></div>
+                    <div><input type="text" placeholder="Đáp án câu 4..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh đáp án</button><input type="text" value="..."></div></div>
+                </div>
+
+                <div class="sub-section-title">... Phần thi Vinh Quang ...</div>
+                <div class="kd-tabs" style="margin-bottom: 8px;">
+                    <div class="kd-tab vq-tier-tab active" onclick="switchVqTier(this, '10')">Mức 10 ĐIỂM (6 câu)</div>
+                    <div class="kd-tab vq-tier-tab" onclick="switchVqTier(this, '20')">Mức 20 ĐIỂM (6 câu)</div>
+                    <div class="kd-tab vq-tier-tab" onclick="switchVqTier(this, '30')">Mức 30 ĐIỂM (6 câu)</div>
+                </div>
+
+                <!-- Mức 10 ĐIỂM -->
+                <div id="vq-tier-10" class="vq-tier-content">
+                    <div style="font-weight: bold; color: #0056b3; margin-bottom: 5px;">* Các câu hỏi Mức 10 ĐIỂM</div>
+                    <div class="q-row"><span>Câu 10Đ - 1</span><div><input type="text" placeholder="Nội dung câu hỏi 1..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 10Đ - 2</span><div><input type="text" placeholder="Nội dung câu hỏi 2..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 10Đ - 3</span><div><input type="text" placeholder="Nội dung câu hỏi 3..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 10Đ - 4</span><div><input type="text" placeholder="Nội dung câu hỏi 4..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 10Đ - 5</span><div><input type="text" placeholder="Nội dung câu hỏi 5..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 10Đ - 6</span><div><input type="text" placeholder="Nội dung câu hỏi 6..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                </div>
+
+                <!-- Mức 20 ĐIỂM -->
+                <div id="vq-tier-20" class="vq-tier-content" style="display: none;">
+                    <div style="font-weight: bold; color: #0056b3; margin-bottom: 5px;">* Các câu hỏi Mức 20 ĐIỂM</div>
+                    <div class="q-row"><span>Câu 20Đ - 1</span><div><input type="text" placeholder="Nội dung câu hỏi 1..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 20Đ - 2</span><div><input type="text" placeholder="Nội dung câu hỏi 2..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 20Đ - 3</span><div><input type="text" placeholder="Nội dung câu hỏi 3..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 20Đ - 4</span><div><input type="text" placeholder="Nội dung câu hỏi 4..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 20Đ - 5</span><div><input type="text" placeholder="Nội dung câu hỏi 5..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 20Đ - 6</span><div><input type="text" placeholder="Nội dung câu hỏi 6..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                </div>
+
+                <!-- Mức 30 ĐIỂM -->
+                <div id="vq-tier-30" class="vq-tier-content" style="display: none;">
+                    <div style="font-weight: bold; color: #0056b3; margin-bottom: 5px;">* Các câu hỏi Mức 30 ĐIỂM</div>
+                    <div class="q-row"><span>Câu 30Đ - 1</span><div><input type="text" placeholder="Nội dung câu hỏi 1..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 30Đ - 2</span><div><input type="text" placeholder="Nội dung câu hỏi 2..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 30Đ - 3</span><div><input type="text" placeholder="Nội dung câu hỏi 3..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 30Đ - 4</span><div><input type="text" placeholder="Nội dung câu hỏi 4..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 30Đ - 5</span><div><input type="text" placeholder="Nội dung câu hỏi 5..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                    <div class="q-row"><span>Câu 30Đ - 6</span><div><input type="text" placeholder="Nội dung câu hỏi 6..."><div class="media-btn-group"><button class="btn" style="font-size: 11px;">Chọn ảnh hoặc video</button><input type="text" value="..."></div></div><div><input type="text" placeholder="Đáp án..."></div></div>
+                </div>
+
+                <div class="sub-section-title">... Phần thi Vinh Quang Phụ ...</div>
+                <div class="q-row"><span>Câu 1</span><div><input type="text"></div><div><input type="text"></div></div>
+                <div class="q-row"><span>Câu 2</span><div><input type="text"></div><div><input type="text"></div></div>
+                <div class="q-row"><span>Câu 3</span><div><input type="text"></div><div><input type="text"></div></div>
+
+                <div class="footer-actions">
+                    <div>
+                        <span>Cập nhật dữ liệu file PowerPoint</span>
+                        <button class="btn">Thực hiện</button>
+                    </div>
+                    <div>
+                        <button class="btn">Xuất câu hỏi</button>
+                        <button class="btn">Lưu câu hỏi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: XUẤT PHÁT -->
+    <div class="tab-content">
+        <div class="game-main-layout">
+            <div class="kd-students-container" id="students-container-tab1">
+                <!-- Injected dynamically via JS or standard structure -->
+            </div>
+
+            <div class="kd-right-sidebar">
+                <div class="kd-side-btn"><span>Lượt thi riêng (TS1)</span><span class="kd-side-badge">1</span></div>
+                <div class="kd-side-btn"><span>Lượt thi riêng (TS2)</span><span class="kd-side-badge">2</span></div>
+                <div class="kd-side-btn"><span>Lượt thi riêng (TS3)</span><span class="kd-side-badge">3</span></div>
+                <div class="kd-side-btn"><span>Lượt thi riêng (TS4)</span><span class="kd-side-badge">4</span></div>
+                <div class="kd-side-btn"><span>Lượt thi riêng (TS5)</span><span class="kd-side-badge">5</span></div>
+                <div class="kd-side-btn"><span>Lượt thi chung</span><span class="kd-side-badge">6</span></div>
+            </div>
+
+            <div class="kd-bottom-section">
+                <div class="kd-question-preview">
+                    <div class="kd-preview-main"></div>
+                    <div class="kd-preview-side"></div>
+                </div>
+
+                <div class="kd-control-toolbar">
+                    <div class="kd-progress-bar">00:00</div>
+                    <div class="kd-icon-group">
+                        <button class="kd-action-btn">⇅ ↗</button>
+                    </div>
+                    <button class="kd-action-btn">✔</button>
+                    <button class="kd-action-btn">✖</button>
+                    <button class="kd-action-btn">🔊 ...</button>
+                </div>
+
+                <div class="kd-bottom-nav-row">
+                    <div class="kd-slide-controls">
+                        <div class="kd-slide-group">
+                            <span>Chuyển slide</span>
+                            <button class="btn">Video Giới thiệu</button>
+                            <button class="btn">Video Xuất Phát</button>
+                            <button class="btn">Chuyển slide PPT</button>
+                        </div>
+                        <div class="kd-rule-group">
+                            <span>Luật thi</span>
+                            <div><label><input type="radio" name="kd-rule"> Luật O20</label></div>
+                            <div><label><input type="radio" name="kd-rule" checked> Luật O23-26</label></div>
+                        </div>
+                        <div>
+                            <button class="btn" style="margin-top: 18px;">Phát âm thanh</button>
+                        </div>
+                    </div>
+
+                    <div class="kd-action-buttons-row">
+                        <button class="kd-main-btn">Xuất Phát</button>
+                        <button class="kd-main-btn">Bắt đầu</button>
+                        <button class="kd-main-btn">Hoàn thành</button>
+                        <button class="kd-main-btn">Dừng nhạc</button>
+                        <button class="kd-main-btn">Đặt lại</button>
+                        <button class="kd-main-btn">Tổng kết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: RA KHƠI -->
+    <div class="tab-content">
+        <div class="game-main-layout">
+            <div class="tt-top-section">
+                <div class="kd-students-container" id="students-container-tab3"></div>
+
+                <div class="tt-right-sidebar">
+                    <div class="tt-side-row"><span>Câu hỏi thứ</span><div class="tt-side-badge">1</div></div>
+                    <div class="tt-side-row"><span>Câu hỏi thứ</span><div class="tt-side-badge">2</div></div>
+                    <div class="tt-side-row"><span>Câu hỏi thứ</span><div class="tt-side-badge">3</div></div>
+                    <div class="tt-side-row"><span>Câu hỏi thứ</span><div class="tt-side-badge">4</div></div>
+                    <div class="tt-side-row"><span>Câu hỏi thứ</span><div class="tt-side-badge">5</div></div>
+                </div>
+            </div>
+
+            <div class="kd-bottom-section">
+                <div class="vcnv-bottom-display">
+                    <div class="vcnv-preview-main"></div>
+                    <div class="vcnv-preview-side">0</div>
+                </div>
+
+                <div class="kd-control-toolbar">
+                    <div class="kd-progress-bar">00:00</div>
+                    <button class="kd-action-btn">⇅</button>
+                    <button class="kd-action-btn" style="width: 100px; font-size: 11px;">Hiện Đáp án</button>
+                    <button class="kd-action-btn">🔊 ...</button>
+                </div>
+
+                <div class="kd-bottom-nav-row">
+                    <div class="kd-slide-controls">
+                        <div class="kd-slide-group">
+                            <span>Chuyển slide</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn">Video Ra Khơi</button>
+                                <button class="btn">Giải mã Video/Ảnh</button>
+                            </div>
+                            <div style="display: flex; gap: 5px; margin-top: 2px;">
+                                <button class="btn">Điểm TS</button>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn" style="margin-top: 15px;">Chuyển slide PPT</button>
+                            <button class="btn" style="margin-top: 15px;">Phát âm thanh</button>
+                        </div>
+                    </div>
+
+                    <div class="kd-action-buttons-row">
+                        <button class="kd-main-btn">Ra Khơi</button>
+                        <button class="kd-main-btn">Tính Thời gian</button>
+                        <button class="kd-main-btn">Đáp án TS</button>
+                        <button class="kd-main-btn">Điểm TS</button>
+                        <button class="kd-main-btn">Đặt lại</button>
+                        <button class="kd-main-btn">Tổng kết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: VƯỢT SÓNG -->
+    <div class="tab-content">
+        <div class="game-main-layout">
+            <div class="vcnv-top-section">
+                <div class="kd-students-container" id="students-container-tab2"></div>
+
+                <div class="vcnv-center-preview">
+                    <div class="vcnv-grid-item">1</div>
+                    <div class="vcnv-grid-item">2</div>
+                    <div class="vcnv-grid-item">4</div>
+                    <div class="vcnv-grid-item">3</div>
+                    <div class="vcnv-center-box"></div>
+                </div>
+
+                <div class="vcnv-right-sidebar">
+                    <div class="vcnv-side-row">
+                        <button class="btn" style="padding: 2px 6px;">📁</button>
+                        <span>0 kí tự</span>
+                        <span style="cursor: pointer;">👁️</span>
+                        <div class="vcnv-side-badge">1</div>
+                    </div>
+                    <div class="vcnv-side-row">
+                        <button class="btn" style="padding: 2px 6px;">📁</button>
+                        <span>0 kí tự</span>
+                        <span style="cursor: pointer;">👁️</span>
+                        <div class="vcnv-side-badge">2</div>
+                    </div>
+                    <div class="vcnv-side-row">
+                        <button class="btn" style="padding: 2px 6px;">📁</button>
+                        <span>0 kí tự</span>
+                        <span style="cursor: pointer;">👁️</span>
+                        <div class="vcnv-side-badge">3</div>
+                    </div>
+                    <div class="vcnv-side-row">
+                        <button class="btn" style="padding: 2px 6px;">📁</button>
+                        <span>0 kí tự</span>
+                        <span style="cursor: pointer;">👁️</span>
+                        <div class="vcnv-side-badge">4</div>
+                    </div>
+                    <div class="vcnv-keyword-row">
+                        <span>Vượt Sóng 0 kí tự</span>
+                        <select><option>▼</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kd-bottom-section">
+                <div class="vcnv-bottom-display">
+                    <div class="vcnv-preview-main"></div>
+                    <div class="vcnv-preview-side">0</div>
+                </div>
+
+                <div class="kd-control-toolbar">
+                    <div class="kd-progress-bar">00:00</div>
+                    <button class="kd-action-btn">⇅</button>
+                    <button class="kd-action-btn">✔</button>
+                    <button class="kd-action-btn">✖</button>
+                    <button class="kd-action-btn">🔊 ...</button>
+                </div>
+
+                <div class="kd-bottom-nav-row">
+                    <div class="kd-slide-controls">
+                        <div class="kd-slide-group">
+                            <span>Chuyển slide</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn">Video Vượt Sóng</button>
+                                <button class="btn">Hình ảnh Vượt Sóng</button>
+                            </div>
+                            <div style="display: flex; gap: 5px; margin-top: 2px;">
+                                <button class="btn">Phần Thi</button>
+                                <button class="btn">Mở Hình ảnh</button>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn" style="margin-top: 15px;">Chuyển slide PPT</button>
+                            <button class="btn" style="margin-top: 15px;">Phát âm thanh</button>
+                        </div>
+                    </div>
+
+                    <div class="kd-action-buttons-row">
+                        <button class="kd-main-btn">Vượt Sóng</button>
+                        <button class="kd-main-btn">Tính Thời gian</button>
+                        <button class="kd-main-btn">Đáp án TS</button>
+                        <button class="kd-main-btn">Mảnh ghép</button>
+                        <button class="kd-main-btn">Đặt lại</button>
+                        <button class="kd-main-btn">Tổng kết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: VINH QUANG -->
+    <div class="tab-content">
+        <div class="game-main-layout">
+            <div class="vd-top-section">
+                <div class="kd-students-container" id="students-container-tab4"></div>
+
+                <div class="vd-center-panel">
+                    <div class="vd-center-title">Chọn gói câu hỏi</div>
+                    <button class="vd-choose-btn">Chọn Gói</button>
+                    <div class="vd-choose-mode">
+                        <span>Lựa chọn câu hỏi theo:</span>
+                        <label><input type="radio" name="mode" checked> Thứ tự</label>
+                        <label><input type="radio" name="mode"> Ngẫu nhiên</label>
+                        <label><input type="radio" name="mode"> Tự chọn</label>
+                    </div>
+
+                    <div class="vd-question-row">
+                        <span>Câu 1:</span>
+                        <div class="vd-question-options">
+                            <div class="vd-option-group">
+                                <label><input type="checkbox"> Câu 20 điểm</label>
+                                <div class="vd-sub-options">
+                                    <label><input type="radio" name="q1_20"> -1</label>
+                                    <label><input type="radio" name="q1_20"> -2</label>
+                                    <label><input type="radio" name="q1_20"> -3</label>
+                                </div>
+                            </div>
+                            <div class="vd-option-group">
+                                <label><input type="checkbox"> Câu 30 điểm</label>
+                                <div class="vd-sub-options">
+                                    <label><input type="radio" name="q1_30"> -1</label>
+                                    <label><input type="radio" name="q1_30"> -2</label>
+                                    <label><input type="radio" name="q1_30"> -3</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vd-question-row">
+                        <span>Câu 2:</span>
+                        <div class="vd-question-options">
+                            <div class="vd-option-group">
+                                <label><input type="checkbox"> Câu 20 điểm</label>
+                                <div class="vd-sub-options">
+                                    <label><input type="radio" name="q2_20"> -1</label>
+                                    <label><input type="radio" name="q2_20"> -2</label>
+                                    <label><input type="radio" name="q2_20"> -3</label>
+                                </div>
+                            </div>
+                            <div class="vd-option-group">
+                                <label><input type="checkbox"> Câu 30 điểm</label>
+                                <div class="vd-sub-options">
+                                    <label><input type="radio" name="q2_30"> -1</label>
+                                    <label><input type="radio" name="q2_30"> -2</label>
+                                    <label><input type="radio" name="q2_30"> -3</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vd-question-row">
+                        <span>Câu 3:</span>
+                        <div class="vd-question-options">
+                            <div class="vd-option-group">
+                                <label><input type="checkbox"> Câu 20 điểm</label>
+                                <div class="vd-sub-options">
+                                    <label><input type="radio" name="q3_20"> -1</label>
+                                    <label><input type="radio" name="q3_20"> -2</label>
+                                    <label><input type="radio" name="q3_20"> -3</label>
+                                </div>
+                            </div>
+                            <div class="vd-option-group">
+                                <label><input type="checkbox"> Câu 30 điểm</label>
+                                <div class="vd-sub-options">
+                                    <label><input type="radio" name="q3_30"> -1</label>
+                                    <label><input type="radio" name="q3_30"> -2</label>
+                                    <label><input type="radio" name="q3_30"> -3</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="font-style: italic; font-size: 11px; color: #444; margin-top: 10px;">(*): là câu hỏi có chứa hình ảnh hoặc video.</div>
+                </div>
+
+                <div class="vd-right-sidebar">
+                    <div class="vd-package-box">Gói...</div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ 1</span><div class="vd-side-indicator"></div></div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ 2</span><div class="vd-side-indicator"></div></div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ 3</span><div class="vd-side-indicator"></div></div>
+                    <div class="vd-star-icon">⭐</div>
+                </div>
+            </div>
+
+            <div class="kd-bottom-section">
+                <div class="vcnv-bottom-display">
+                    <div class="vcnv-preview-main"></div>
+                    <div class="vcnv-preview-side">0</div>
+                </div>
+                <div class="kd-control-toolbar">
+                    <div class="kd-progress-bar">00:00</div>
+                    <button class="kd-action-btn">⇅</button>
+                    <button class="kd-action-btn">✔</button>
+                    <button class="kd-action-btn">✖</button>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; background: #e2e2e2; padding: 5px 8px; border: 1px solid #bbb; border-radius: 2px; cursor: pointer;">
+                        <input type="checkbox"> Đếm 5s trả lời
+                    </label>
+                    <button class="kd-action-btn">🔊 ...</button>
+                </div>
+                <div class="kd-bottom-nav-row">
+                    <div class="kd-slide-controls">
+                        <div class="kd-slide-group">
+                            <span>Chuyển slide</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn">Video Vinh Quang</button>
+                                <button class="btn">Phần Thi</button>
+                            </div>
+                            <div style="display: flex; gap: 5px; margin-top: 2px;">
+                                <button class="btn">Video Câu hỏi</button>
+                                <button class="btn">TG Thực nghiệm</button>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn" style="margin-top: 15px;">Chuyển slide PPT</button>
+                            <button class="btn" style="margin-top: 15px;">Phát âm thanh</button>
+                        </div>
+                    </div>
+                    <div class="kd-action-buttons-row">
+                        <button class="kd-main-btn">Vinh Quang</button>
+                        <button class="kd-main-btn">Tính Thời gian</button>
+                        <button class="kd-main-btn">Ẩn Câu hỏi</button>
+                        <button class="kd-main-btn">5s Trả lời</button>
+                        <button class="kd-main-btn">Đặt lại</button>
+                        <button class="kd-main-btn">Tổng kết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: CÂU HỎI PHỤ -->
+    <div class="tab-content">
+        <div class="game-main-layout">
+            <div class="vd-top-section">
+                <div class="kd-students-container" id="students-container-tab5"></div>
+
+                <div class="vd-center-panel">
+                    <div class="vd-center-title">Điểm câu hỏi</div>
+                    <div class="chp-score-table">
+                        <div class="chp-score-header">
+                            <span>Đúng (+)</span>
+                            <span>Sai (-)</span>
+                        </div>
+                        <div class="chp-score-row">
+                            <span>Thí sinh trả lời lượt đầu tiên</span>
+                            <input type="text" value="0" style="width: 100%; padding: 4px; text-align: center; border: 1px solid #ccc; background: #fff;">
+                            <input type="text" value="0" style="width: 100%; padding: 4px; text-align: center; border: 1px solid #ccc; background: #fff;">
+                        </div>
+                        <div class="chp-score-row">
+                            <span>Thí sinh trả lời các lượt tiếp theo</span>
+                            <input type="text" value="0" style="width: 100%; padding: 4px; text-align: center; border: 1px solid #ccc; background: #fff;">
+                            <input type="text" value="0" style="width: 100%; padding: 4px; text-align: center; border: 1px solid #ccc; background: #fff;">
+                        </div>
+                    </div>
+                    <div class="chp-note">Thay đổi điểm câu hỏi tại mục "Cài đặt" [Tab HỆ THỐNG]</div>
+                </div>
+
+                <div class="vd-right-sidebar">
+                    <div class="chp-pagination">
+                        <button class="chp-page-btn active">1-5</button>
+                        <button class="chp-page-btn">6-10</button>
+                    </div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ</span><div class="vd-side-indicator" style="display: flex; align-items: center; justify-content: center; background: #fff; color: #333; font-weight: bold;">1</div></div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ</span><div class="vd-side-indicator" style="display: flex; align-items: center; justify-content: center; background: #fff; color: #333; font-weight: bold;">2</div></div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ</span><div class="vd-side-indicator" style="display: flex; align-items: center; justify-content: center; background: #fff; color: #333; font-weight: bold;">3</div></div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ</span><div class="vd-side-indicator" style="display: flex; align-items: center; justify-content: center; background: #fff; color: #333; font-weight: bold;">4</div></div>
+                    <div class="vd-side-row"><span>Câu hỏi thứ</span><div class="vd-side-indicator" style="display: flex; align-items: center; justify-content: center; background: #fff; color: #333; font-weight: bold;">5</div></div>
+                </div>
+            </div>
+
+            <div class="kd-bottom-section">
+                <div class="vcnv-bottom-display">
+                    <div class="vcnv-preview-main"></div>
+                    <div class="vcnv-preview-side">0</div>
+                </div>
+                <div class="kd-control-toolbar">
+                    <div class="kd-progress-bar">00:00</div>
+                    <button class="kd-action-btn">⇅</button>
+                    <button class="kd-action-btn">✔</button>
+                    <button class="kd-action-btn">✖</button>
+                    <button class="kd-action-btn">🔊 ...</button>
+                </div>
+                <div class="kd-bottom-nav-row">
+                    <div class="kd-slide-controls">
+                        <div class="kd-slide-group">
+                            <span>Chuyển slide</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn">Video Về Đích</button>
+                            </div>
+                            <div style="display: flex; gap: 5px; margin-top: 2px;">
+                                <button class="btn">Thử Chuông</button>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn" style="margin-top: 15px;">Chuyển slide PPT</button>
+                            <button class="btn" style="margin-top: 15px;">Phát âm thanh</button>
+                        </div>
+                    </div>
+                    <div class="kd-action-buttons-row">
+                        <button class="kd-main-btn">Câu Hỏi Phụ</button>
+                        <button class="kd-main-btn">Bắt đầu</button>
+                        <button class="kd-main-btn">Ẩn Câu hỏi</button>
+                        <button class="kd-main-btn">5s Trả lời</button>
+                        <button class="kd-main-btn">Đặt lại</button>
+                        <button class="kd-main-btn">Tổng kết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PPT Slide Navigation Floating Window Popup -->
+    <div id="ppt-slide-modal" class="ppt-modal-overlay">
+        <div id="ppt-window-box" class="ppt-modal-container">
+            <!-- Window Title Bar Header -->
+            <div id="ppt-window-header" class="ppt-window-header">
+                <div class="ppt-window-title">
+                    <span>❖ BẢNG ĐIỀU KHIỂN CHUYỂN SLIDE PPT</span>
+                    <small>Kéo thanh này để di chuyển cửa sổ</small>
+                </div>
+                <div class="ppt-window-controls">
+                    <button class="ppt-win-btn" onclick="togglePptMinimize()" title="Thu nhỏ / Mở rộng">−</button>
+                    <button class="ppt-win-btn" onclick="resetPptWindowPos()" title="Đặt lại vị trí trung tâm">⟲</button>
+                    <button class="ppt-win-btn close-btn" onclick="closePptModal()" title="Đóng cửa sổ">&times;</button>
+                </div>
+            </div>
+
+            <!-- Window Content Body -->
+            <div id="ppt-modal-body" class="ppt-modal-body">
+                <div class="ppt-modal-grid">
+                    <!-- Column 1: *Giới thiệu -->
+                    <div class="ppt-col">
+                        <div class="ppt-col-title">*Giới thiệu</div>
+                        <button class="ppt-btn" onclick="selectPptSlide('Maket')">Maket</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('BatDau')">BatDau</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VideoGioiThieu')">VideoGioiThieu</button>
+                        <div class="ppt-divider"></div>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video1')">Video1</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video2')">Video2</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video3')">Video3</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video4')">Video4</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video5')">Video5</button>
+                        <div class="ppt-divider"></div>
+                    </div>
+
+                    <!-- Column 2: *Xuất phát -->
+                    <div class="ppt-col">
+                        <div class="ppt-col-title">*Xuất phát</div>
+                        <button class="ppt-btn" onclick="selectPptSlide('KhoiDong-Video')">KhoiDong-Video</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('KhoiDong-BatDau')">KhoiDong-BatDau</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('KhoiDong-PhanThi')">KhoiDong-PhanThi</button>
+                        <div class="ppt-divider"></div>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video6')">Video6</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video7')">Video7</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video8')">Video8</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video9')">Video9</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('Video10')">Video10</button>
+                        <div class="ppt-divider"></div>
+                    </div>
+
+                    <!-- Column 3: *Ra khơi -->
+                    <div class="ppt-col">
+                        <div class="ppt-col-title">*Ra khơi</div>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-Video')">TangToc-Video</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-PhanThi1')">TangToc-PhanThi1</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-PhanThi2')">TangToc-PhanThi2</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-PhanThi3')">TangToc-PhanThi3</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-PhanThi4')">TangToc-PhanThi4</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-PhanThi5')">TangToc-PhanThi5</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-PhanThi6')">TangToc-PhanThi6</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-DapAnTS')">TangToc-DapAnTS</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('TangToc-DiemTS')">TangToc-DiemTS</button>
+                        <div class="ppt-divider"></div>
+                    </div>
+
+                    <!-- Column 4: *Vượt sóng -->
+                    <div class="ppt-col">
+                        <div class="ppt-col-title">*Vượt sóng</div>
+                        <button class="ppt-btn" onclick="selectPptSlide('VCNV-Video')">VCNV-Video</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VCNV-BatDau')">VCNV-BatDau</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VCNV-PhanThi')">VCNV-PhanThi</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VCNV-DapAnTS')">VCNV-DapAnTS</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VCNV-ManhGhep')">VCNV-ManhGhep</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VCNV-HinhAnh')">VCNV-HinhAnh</button>
+                        <div class="ppt-divider"></div>
+                    </div>
+
+                    <!-- Column 5: *Vinh quang -->
+                    <div class="ppt-col">
+                        <div class="ppt-col-title">*Vinh quang</div>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-Video')">VeDich-Video</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-PhanThi')">VeDich-PhanThi</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-VideoTS1')">VeDich-VideoTS1</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-VideoTS2')">VeDich-VideoTS2</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-VideoTS3')">VeDich-VideoTS3</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-VideoTS4')">VeDich-VideoTS4</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDich-VideoTS5')">VeDich-VideoTS5</button>
+                        <div class="ppt-divider"></div>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDichPhu-BatDau')">VeDichPhu-BatDau</button>
+                        <button class="ppt-btn" onclick="selectPptSlide('VeDichPhu-PhanThi')">VeDichPhu-PhanThi</button>
+                        <div class="ppt-divider"></div>
+                    </div>
+                </div>
+
+                <!-- Footer Navigation -->
+                <div class="ppt-modal-footer">
+                    <button class="ppt-nav-btn" onclick="selectPptSlide('Slide phía trước')">Slide phía trước</button>
+                    <button class="ppt-nav-btn" onclick="selectPptSlide('Slide tiếp theo')">Slide tiếp theo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Sound Control Floating Window Popup -->
+    <div id="audio-slide-modal" class="ppt-modal-overlay">
+        <div id="audio-window-box" class="ppt-modal-container audio-window-container">
+            <!-- Window Title Bar Header -->
+            <div id="audio-window-header" class="ppt-window-header">
+                <div class="ppt-window-title">
+                    <span>🔊 BẢNG PHÁT ÂM THANH</span>
+                    <small>Kéo để di chuyển</small>
+                </div>
+                <div class="ppt-window-controls">
+                    <button class="ppt-win-btn" onclick="toggleAudioMinimize()" title="Thu nhỏ / Mở rộng">−</button>
+                    <button class="ppt-win-btn" onclick="resetAudioWindowPos()" title="Đặt lại vị trí">⟲</button>
+                    <button class="ppt-win-btn close-btn" onclick="closeAudioModal()" title="Đóng cửa sổ">&times;</button>
+                </div>
+            </div>
+
+            <!-- Window Content Body -->
+            <div id="audio-modal-body" class="ppt-modal-body">
+                <div class="audio-list-container">
+                    <div class="audio-list-header">
+                        <div></div>
+                        <div></div>
+                        <div style="text-align: center;">Phím tắt</div>
+                    </div>
+
+                    <div class="audio-row"><span class="audio-idx">1</span><button class="audio-play-btn" onclick="playAudioSound('1ST')">1ST</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">2</span><button class="audio-play-btn" onclick="playAudioSound('2ND')">2ND</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">3</span><button class="audio-play-btn" onclick="playAudioSound('3RD')">3RD</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">4</span><button class="audio-play-btn" onclick="playAudioSound('4TH')">4TH</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">5</span><button class="audio-play-btn" onclick="playAudioSound('AWARD')">AWARD</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">6</span><button class="audio-play-btn" onclick="playAudioSound('CONTESTANT')">CONTESTANT</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">7</span><button class="audio-play-btn" onclick="playAudioSound('FINISHING')">FINISHING</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">8</span><button class="audio-play-btn" onclick="playAudioSound('HEART')">HEART</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">9</span><button class="audio-play-btn" onclick="playAudioSound('HOSTENTRANCE')">HOSTENTRANCE</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">10</span><button class="audio-play-btn" onclick="playAudioSound('IN1')">IN1</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">11</span><button class="audio-play-btn" onclick="playAudioSound('IN2')">IN2</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">12</span><button class="audio-play-btn" onclick="playAudioSound('IN3')">IN3</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">13</span><button class="audio-play-btn" onclick="playAudioSound('IN4')">IN4</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">14</span><button class="audio-play-btn" onclick="playAudioSound('IN5')">IN5</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">15</span><button class="audio-play-btn" onclick="playAudioSound('LETTER')">LETTER</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">16</span><button class="audio-play-btn" onclick="playAudioSound('NUI10')">NUI10</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">17</span><button class="audio-play-btn" onclick="playAudioSound('15S')">15S</button><span class="audio-shortcut">1</span></div>
+                    <div class="audio-row"><span class="audio-idx">18</span><button class="audio-play-btn" onclick="playAudioSound('20S')">20S</button><span class="audio-shortcut">2</span></div>
+                    <div class="audio-row"><span class="audio-idx">19</span><button class="audio-play-btn" onclick="playAudioSound('SOUND19')">SOUND19</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">20</span><button class="audio-play-btn" onclick="playAudioSound('SOUND20')">SOUND20</button><span class="audio-shortcut">...</span></div>
+                    <div class="audio-row"><span class="audio-idx">-</span><button class="audio-play-btn stop-btn" onclick="stopAudioSound()">Dừng Phát</button><span class="audio-shortcut">F12</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Controller Logic -->
+    <script>
+        // PPT Slide Control Draggable Floating Window Logic
+        function openPptModal() {
+            const modal = document.getElementById('ppt-slide-modal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closePptModal() {
+            const modal = document.getElementById('ppt-slide-modal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        // Audio Sound Control Draggable Floating Window Logic
+        function openAudioModal() {
+            const modal = document.getElementById('audio-slide-modal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closeAudioModal() {
+            const modal = document.getElementById('audio-slide-modal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function playAudioSound(soundName) {
+            console.log('Phát âm thanh:', soundName);
+            showPptToast('🔊 Đã phát âm thanh: ' + soundName);
+        }
+
+        function stopAudioSound() {
+            console.log('Dừng phát âm thanh');
+            showPptToast('⏹ Đã dừng phát âm thanh');
+        }
+
+        function toggleAudioMinimize() {
+            const body = document.getElementById('audio-modal-body');
+            if (body) {
+                body.style.display = (body.style.display === 'none') ? 'block' : 'none';
+            }
+        }
+
+        function resetAudioWindowPos() {
+            const win = document.getElementById('audio-window-box');
+            if (win) {
+                win.style.left = 'calc(100vw - 310px)';
+                win.style.top = '70px';
+                win.style.margin = '0';
+                const body = document.getElementById('audio-modal-body');
+                if (body) body.style.display = 'block';
+            }
+        }
+
+        function selectPptSlide(slideName) {
+            console.log('Chuyển đến slide PPT:', slideName);
+            showPptToast('Đã chuyển đến: ' + slideName);
+        }
+
+        function showPptToast(message) {
+            let toast = document.getElementById('ppt-toast-notification');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'ppt-toast-notification';
+                toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.85); color:#fff; padding:8px 16px; border-radius:4px; font-size:12px; z-index:10002; transition:opacity 0.25s ease; pointer-events:none; opacity:0; font-family:sans-serif;';
+                document.body.appendChild(toast);
+            }
+            toast.innerText = message;
+            toast.style.opacity = '1';
+            clearTimeout(window.pptToastTimer);
+            window.pptToastTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function togglePptMinimize() {
+            const body = document.getElementById('ppt-modal-body');
+            if (body) {
+                body.style.display = (body.style.display === 'none') ? 'block' : 'none';
+            }
+        }
+
+        function resetPptWindowPos() {
+            const win = document.getElementById('ppt-window-box');
+            if (win) {
+                win.style.left = 'calc(50vw - 430px)';
+                win.style.top = '70px';
+                win.style.margin = '0';
+                const body = document.getElementById('ppt-modal-body');
+                if (body) body.style.display = 'block';
+            }
+        }
+
+        // Generic Draggable Window Utility
+        function makeDraggable(headerId, boxId) {
+            const header = document.getElementById(headerId);
+            const win = document.getElementById(boxId);
+            if (!header || !win) return;
+
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            header.addEventListener('mousedown', startDrag);
+            header.addEventListener('touchstart', startDrag, { passive: false });
+
+            function startDrag(e) {
+                if (e.target.closest('.ppt-win-btn')) return;
+                isDragging = true;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+                startX = clientX;
+                startY = clientY;
+
+                const rect = win.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', stopDrag);
+                document.addEventListener('touchmove', onDrag, { passive: false });
+                document.addEventListener('touchend', stopDrag);
+            }
+
+            function onDrag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+
+                const maxLeft = window.innerWidth - 100;
+                const maxTop = window.innerHeight - 40;
+                newLeft = Math.max(-200, Math.min(newLeft, maxLeft));
+                newTop = Math.max(0, Math.min(newTop, maxTop));
+
+                win.style.left = newLeft + 'px';
+                win.style.top = newTop + 'px';
+                win.style.margin = '0';
+            }
+
+            function stopDrag() {
+                isDragging = false;
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('mouseup', stopDrag);
+                document.removeEventListener('touchmove', onDrag);
+                document.removeEventListener('touchend', stopDrag);
+            }
+        }
+
+        // Draggable Window Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            makeDraggable('ppt-window-header', 'ppt-window-box');
+            makeDraggable('audio-window-header', 'audio-window-box');
+        });
+
+        // Keyboard Shortcuts Handler
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === '1') {
+                playAudioSound('15S');
+            } else if (e.key === '2') {
+                playAudioSound('20S');
+            } else if (e.key === 'F12') {
+                e.preventDefault();
+                stopAudioSound();
+            }
+        });
+
+        // Global click handler for slide navigation and audio buttons
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('button, .btn, .kd-action-btn');
+            if (!btn) return;
+            if (btn.classList.contains('ppt-btn') || btn.classList.contains('ppt-nav-btn') || btn.classList.contains('ppt-win-btn') || btn.classList.contains('audio-play-btn')) return;
+            
+            const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+            if (txt.includes('chuyển slide') || txt.includes('slide ppt') || txt.includes('slide powerpoint') || txt.includes('chuyen slide')) {
+                e.preventDefault();
+                openPptModal();
+            } else if (txt.includes('phát âm thanh') || txt.includes('phat am thanh') || txt.includes('🔊')) {
+                e.preventDefault();
+                openAudioModal();
+            }
+        });
+
+        // Close modal on backdrop click
+        window.addEventListener('click', function(e) {
+            if (e.target.id === 'ppt-slide-modal') {
+                closePptModal();
+            } else if (e.target.id === 'audio-slide-modal') {
+                closeAudioModal();
+            }
+        });
+        // Synchronized student state
+        const studentsData = [
+            { id: 1, name: 'Thí sinh 1', score: 0, icon: '' },
+            { id: 2, name: 'Thí sinh 2', score: 0, icon: '' },
+            { id: 3, name: 'Thí sinh 3', score: 0, icon: '' },
+            { id: 4, name: 'Thí sinh 4', score: 0, icon: '' },
+            { id: 5, name: 'Thí sinh 5', score: 0, icon: '' }
+        ];
+
+        function switchTab(index) {
+            const navItems = document.querySelectorAll('.nav-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navItems.forEach(item => item.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            navItems[index].classList.add('active');
+            tabContents[index].classList.add('active');
+        }
+
+        function switchKdTab(element, roundNum) {
+            const tabs = element.parentElement.querySelectorAll('.kd-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function switchVqTier(element, tier) {
+            document.querySelectorAll('.vq-tier-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.vq-tier-content').forEach(c => c.style.display = 'none');
+            element.classList.add('active');
+            const target = document.getElementById('vq-tier-' + tier);
+            if (target) target.style.display = 'block';
+        }
+
+        function renderStudentRows() {
+            const containers = [
+                document.getElementById('students-container-tab1'),
+                document.getElementById('students-container-tab2'),
+                document.getElementById('students-container-tab3'),
+                document.getElementById('students-container-tab4'),
+                document.getElementById('students-container-tab5')
+            ];
+
+            containers.forEach((container, idx) => {
+                if (!container) return;
+                const hasIcon = idx >= 2; // Tab 3, 4, 5 show 👤 icon
+                container.innerHTML = studentsData.map(st => `
+                    <div class="kd-student-row">
+                        <div class="kd-score-box">
+                            <input type="number" value="${st.score}" onchange="updateScore(${st.id}, this.value)">
+                            <span class="kd-edit-icon" onclick="promptScore(${st.id})">✏️</span>
+                        </div>
+                        <div class="kd-info-bars">
+                            <div class="kd-bar-top">
+                                <span>${st.name}</span>
+                                ${hasIcon ? '<span>👤</span>' : ''}
+                                <input type="text" value="" placeholder="">
+                            </div>
+                            <div class="kd-bar-bottom">${!hasIcon ? '' : '👤'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function updateScore(id, val) {
+            const st = studentsData.find(s => s.id === id);
+            if (st) {
+                st.score = parseInt(val) || 0;
+                renderStudentRows();
+            }
+        }
+
+        function promptScore(id) {
+            const st = studentsData.find(s => s.id === id);
+            if (!st) return;
+            const newScore = prompt(`Nhập điểm cho ${st.name}:`, st.score);
+            if (newScore !== null) {
+                st.score = parseInt(newScore) || 0;
+                renderStudentRows();
+            }
+        }
+
+        // Broadcast Channel for Projector Sync
+        const projectorChannel = new BroadcastChannel('olympia_game_channel');
+
+        function openProjectorWindow() {
+            window.open('projector.html', '_blank', 'width=1280,height=720');
+        }
+
+        function broadcastToProjector() {
+            const ts1 = studentsData.find(s => s.id === 1);
+            const ts1NameFormatted = ts1 ? (' 1. ' + ts1.name) : ' 1. THí sinh 1';
+            localStorage.setItem('ts1_name', ts1NameFormatted);
+            projectorChannel.postMessage({
+                type: 'UPDATE_ALL_STUDENTS',
+                students: studentsData
+            });
+            projectorChannel.postMessage({
+                type: 'UPDATE_TS1_NAME',
+                value: ts1NameFormatted
+            });
+        }
+
+        function updateStudentNames() {
+            const inputs = document.querySelectorAll('.ts-input-name');
+            inputs.forEach(input => {
+                const id = parseInt(input.getAttribute('data-ts'));
+                const st = studentsData.find(s => s.id === id);
+                if (st && input.value.trim() !== '') {
+                    st.name = input.value.trim();
+                }
+            });
+            renderStudentRows();
+            broadcastToProjector();
+            showPptToast('Đã cập nhật tên thí sinh lên màn hình máy chiếu');
+        }
+
+        function updateBoxes(rowIndex, text) {
+            const boxContainer = document.getElementById(`box-row-${rowIndex}`);
+            const countLabel = document.getElementById(`count-row-${rowIndex}`);
+            if (!boxContainer || !countLabel) return;
+
+            const cleanText = text.replace(/\s+/g, '');
+            const chars = cleanText.toUpperCase().split('');
+            countLabel.innerText = `${cleanText.length} kí tự`;
+
+            const cells = boxContainer.querySelectorAll('.box-cell');
+            cells.forEach((cell, i) => {
+                cell.innerText = chars[i] || '';
+                cell.style.textAlign = 'center';
+                cell.style.lineHeight = '24px';
+                cell.style.fontWeight = 'bold';
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderStudentRows();
+        });
+    </script>
+</body>
+</html>
