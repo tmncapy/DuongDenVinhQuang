@@ -1,0 +1,6 @@
+{
+  "name": "Bộ Điều Khiển Trò Chơi",
+  "description": "Giao diện điều khiển trò chơi tổng hợp 6 phần thi (Hệ thống, Khởi động, VCNV, Tăng tốc, Về đích, Câu hỏi phụ)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
