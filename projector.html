@@ -144,25 +144,24 @@
             50% { background-color: #ef4444; }
             100% { background-color: #3b82f6; }
         }
-        #view-file-1 .btn-xuat-phat-container { position: absolute; top: 492px; left: 50%; transform: translateX(-50%); z-index: 20; }
-        #view-file-1 .btn-xuat-phat { padding: 20px 50px; font-size: 32px; background-color: #22c55e; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; }
-        #view-file-1 .contestant-selection-list { position: absolute; top: 692px; left: 50%; transform: translateX(-50%); display: flex; gap: 25px; z-index: 20; }
+        #view-file-1 .btn-xuat-phat-container { display: none !important; }
+        #view-file-1 .btn-xuat-phat { display: none !important; }
+        #view-file-1 .contestant-selection-list { display: none !important; }
         #view-file-1 .contestant-item { padding: 20px 30px; background: rgba(255, 255, 255, 0.1); border: 2px solid #6366f1; border-radius: 10px; cursor: pointer; font-size: 26px; }
         #view-file-1 .random-bg { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; object-fit: cover; display: none; }
         #view-file-1 #numberBox1 { position: absolute; left: 118px; top: 800px; width: 365px; height: 240px; font-size: 110px; color: #ffffff; display: none; justify-content: center; align-items: center; font-weight: bold; z-index: 10; }
         #view-file-1 #displayContestantName1 { position: absolute; left: 520px; top: 800px; width: 1300px; height: 240px; font-size: 60px; color: #ffffff; font-weight: bold; display: none; align-items: center; padding-left: 30px; z-index: 10; }
-        #view-file-1 .btn-bam-de { position: absolute; left: 1124px; top: 492px; padding: 16px 40px; background-color: #eab308; color: #000; border: none; border-radius: 10px; cursor: pointer; font-size: 28px; font-weight: bold; display: none; z-index: 20; }
+        #view-file-1 .btn-bam-de { display: none !important; }
         #view-file-1 #scene-cau-hoi1 { background-color: #0f172a; }
         #view-file-1 .ques-box-bg { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; object-fit: cover; z-index: 1; }
         #view-file-1 .timer-board { position: absolute; left: 1610px; top: 775px; width: 166px; height: 166px; font-size: 54px; font-weight: bold; z-index: 5; display: flex; align-items: center; justify-content: center; }
         #view-file-1 .score-board { position: absolute; left: 1465px; top: 640px; width: 247px; height: 114px; font-size: 45px; font-weight: bold; z-index: 5; display: flex; align-items: center; justify-content: center; }
         #view-file-1 .question-text { position: absolute; left: 265px; top: 665px; width: 1150px; height: 262px; font-size: 32px; color: #fff; font-weight: bold; z-index: 5; display: flex; align-items: center; }
-        #view-file-1 .answer-box { position: absolute; left: 300px; top: 945px; width: 1550px; height: 73px; font-size: 32px; color: #ffffff; z-index: 5; display: none; align-items: center; padding-left: 20px; font-weight: bold; }
+        #view-file-1 .answer-box { position: absolute; left: 50%; transform: translateX(-50%); top: 945px; width: 1300px; height: 73px; font-size: 32px; color: #ffffff; z-index: 5; display: none; align-items: center; justify-content: center; text-align: center; font-weight: bold; }
         #view-file-1 .contestant-name-ques { position: absolute; left: 350px; top: 697px; width: 1050px; height: 64px; font-size: 34px; color: #002060; z-index: 5; display: flex; align-items: center; font-weight: bold; }
         #view-file-1 .ket-qua-cau { position: absolute; top: 722px; width: 25px; height: 25px; border: 0px solid white; z-index: 5; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
         #view-file-1 .ket-qua-cau.inactive { background-color: #4b5563; }
-        #view-file-1 .control-panel-external { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; background: rgba(0,0,0,0.85); padding: 12px 20px; border-radius: 12px; z-index: 1000; }
-        #view-file-1 .control-panel-external button { padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 8px; border: none; background: #3b82f6; color: white; }
+        #view-file-1 .control-panel-external { display: none !important; }
 
         /* VIEW 2 */
         #view-file-2 { background-color: #000; }
@@ -172,7 +171,7 @@
 
         /* VIEW 3 */
         #view-file-3 { background-color: #0b0b0b; }
-        #view-file-3 .scene-container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/bgv3.png'); background-size: 100% 100%; background-repeat: no-repeat; overflow: hidden; }
+        #view-file-3 .scene-container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/bgV3.png'); background-size: 100% 100%; background-repeat: no-repeat; overflow: hidden; }
         #view-file-3 .game-item { position: absolute; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; }
 
         /* VIEW 4 */
@@ -235,13 +234,13 @@
 
     <!-- Navigation Bar -->
     <nav id="view-nav-bar">
-        <button onclick="switchView(1)" id="btn-view-1" class="active-view-btn">1. Xuất phát</button>
-        <button onclick="switchView(2)" id="btn-view-2">2. Đ/Á Ra Khơi</button>
-        <button onclick="switchView(3)" id="btn-view-3">3. Ô Chữ Vượt Sóng</button>
-        <button onclick="switchView(4)" id="btn-view-4">4. C/Hỏi Vượt Sóng (20s)</button>
+        <button onclick="switchView(1)" id="btn-view-1" class="active-view-btn">1. Xuất Phát</button>
+        <button onclick="switchView(2)" id="btn-view-2">2. C/Hỏi Ra Khơi</button>
+        <button onclick="switchView(3)" id="btn-view-3">3. Đ/Á Ra Khơi</button>
+        <button onclick="switchView(4)" id="btn-view-4">4. Ô Chữ Vượt Sóng</button>
         <button onclick="switchView(5)" id="btn-view-5">5. Đ/Á Vượt Sóng</button>
         <button onclick="switchView(6)" id="btn-view-6">6. Chọn Điểm</button>
-        <button onclick="switchView(7)" id="btn-view-7">7. C/Hỏi Vinh Quang (25s)</button>
+        <button onclick="switchView(7)" id="btn-view-7">7. C/Hỏi Vinh Quang</button>
         <button onclick="switchView(8)" id="btn-view-8">8. Đ/Á Vinh Quang</button>
     </nav>
 
@@ -271,7 +270,7 @@
                 </div>
 
                 <div id="scene-cau-hoi1" class="sub-scene">
-                    <img src="Images/quesbox1.png" class="ques-box-bg">
+                    <img src="Images/QuesBox1.png" class="ques-box-bg">
                     <div class="score-board"><span id="score1">0</span></div>
                     <div class="timer-board"><span id="timer1">60</span></div>
                     <div class="contestant-name-ques" id="quesContestantName1">Thí sinh: ...</div>
@@ -332,7 +331,7 @@
         <!-- VIEW 4 -->
         <div id="view-file-4" class="view-section">
             <div class="scene-container">
-                <img src="Images/QuesBox2.png" alt="QuesBox" class="ques-box">
+                <img src="Images/QuesBox3.png" alt="QuesBox" class="ques-box">
                 <div class="round-name">VƯỢT SÓNG</div>
                 <div class="question-box">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
                 <div id="clock4" class="clock-box" onclick="startCountdown4()">20</div>
@@ -366,14 +365,14 @@
                     <div class="pack-item" onclick="selectPack6(this, '30', 'Hóa Học')"><div class="score">30</div></div>
                 </div>
             </div>
-            <audio id="audioChoose6" src="ChooseQues.mp3"></audio>
+            <audio id="audioChoose6" src="sounds/ChooseQues.mp3"></audio>
             <audio id="audioClose6" src="sounds/ClosePack.mp3"></audio>
         </div>
 
         <!-- VIEW 7 -->
         <div id="view-file-7" class="view-section">
             <div class="scene-container">
-                <img src="Images/QuesBox2.png" alt="QuesBox" class="ques-box">
+                <img src="Images/QuesBox3.png" alt="QuesBox" class="ques-box">
                 <div class="round-name">VINH QUANG</div>
                 <div class="question-box">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
                 <div id="clock7" class="clock-box" onclick="startCountdown7()">25</div>
@@ -452,13 +451,46 @@
 
         /* VIEW 1 LOGIC */
         let score1 = 0, timeLeft1 = 60, timerInterval1 = null, isRolling1 = false, currentQuestionIndex1 = 1;
+        let soundShowTitle1 = new Audio('sounds/ShowTitle.mp3');
         let soundRandomSet1 = new Audio('sounds/RandomSet.mp3');
         let soundBeginQues1 = new Audio('sounds/BeginQues.mp3');
         let sound60s1 = new Audio('sounds/60s.mp3');
-        let soundTick1 = new Audio('sounds/tick.mp3');
+        let soundTick1 = new Audio('sounds/Tick.mp3');
         let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
         let soundRight1 = new Audio('sounds/right.mp3');
         let soundWrong1 = new Audio('sounds/wrong.mp3');
+
+        function safePlay(audio) {
+            if (!audio) return;
+            try {
+                audio.currentTime = 0;
+                let p = audio.play();
+                if (p && typeof p.then === 'function') {
+                    p.catch(e => console.log("Audio play error/blocked:", e));
+                }
+            } catch(e) {
+                console.log("Audio exception:", e);
+            }
+        }
+
+        function safePause(audio) {
+            if (!audio) return;
+            try {
+                audio.pause();
+                audio.currentTime = 0;
+            } catch(e) {}
+        }
+
+        function stopAllAudio1() {
+            safePause(soundShowTitle1);
+            safePause(soundRandomSet1);
+            safePause(soundBeginQues1);
+            safePause(sound60s1);
+            safePause(soundTick1);
+            safePause(soundTimeUp1);
+            safePause(soundRight1);
+            safePause(soundWrong1);
+        }
 
         function updateBlink1() {
             document.querySelectorAll('#view-file-1 .ket-qua-cau').forEach(el => el.classList.remove('blinking'));
@@ -485,7 +517,7 @@
             if (isRolling1) return;
             isRolling1 = true;
             document.getElementById('btnBamDe1').style.display = 'none';
-            soundRandomSet1.currentTime = 0; soundRandomSet1.play().catch(e=>console.log(e));
+            safePlay(soundRandomSet1);
 
             let startTime = Date.now();
             let rollInterval = setInterval(() => {
@@ -508,9 +540,8 @@
             updateBlink1();
 
             clearInterval(timerInterval1);
-            soundBeginQues1.currentTime = 0; sound60s1.currentTime = 0;
-            soundBeginQues1.play().catch(e=>console.log(e));
-            sound60s1.play().catch(e=>console.log(e));
+            safePlay(soundBeginQues1);
+            safePlay(sound60s1);
 
             timeLeft1 = 60;
             document.getElementById('timer1').innerText = timeLeft1;
@@ -521,27 +552,27 @@
                 document.getElementById('timer1').innerText = timeLeft1;
 
                 if (timeLeft1 <= 5 && timeLeft1 > 0 && timeLeft1 !== prevTime) {
-                    soundTick1.currentTime = 0; soundTick1.play().catch(e=>console.log(e));
+                    safePlay(soundTick1);
                 }
 
                 if (timeLeft1 === 0) {
                     clearInterval(timerInterval1);
-                    sound60s1.pause();
-                    soundTimeUp1.currentTime = 0; soundTimeUp1.play().catch(e=>console.log(e));
+                    safePlay(soundTimeUp1);
                 }
             }, 200);
         }
 
         function traLoiDung1() {
-            soundRight1.currentTime = 0; soundRight1.play().catch(e=>console.log(e));
+            safePlay(soundRight1);
             score1 += 10; 
             document.getElementById('score1').innerText = score1;
             let el = document.getElementById('kq1-' + currentQuestionIndex1);
             if(el) { el.classList.remove('blinking'); el.style.backgroundColor = '#3b82f6'; }
+            document.getElementById('answerBox1').style.display = 'flex';
         }
 
         function traLoiSai1() {
-            soundWrong1.currentTime = 0; soundWrong1.play().catch(e=>console.log(e));
+            safePlay(soundWrong1);
             let el = document.getElementById('kq1-' + currentQuestionIndex1);
             if(el) { el.classList.remove('blinking'); el.style.backgroundColor = '#ef4444'; }
             document.getElementById('answerBox1').style.display = 'flex';
@@ -642,6 +673,141 @@
                 if (timeLeft7 <= 0) { clearInterval(countdown7); clockElement.textContent = "0"; }
             }, 1000);
         }
+
+        /* CONTROLLER - PROJECTOR CONNECTION (BroadcastChannel & localStorage) */
+        const projectorChannel = new BroadcastChannel('ddvq_game_channel');
+
+        projectorChannel.onmessage = function(event) {
+            const data = event.data;
+            if (!data || !data.type) return;
+
+            if (data.type === 'SWITCH_VIEW') {
+                if (data.viewNum) switchView(data.viewNum);
+            } else if (data.type === 'XUAT_PHAT_INTRO') {
+                switchView(1);
+                stopAllAudio1();
+                safePlay(soundShowTitle1);
+                document.getElementById('scene-chon-de').classList.add('active');
+                document.getElementById('scene-cau-hoi1').classList.remove('active');
+                document.getElementById('xuatPhatContainer').style.display = 'block';
+                document.getElementById('contestantList1').style.display = 'none';
+                document.getElementById('randomImg1').style.display = 'none';
+                document.getElementById('displayContestantName1').style.display = 'none';
+                document.getElementById('numberBox1').style.display = 'none';
+                document.getElementById('btnBamDe1').style.display = 'none';
+            } else if (data.type === 'XUAT_PHAT_LUAT') {
+                switchView(1);
+                stopAllAudio1();
+                safePlay(soundShowTitle1);
+                showPopup('VÒNG THI XUẤT PHÁT:\nMỗi thí sinh khởi động với các câu hỏi trong vòng 60 giây. Trả lời đúng mỗi câu được 10 điểm, trả lời sai không bị trừ điểm.');
+            } else if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
+                switchView(1);
+                const name = data.name || "Thí sinh";
+                chonThiSinh1(name);
+                if (data.score !== undefined) {
+                    score1 = data.score;
+                    document.getElementById('score1').innerText = score1;
+                }
+            } else if (data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE') {
+                switchView(1);
+                document.getElementById('scene-chon-de').classList.add('active');
+                document.getElementById('scene-cau-hoi1').classList.remove('active');
+                document.getElementById('xuatPhatContainer').style.display = 'none';
+                document.getElementById('contestantList1').style.display = 'none';
+                document.getElementById('randomImg1').style.display = 'block';
+                document.getElementById('displayContestantName1').style.display = 'flex';
+                if (data.name) {
+                    document.getElementById('displayContestantName1').innerText = data.name;
+                    document.getElementById('quesContestantName1').innerText = data.name;
+                }
+                document.getElementById('numberBox1').style.display = 'flex';
+                document.getElementById('btnBamDe1').style.display = 'block';
+            } else if (data.type === 'XUAT_PHAT_RANDOM_DE') {
+                switchView(1);
+                document.getElementById('scene-chon-de').classList.add('active');
+                document.getElementById('scene-cau-hoi1').classList.remove('active');
+                document.getElementById('randomImg1').style.display = 'block';
+                document.getElementById('displayContestantName1').style.display = 'flex';
+                document.getElementById('numberBox1').style.display = 'flex';
+                bamDe1();
+            } else if (data.type === 'XUAT_PHAT_START_TIMER') {
+                switchView(1);
+                document.getElementById('scene-chon-de').classList.remove('active');
+                document.getElementById('scene-cau-hoi1').classList.add('active');
+                if (data.questionText) {
+                    document.getElementById('questionText1').innerText = data.questionText;
+                }
+                if (data.questionIndex) {
+                    currentQuestionIndex1 = data.questionIndex;
+                }
+                if (data.contestantName) {
+                    document.getElementById('quesContestantName1').innerText = data.contestantName;
+                }
+                if (data.score !== undefined) {
+                    score1 = data.score;
+                    document.getElementById('score1').innerText = score1;
+                }
+                batDauCauHoi1();
+            } else if (data.type === 'XUAT_PHAT_RIGHT') {
+                if (data.score !== undefined) {
+                    score1 = data.score;
+                    document.getElementById('score1').innerText = score1;
+                }
+                if (data.answerText) {
+                    document.getElementById('answerBox1').innerText = data.answerText;
+                }
+                traLoiDung1();
+            } else if (data.type === 'XUAT_PHAT_WRONG') {
+                if (data.answerText) {
+                    document.getElementById('answerBox1').innerText = data.answerText;
+                }
+                traLoiSai1();
+            } else if (data.type === 'XUAT_PHAT_FINISH') {
+                clearInterval(timerInterval1);
+                stopAllAudio1();
+                document.getElementById('scene-chon-de').classList.remove('active');
+                document.getElementById('scene-cau-hoi1').classList.remove('active');
+            } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
+                if (data.questionIndex) {
+                    currentQuestionIndex1 = data.questionIndex;
+                }
+                document.getElementById('answerBox1').style.display = 'none';
+                let nextBox = document.getElementById('kq1-' + currentQuestionIndex1);
+                if (nextBox) nextBox.classList.remove('inactive');
+                if (data.questionText) {
+                    document.getElementById('questionText1').innerText = data.questionText;
+                } else {
+                    document.getElementById('questionText1').innerText = "Nội dung câu hỏi số " + currentQuestionIndex1;
+                }
+                updateBlink1();
+            } else if (data.type === 'XUAT_PHAT_RESET') {
+                clearInterval(timerInterval1);
+                stopAllAudio1();
+                timeLeft1 = 60;
+                document.getElementById('timer1').innerText = "60";
+                score1 = data.score !== undefined ? data.score : 0;
+                document.getElementById('score1').innerText = score1;
+                currentQuestionIndex1 = 1;
+                document.getElementById('answerBox1').style.display = 'none';
+                document.getElementById('scene-chon-de').classList.add('active');
+                document.getElementById('scene-cau-hoi1').classList.remove('active');
+                document.getElementById('xuatPhatContainer').style.display = 'block';
+                document.getElementById('contestantList1').style.display = 'none';
+                document.getElementById('randomImg1').style.display = 'none';
+                document.getElementById('displayContestantName1').style.display = 'none';
+                document.getElementById('numberBox1').style.display = 'none';
+                document.getElementById('btnBamDe1').style.display = 'none';
+                for (let i = 1; i <= 10; i++) {
+                    let box = document.getElementById('kq1-' + i);
+                    if (box) {
+                        box.className = 'ket-qua-cau inactive';
+                        box.style.backgroundColor = '';
+                    }
+                }
+            } else if (data.type === 'XUAT_PHAT_STOP_SOUND') {
+                stopAllAudio1();
+            }
+        };
     </script>
 </body>
 </html>
