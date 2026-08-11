@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projector- Đường đến Vinh quang</title>
+    <style>
+        /* Global & Reset Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', Geneva, Verdana, sans-serif;
+            font-weight: bold !important;
+        }
+
+        body, html {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #050b14;
+            color: #ffffff;
+        }
+
+        /* View Navigation Bar */
+        #view-nav-bar {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            gap: 8px;
+            background: rgba(15, 23, 42, 0.92);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        #view-nav-bar button {
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #view-nav-bar button:hover {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+        }
+
+        #view-nav-bar button.active-view-btn {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #93c5fd;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+        }
+
+        /* Stage Container chuẩn 1920x1080 */
+        .stage-wrapper {
+            position: absolute;
+            width: 1920px;
+            height: 1080px;
+            transform-origin: top left;
+            overflow: hidden;
+            contain: layout style;
+        }
+
+        .view-section {
+            display: none !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+        }
+
+        .view-section.active-view {
+            display: block !important;
+        }
+
+        /* Popup Dialog Styles */
+        #custom-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 20000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup-card {
+            background: #1e293b;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 24px 32px;
+            min-width: 320px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .popup-message {
+            font-size: 18px;
+            color: #f8fafc;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .popup-btn {
+            padding: 10px 24px;
+            background: #3b82f6;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .popup-btn:hover { background: #2563eb; }
+
+        /* VIEW 1 */
+        #view-file-1 { background-color: #050b14; }
+        #view-file-1 .stage { position: relative; width: 1920px; height: 1080px; background: #1e1b4b; overflow: hidden; }
+        #view-file-1 .sub-scene { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #view-file-1 .sub-scene.active { display: block; }
+        #view-file-1 .blinking { animation: blink-blue-red 0.5s infinite; }
+        @keyframes blink-blue-red {
+            0% { background-color: #3b82f6; }
+            50% { background-color: #ef4444; }
+            100% { background-color: #3b82f6; }
+        }
+        #view-file-1 .btn-xuat-phat-container { position: absolute; top: 492px; left: 50%; transform: translateX(-50%); z-index: 20; }
+        #view-file-1 .btn-xuat-phat { padding: 20px 50px; font-size: 32px; background-color: #22c55e; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        #view-file-1 .contestant-selection-list { position: absolute; top: 692px; left: 50%; transform: translateX(-50%); display: flex; gap: 25px; z-index: 20; }
+        #view-file-1 .contestant-item { padding: 20px 30px; background: rgba(255, 255, 255, 0.1); border: 2px solid #6366f1; border-radius: 10px; cursor: pointer; font-size: 26px; }
+        #view-file-1 .random-bg { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; object-fit: cover; display: none; }
+        #view-file-1 #numberBox1 { position: absolute; left: 118px; top: 800px; width: 365px; height: 240px; font-size: 110px; color: #ffffff; display: none; justify-content: center; align-items: center; font-weight: bold; z-index: 10; }
+        #view-file-1 #displayContestantName1 { position: absolute; left: 520px; top: 800px; width: 1300px; height: 240px; font-size: 60px; color: #ffffff; font-weight: bold; display: none; align-items: center; padding-left: 30px; z-index: 10; }
+        #view-file-1 .btn-bam-de { position: absolute; left: 1124px; top: 492px; padding: 16px 40px; background-color: #eab308; color: #000; border: none; border-radius: 10px; cursor: pointer; font-size: 28px; font-weight: bold; display: none; z-index: 20; }
+        #view-file-1 #scene-cau-hoi1 { background-color: #0f172a; }
+        #view-file-1 .ques-box-bg { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; object-fit: cover; z-index: 1; }
+        #view-file-1 .timer-board { position: absolute; left: 1610px; top: 775px; width: 166px; height: 166px; font-size: 54px; font-weight: bold; z-index: 5; display: flex; align-items: center; justify-content: center; }
+        #view-file-1 .score-board { position: absolute; left: 1465px; top: 640px; width: 247px; height: 114px; font-size: 45px; font-weight: bold; z-index: 5; display: flex; align-items: center; justify-content: center; }
+        #view-file-1 .question-text { position: absolute; left: 265px; top: 665px; width: 1150px; height: 262px; font-size: 32px; color: #fff; font-weight: bold; z-index: 5; display: flex; align-items: center; }
+        #view-file-1 .answer-box { position: absolute; left: 300px; top: 945px; width: 1550px; height: 73px; font-size: 32px; color: #ffffff; z-index: 5; display: none; align-items: center; padding-left: 20px; font-weight: bold; }
+        #view-file-1 .contestant-name-ques { position: absolute; left: 350px; top: 697px; width: 1050px; height: 64px; font-size: 34px; color: #002060; z-index: 5; display: flex; align-items: center; font-weight: bold; }
+        #view-file-1 .ket-qua-cau { position: absolute; top: 722px; width: 25px; height: 25px; border: 0px solid white; z-index: 5; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        #view-file-1 .ket-qua-cau.inactive { background-color: #4b5563; }
+        #view-file-1 .control-panel-external { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; background: rgba(0,0,0,0.85); padding: 12px 20px; border-radius: 12px; z-index: 1000; }
+        #view-file-1 .control-panel-external button { padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 8px; border: none; background: #3b82f6; color: white; }
+
+        /* VIEW 2 */
+        #view-file-2 { background-color: #000; }
+        #view-file-2 #container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/RKAnswer.png'); background-size: cover; }
+        #view-file-2 .text-box { position: absolute; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; }
+        #view-file-2 .dap-an { color: rgb(0, 32, 96); background-color: rgba(255, 255, 255, 0.8); }
+
+        /* VIEW 3 */
+        #view-file-3 { background-color: #0b0b0b; }
+        #view-file-3 .scene-container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/bgv3.png'); background-size: 100% 100%; background-repeat: no-repeat; overflow: hidden; }
+        #view-file-3 .game-item { position: absolute; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; }
+
+        /* VIEW 4 */
+        #view-file-4 { background-color: #0b132b; }
+        #view-file-4 .scene-container { position: relative; width: 1920px; height: 1080px; }
+        #view-file-4 .ques-box { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; z-index: 1; object-fit: cover; }
+        #view-file-4 .round-name { position: absolute; left: 7%; top: 71%; width: 30%; height: 4.4%; z-index: 2; display: flex; align-items: center; justify-content: center; color: #002060; font-size: 26px; font-weight: bold; text-transform: uppercase; }
+        #view-file-4 .question-box { position: absolute; left: 0%; top: 69.06%; width: 74.9%; height: 19.02%; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 0 40px; color: #ffffff; font-size: 32px; font-weight: 600; text-align: center; line-height: 1.4; }
+        #view-file-4 .clock-box { position: absolute; left: 86.14%; top: 75.06%; width: 8.82%; height: 15.68%; z-index: 3; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0); color: #ffffff; font-size: 60px; font-weight: bold; cursor: pointer; user-select: none; }
+
+        /* VIEW 5 */
+        #view-file-5 { background: url('Images/VSAnswer.png') no-repeat center center; background-size: 100% 100%; }
+        #view-file-5 .element { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: bold; background: transparent; border: none; text-shadow: none; font-size: 24px; }
+        #view-file-5 .dap-an { color: rgb(0, 32, 96); }
+        #view-file-5 .other { color: white; }
+
+        /* VIEW 6 */
+        #view-file-6 {
+            background-image: url('Images/pack.png');
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.3s ease;
+        }
+        #view-file-6 #pageWrapper {
+            position: absolute; top: 0; left: 0; width: 1920px; height: 1080px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: transform 1s ease-in, opacity 1s ease-in;
+        }
+        #view-file-6 #pageWrapper.fly-down { transform: translateY(1080px); opacity: 0; }
+        #view-file-6 .subject-container { height: 10px; margin-bottom: 80px; display: flex; justify-content: center; align-items: center; }
+        #view-file-6 .subject-title { font-size: 36px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 2px; visibility: hidden; }
+        #view-file-6 .subject-title.show { visibility: visible; }
+        #view-file-6 .container { position: relative; display: flex; gap: 245px; top: 255px; }
+        #view-file-6 .pack-item {
+            position: relative; width: 180px; height: 90px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; border-radius: 10px; transition: all 0.3s ease; background: rgba(0, 0, 0, 0); border: 2px solid rgba(255, 255, 255, 0);
+        }
+        #view-file-6 .pack-item.selected { background-color: rgb(192, 79, 21) !important; border-color: #fff; transform: scale(1.05); }
+        #view-file-6 .score { font-size: 52px; font-weight: bold; color: #fff; z-index: 2; }
+
+        /* VIEW 7 */
+        #view-file-7 { background-color: #0b132b; }
+        #view-file-7 .scene-container { position: relative; width: 1920px; height: 1080px; }
+        #view-file-7 .ques-box { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; z-index: 1; object-fit: cover; }
+        #view-file-7 .round-name { position: absolute; left: 7%; top: 71%; width: 30%; height: 4.4%; z-index: 2; display: flex; align-items: center; justify-content: center; color: #002060; font-size: 26px; font-weight: bold; text-transform: uppercase; }
+        #view-file-7 .question-box { position: absolute; left: 0%; top: 69.06%; width: 74.9%; height: 19.02%; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 0 40px; color: #ffffff; font-size: 32px; font-weight: 600; text-align: center; line-height: 1.4; }
+        #view-file-7 .clock-box { position: absolute; left: 86.14%; top: 75.06%; width: 8.82%; height: 15.68%; z-index: 3; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0); color: #ffffff; font-size: 60px; font-weight: bold; cursor: pointer; user-select: none; }
+
+        /* VIEW 8 */
+        #view-file-8 {
+            background-image: url('Images/VQAnswer.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+        #view-file-8 .item { position: absolute; color: white; font-weight: bold; display: flex; align-items: center; justify-content: left; padding: 0 10px; box-sizing: border-box; font-size: 24px; }
+        #view-file-8 .ans-ts { color: rgb(0, 32, 96); text-shadow: none; -webkit-text-stroke: 0; }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav id="view-nav-bar">
+        <button onclick="switchView(1)" id="btn-view-1" class="active-view-btn">1. Xuất phát</button>
+        <button onclick="switchView(2)" id="btn-view-2">2. Đ/Á Ra Khơi</button>
+        <button onclick="switchView(3)" id="btn-view-3">3. Ô Chữ Vượt Sóng</button>
+        <button onclick="switchView(4)" id="btn-view-4">4. C/Hỏi Vượt Sóng (20s)</button>
+        <button onclick="switchView(5)" id="btn-view-5">5. Đ/Á Vượt Sóng</button>
+        <button onclick="switchView(6)" id="btn-view-6">6. Chọn Điểm</button>
+        <button onclick="switchView(7)" id="btn-view-7">7. C/Hỏi Vinh Quang (25s)</button>
+        <button onclick="switchView(8)" id="btn-view-8">8. Đ/Á Vinh Quang</button>
+    </nav>
+
+    <!-- Global Custom Popup Component -->
+    <div id="custom-popup">
+        <div class="popup-card">
+            <div id="popup-message" class="popup-message">Thông báo</div>
+            <button class="popup-btn" onclick="closePopup()">Đóng</button>
+        </div>
+    </div>
+
+    <div class="stage-wrapper">
+
+        <!-- VIEW 1 -->
+        <div id="view-file-1" class="view-section active-view">
+            <div class="stage">
+                <div id="scene-chon-de" class="sub-scene active">
+                    <div class="btn-xuat-phat-container" id="xuatPhatContainer"><button class="btn-xuat-phat" onclick="xuatPhat1()">Xuất Phát</button></div>
+                    <div class="contestant-selection-list" id="contestantList1" style="display: none;">
+                        <div class="contestant-item" onclick="chonThiSinh1('Nguyễn Văn A')">Thí Sinh 1: Nguyễn Văn A</div>
+                        <div class="contestant-item" onclick="chonThiSinh1('Trần Thị B')">Thí Sinh 2: Trần Thị B</div>
+                    </div>
+                    <img src="Images/random.png" class="random-bg" id="randomImg1">
+                    <div id="displayContestantName1">Tên thí sinh</div>
+                    <div id="numberBox1"></div>
+                    <button class="btn-bam-de" id="btnBamDe1" onclick="bamDe1()">Bấm Đề</button>
+                </div>
+
+                <div id="scene-cau-hoi1" class="sub-scene">
+                    <img src="Images/quesbox1.png" class="ques-box-bg">
+                    <div class="score-board"><span id="score1">0</span></div>
+                    <div class="timer-board"><span id="timer1">60</span></div>
+                    <div class="contestant-name-ques" id="quesContestantName1">Thí sinh: ...</div>
+                    <div class="question-text" id="questionText1"></div>
+                    <div class="answer-box" id="answerBox1">Đáp án chính xác...</div>
+                    
+                    <div class="ket-qua-cau inactive" id="kq1-1" style="left: 963px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-2" style="left: 1010px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-3" style="left: 1057px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-4" style="left: 1104px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-5" style="left: 1151px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-6" style="left: 1198px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-7" style="left: 1245px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-8" style="left: 1292px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-9" style="left: 1339px;"></div>
+                    <div class="ket-qua-cau inactive" id="kq1-10" style="left: 1386px;"></div>
+                </div>
+
+                <div class="control-panel-external">
+                    <button onclick="batDauCauHoi1()">Bắt Đầu Giờ</button>
+                    <button onclick="traLoiDung1()" style="background:#22c55e;">Đúng (+10đ)</button>
+                    <button onclick="traLoiSai1()" style="background:#ef4444;">Sai</button>
+                    <button onclick="chuyenCau1()" style="background:#a855f7;">Chuyển Câu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2 -->
+        <div id="view-file-2" class="view-section">
+            <div id="container">
+                <div class="text-box" id="thoi_gian_ts1" style="left: 412.138px; top: 289.008px; width: 190.085px; height: 141.696px;">00.00</div>
+                <div class="text-box" id="ten_ts1" style="left: 602.223px; top: 298.08px; width: 947.688px; height: 60.624px;">TEN TS1</div>
+                <div class="text-box dap-an" id="dap_an_ts1" style="left: 602.223px; top: 358.704px; width: 947.688px; height: 60.624px;">DAP AN TS1</div>
+                <div class="text-box" id="thoi_gian_ts2" style="left: 412.138px; top: 463.824px; width: 190.085px; height: 141.696px;">00.00</div>
+                <div class="text-box" id="ten_ts2" style="left: 602.223px; top: 473.04px; width: 947.688px; height: 60.624px;">TEN TS2</div>
+                <div class="text-box dap-an" id="dap_an_ts2" style="left: 602.223px; top: 533.664px; width: 947.688px; height: 60.624px;">DAP AN TS2</div>
+                <div class="text-box" id="thoi_gian_ts3" style="left: 412.138px; top: 635.76px; width: 190.085px; height: 141.696px;">00.00</div>
+                <div class="text-box" id="ten_ts3" style="left: 602.223px; top: 644.976px; width: 947.688px; height: 60.624px;">TEN TS3</div>
+                <div class="text-box dap-an" id="dap_an_ts3" style="left: 602.223px; top: 705.6px; width: 947.688px; height: 60.624px;">DAP AN TS3</div>
+                <div class="text-box" id="thoi_gian_ts4" style="left: 412.138px; top: 803.808px; width: 190.085px; height: 141.696px;">00.00</div>
+                <div class="text-box" id="ten_ts4" style="left: 602.223px; top: 813.024px; width: 947.688px; height: 60.624px;">TEN TS4</div>
+                <div class="text-box dap-an" id="dap_an_ts4" style="left: 602.223px; top: 873.648px; width: 947.688px; height: 60.624px;">DAP AN TS4</div>
+            </div>
+        </div>
+
+        <!-- VIEW 3 -->
+        <div id="view-file-3" class="view-section">
+            <div class="scene-container">
+                <div class="game-item" style="left: 92.0px; top: 162.1px; width: 89.6px; height: 66.8px; background-image: url('Images/c1.png');"></div>
+                <div class="game-item" style="left: 92.0px; top: 264.8px; width: 89.6px; height: 66.8px; background-image: url('Images/c2.png');"></div>
+                <div class="game-item" style="left: 92.0px; top: 367.5px; width: 89.6px; height: 66.8px; background-image: url('Images/c3.png');"></div>
+                <div class="game-item" style="left: 92.0px; top: 468.3px; width: 89.6px; height: 66.8px; background-image: url('Images/c4.png');"></div>
+                <div id="file3-rows-container"></div>
+                <div id="file3-keys-container"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 4 -->
+        <div id="view-file-4" class="view-section">
+            <div class="scene-container">
+                <img src="Images/QuesBox2.png" alt="QuesBox" class="ques-box">
+                <div class="round-name">VƯỢT SÓNG</div>
+                <div class="question-box">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
+                <div id="clock4" class="clock-box" onclick="startCountdown4()">20</div>
+            </div>
+            <audio id="vongThiAudio4" src="sounds/20sV1.mp3"></audio>
+        </div>
+
+        <!-- VIEW 5 -->
+        <div id="view-file-5" class="view-section">
+            <div class="element other" style="left: 377.136px; top: 273.312px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div class="element other" style="left: 567.216px; top: 282.528px; width: 947.664px; height: 60.624px;">TEN TS1</div>
+            <div class="element dap-an" style="left: 567.216px; top: 343.152px; width: 947.664px; height: 60.624px;">DAP AN TS1</div>
+            <div class="element other" style="left: 377.136px; top: 437.184px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div class="element other" style="left: 567.216px; top: 446.256px; width: 947.664px; height: 60.624px;">TEN TS2</div>
+            <div class="element dap-an" style="left: 567.216px; top: 506.88px; width: 947.664px; height: 60.624px;">DAP AN TS2</div>
+            <div class="element other" style="left: 377.136px; top: 599.328px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div class="element other" style="left: 567.216px; top: 608.4px; width: 947.664px; height: 60.624px;">TEN TS3</div>
+            <div class="element dap-an" style="left: 567.216px; top: 669.024px; width: 947.664px; height: 60.624px;">DAP AN TS3</div>
+            <div class="element other" style="left: 377.136px; top: 763.488px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div class="element other" style="left: 567.216px; top: 772.704px; width: 947.664px; height: 60.624px;">TEN TS4</div>
+            <div class="element dap-an" style="left: 567.216px; top: 833.328px; width: 947.664px; height: 60.624px;">DAP AN TS4</div>
+        </div>
+
+        <!-- VIEW 6 -->
+        <div id="view-file-6" class="view-section">
+            <div id="pageWrapper">
+                <div class="subject-container"><div class="subject-title" id="subjectTitle6"></div></div>
+                <div class="container" id="packContainer6">
+                    <div class="pack-item" onclick="selectPack6(this, '10', 'Toán Học')"><div class="score">10</div></div>
+                    <div class="pack-item" onclick="selectPack6(this, '20', 'Vật Lý')"><div class="score">20</div></div>
+                    <div class="pack-item" onclick="selectPack6(this, '30', 'Hóa Học')"><div class="score">30</div></div>
+                </div>
+            </div>
+            <audio id="audioChoose6" src="ChooseQues.mp3"></audio>
+            <audio id="audioClose6" src="sounds/ClosePack.mp3"></audio>
+        </div>
+
+        <!-- VIEW 7 -->
+        <div id="view-file-7" class="view-section">
+            <div class="scene-container">
+                <img src="Images/QuesBox2.png" alt="QuesBox" class="ques-box">
+                <div class="round-name">VINH QUANG</div>
+                <div class="question-box">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
+                <div id="clock7" class="clock-box" onclick="startCountdown7()">25</div>
+            </div>
+            <audio id="vongThiAudio7" src="sounds/25sV1.mp3"></audio>
+        </div>
+
+        <!-- VIEW 8 -->
+        <div id="view-file-8" class="view-section">
+            <div class="item" style="left: 390.16659162539395px; top: 268.848px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS1</div>
+            <div class="item" style="left: 580.3511931562358px; top: 279.504px; width: 927.5821701936064px; height: 60.624px;">TÊN TS1</div>
+            <div class="item ans-ts" style="left: 580.3511931562358px; top: 340.128px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS1</div>
+            <div class="item" style="left: 390.16659162539395px; top: 442.368px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS2</div>
+            <div class="item" style="left: 580.3511931562358px; top: 452.88px; width: 927.5821701936064px; height: 60.624px;">TÊN TS2</div>
+            <div class="item ans-ts" style="left: 580.3511931562358px; top: 513.504px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS2</div>
+            <div class="item" style="left: 390.16659162539395px; top: 617.904px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS3</div>
+            <div class="item" style="left: 580.3511931562358px; top: 628.4159999999999px; width: 927.5821701936064px; height: 60.624px;">TÊN TS3</div>
+            <div class="item ans-ts" style="left: 580.3511931562358px; top: 689.04px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS3</div>
+            <div class="item" style="left: 390.16659162539395px; top: 787.8240000000001px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS4</div>
+            <div class="item" style="left: 580.3511931562358px; top: 798.4799999999999px; width: 927.5821701936064px; height: 60.624px;">TÊN TS4</div>
+            <div class="item ans-ts" style="left: 580.3511931562358px; top: 859.104px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS4</div>
+        </div>
+
+    </div>
+
+    <script>
+        function showPopup(message) {
+            document.getElementById('popup-message').innerText = message;
+            document.getElementById('custom-popup').style.display = 'flex';
+        }
+
+        function closePopup() {
+            document.getElementById('custom-popup').style.display = 'none';
+        }
+
+        window.alert = function(msg) { showPopup(msg); };
+        window.prompt = function(msg) { showPopup(msg); return null; };
+        window.confirm = function(msg) { showPopup(msg); return false; };
+
+        let currentViewIndex = 1;
+
+        function switchView(viewNum) {
+            currentViewIndex = viewNum;
+            for (let i = 1; i <= 8; i++) {
+                const viewEl = document.getElementById(`view-file-${i}`);
+                const btnEl = document.getElementById(`btn-view-${i}`);
+                if (viewEl) viewEl.classList.remove('active-view');
+                if (btnEl) btnEl.classList.remove('active-view-btn');
+            }
+            const activeView = document.getElementById(`view-file-${viewNum}`);
+            const activeBtn = document.getElementById(`btn-view-${viewNum}`);
+            if (activeView) activeView.classList.add('active-view');
+            if (activeBtn) activeBtn.classList.add('active-view-btn');
+        }
+
+        function scaleStage() {
+            const wrapper = document.querySelector('.stage-wrapper');
+            if (!wrapper) return;
+            const targetWidth = 1920;
+            const targetHeight = 1080;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            const scale = Math.min(windowWidth / targetWidth, windowHeight / targetHeight);
+
+            wrapper.style.transform = `scale(${scale})`;
+            wrapper.style.left = `${(windowWidth - targetWidth * scale) / 2}px`;
+            wrapper.style.top = `${(windowHeight - targetHeight * scale) / 2}px`;
+        }
+
+        window.addEventListener('resize', scaleStage);
+        window.addEventListener('DOMContentLoaded', () => {
+            scaleStage();
+            initFile3Grid();
+        });
+
+        /* VIEW 1 LOGIC */
+        let score1 = 0, timeLeft1 = 60, timerInterval1 = null, isRolling1 = false, currentQuestionIndex1 = 1;
+        let soundRandomSet1 = new Audio('sounds/RandomSet.mp3');
+        let soundBeginQues1 = new Audio('sounds/BeginQues.mp3');
+        let sound60s1 = new Audio('sounds/60s.mp3');
+        let soundTick1 = new Audio('sounds/tick.mp3');
+        let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
+        let soundRight1 = new Audio('sounds/right.mp3');
+        let soundWrong1 = new Audio('sounds/wrong.mp3');
+
+        function updateBlink1() {
+            document.querySelectorAll('#view-file-1 .ket-qua-cau').forEach(el => el.classList.remove('blinking'));
+            let currentBox = document.getElementById('kq1-' + currentQuestionIndex1);
+            if (currentBox) currentBox.classList.add('blinking');
+        }
+
+        function xuatPhat1() { 
+            document.getElementById('xuatPhatContainer').style.display = 'none'; 
+            document.getElementById('contestantList1').style.display = 'flex'; 
+        }
+
+        function chonThiSinh1(name) { 
+            document.getElementById('contestantList1').style.display = 'none'; 
+            document.getElementById('randomImg1').style.display = 'block'; 
+            document.getElementById('displayContestantName1').style.display = 'flex'; 
+            document.getElementById('displayContestantName1').innerText = name; 
+            document.getElementById('quesContestantName1').innerText = name; 
+            document.getElementById('numberBox1').style.display = 'flex'; 
+            document.getElementById('btnBamDe1').style.display = 'block'; 
+        }
+
+        function bamDe1() {
+            if (isRolling1) return;
+            isRolling1 = true;
+            document.getElementById('btnBamDe1').style.display = 'none';
+            soundRandomSet1.currentTime = 0; soundRandomSet1.play().catch(e=>console.log(e));
+
+            let startTime = Date.now();
+            let rollInterval = setInterval(() => {
+                document.getElementById('numberBox1').innerText = Math.floor(Math.random() * 8) + 1;
+                if (Date.now() - startTime >= 5000) { 
+                    clearInterval(rollInterval);
+                    isRolling1 = false;
+                    setTimeout(() => { 
+                        document.getElementById('scene-chon-de').classList.remove('active'); 
+                        document.getElementById('scene-cau-hoi1').classList.add('active'); 
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        function batDauCauHoi1() {
+            document.getElementById('questionText1').innerText = "Nội dung câu hỏi số 1";
+            let firstBox = document.getElementById('kq1-1');
+            if (firstBox) firstBox.classList.remove('inactive');
+            updateBlink1();
+
+            clearInterval(timerInterval1);
+            soundBeginQues1.currentTime = 0; sound60s1.currentTime = 0;
+            soundBeginQues1.play().catch(e=>console.log(e));
+            sound60s1.play().catch(e=>console.log(e));
+
+            timeLeft1 = 60;
+            document.getElementById('timer1').innerText = timeLeft1;
+            let targetTime = Date.now() + 60000;
+            timerInterval1 = setInterval(() => {
+                let prevTime = timeLeft1;
+                timeLeft1 = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
+                document.getElementById('timer1').innerText = timeLeft1;
+
+                if (timeLeft1 <= 5 && timeLeft1 > 0 && timeLeft1 !== prevTime) {
+                    soundTick1.currentTime = 0; soundTick1.play().catch(e=>console.log(e));
+                }
+
+                if (timeLeft1 === 0) {
+                    clearInterval(timerInterval1);
+                    sound60s1.pause();
+                    soundTimeUp1.currentTime = 0; soundTimeUp1.play().catch(e=>console.log(e));
+                }
+            }, 200);
+        }
+
+        function traLoiDung1() {
+            soundRight1.currentTime = 0; soundRight1.play().catch(e=>console.log(e));
+            score1 += 10; 
+            document.getElementById('score1').innerText = score1;
+            let el = document.getElementById('kq1-' + currentQuestionIndex1);
+            if(el) { el.classList.remove('blinking'); el.style.backgroundColor = '#3b82f6'; }
+        }
+
+        function traLoiSai1() {
+            soundWrong1.currentTime = 0; soundWrong1.play().catch(e=>console.log(e));
+            let el = document.getElementById('kq1-' + currentQuestionIndex1);
+            if(el) { el.classList.remove('blinking'); el.style.backgroundColor = '#ef4444'; }
+            document.getElementById('answerBox1').style.display = 'flex';
+        }
+
+        function chuyenCau1() {
+            document.getElementById('answerBox1').style.display = 'none';
+            if(currentQuestionIndex1 < 10) {
+                currentQuestionIndex1++;
+                let nextBox = document.getElementById('kq1-' + currentQuestionIndex1);
+                if(nextBox) nextBox.classList.remove('inactive');
+                document.getElementById('questionText1').innerText = "Nội dung câu hỏi số " + currentQuestionIndex1;
+                updateBlink1();
+            }
+        }
+
+        /* VIEW 3 LOGIC */
+        function initFile3Grid() {
+            const rowsContainer = document.getElementById('file3-rows-container');
+            const keysContainer = document.getElementById('file3-keys-container');
+            if (!rowsContainer || !keysContainer) return;
+
+            const startX_Row = 237.2, startY_Row = 157.7, deltaX_Row = 99.2, deltaY_Row = 102.7;
+            const widthRow = 95.6, heightRow = 75.7;
+            let rowHtml = '';
+            for (let h = 1; h <= 4; h++) {
+                let currentY = startY_Row + (h - 1) * deltaY_Row;
+                for (let n = 1; n <= 15; n++) {
+                    let currentX = startX_Row + (n - 1) * deltaX_Row;
+                    rowHtml += `<div class="game-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthRow}px; height: ${heightRow}px; background-image: url('Images/LetterDefault.png');"></div>`;
+                }
+            }
+            rowsContainer.innerHTML = rowHtml;
+
+            const startX_Key = 255.6, startY_Key = 565.5, deltaX_Key = 98.5, deltaY_Key = 89.7;
+            const widthKey = 86.7, heightKey = 75.7;
+            let keyHtml = '';
+            for (let hang = 1; hang <= 3; hang++) {
+                let currentY = startY_Key + (hang - 1) * deltaY_Key;
+                for (let cot = 1; cot <= 15; cot++) {
+                    let currentX = startX_Key + (cot - 1) * deltaX_Key;
+                    keyHtml += `<div class="game-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthKey}px; height: ${heightKey}px; background-image: url('Images/LetterKey.png');"></div>`;
+                }
+            }
+            keysContainer.innerHTML = keyHtml;
+        }
+
+        /* VIEW 4 LOGIC */
+        let countdown4, timeLeft4 = 20, isRunning4 = false;
+        function startCountdown4() {
+            if (isRunning4) return;
+            isRunning4 = true;
+            const clockElement = document.getElementById('clock4');
+            const audio = document.getElementById('vongThiAudio4');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log(e));
+            countdown4 = setInterval(() => {
+                timeLeft4--;
+                clockElement.textContent = timeLeft4;
+                if (timeLeft4 <= 0) { clearInterval(countdown4); clockElement.textContent = "0"; }
+            }, 1000);
+        }
+
+        /* VIEW 6 LOGIC */
+        let isSelected6 = false;
+        function selectPack6(element, score, subjectName) {
+            if (isSelected6) return;
+            isSelected6 = true;
+            document.getElementById('view-file-6').style.backgroundImage = "url('Images/packchoose.png')";
+            element.classList.add('selected');
+            const subjectTitleEl = document.getElementById('subjectTitle6');
+            subjectTitleEl.innerText = subjectName;
+            subjectTitleEl.classList.add('show');
+            document.getElementById('audioChoose6').play().catch(e => console.log(e));
+        }
+
+        window.addEventListener('keydown', function(event) {
+            if (currentViewIndex === 6 && event.code === 'Space' && isSelected6) {
+                event.preventDefault();
+                document.getElementById('audioClose6').play().catch(e => console.log(e));
+                const pageWrapper = document.querySelector('#view-file-6 #pageWrapper');
+                if (pageWrapper) pageWrapper.classList.add('fly-down');
+            }
+        });
+
+        /* VIEW 7 LOGIC */
+        let countdown7, timeLeft7 = 25, isRunning7 = false;
+        function startCountdown7() {
+            if (isRunning7) return;
+            isRunning7 = true;
+            const clockElement = document.getElementById('clock7');
+            const audio = document.getElementById('vongThiAudio7');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log(e));
+            countdown7 = setInterval(() => {
+                timeLeft7--;
+                clockElement.textContent = timeLeft7;
+                if (timeLeft7 <= 0) { clearInterval(countdown7); clockElement.textContent = "0"; }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
