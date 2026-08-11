@@ -48,6 +48,8 @@
             padding: 10px;
             gap: 10px;
             height: calc(100vh - 41px);
+            overflow: auto;
+            box-sizing: border-box;
         }
 
         /* Left Column */
@@ -56,6 +58,8 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            min-width: 280px;
+            overflow-y: auto;
         }
 
         /* Connection Box */
@@ -178,6 +182,19 @@
             border-radius: 4px;
             overflow-y: auto;
             max-height: calc(100vh - 60px);
+            min-width: 300px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 41px);
+            }
+            .left-col, .right-col {
+                width: 100%;
+                max-height: none;
+            }
         }
 
         .question-header {
@@ -543,11 +560,6 @@
                         <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
                     </tr>
                     <tr>
-                        <td style="color: #666;">Chưa kết nối</td>
-                        <td><input type="text" value="Thí sinh 5" id="ts_name_5"></td>
-                        <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
-                    </tr>
-                    <tr>
                         <td style="color: #28a745; font-weight: bold;">Đã kết nối</td>
                         <td><input type="text" value="Máy MC"></td>
                         <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
@@ -634,13 +646,14 @@
             <!-- PHẦN THI XUẤT PHÁT -->
             <div class="sub-section-title">... Phần thi XUẤT PHÁT ...</div>
             <div class="kd-tabs" id="xuatPhatTabHeader">
-                <div class="kd-tab active" onclick="switchXuatPhatTurn(1)">Lượt thi 1</div>
-                <div class="kd-tab" onclick="switchXuatPhatTurn(2)">Lượt thi 2</div>
-                <div class="kd-tab" onclick="switchXuatPhatTurn(3)">Lượt thi 3</div>
-                <div class="kd-tab" onclick="switchXuatPhatTurn(4)">Lượt thi 4</div>
-                <div class="kd-tab" onclick="switchXuatPhatTurn(5)">Lượt thi 5</div>
-                <div class="kd-tab" onclick="switchXuatPhatTurn(6)">Lượt thi 6</div>
-                <div class="kd-tab" onclick="switchXuatPhatTurn(7)">Lượt thi 7</div>
+                <div class="kd-tab active" onclick="switchXuatPhatTurn(1)">Bộ đề 1</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(2)">Bộ đề 2</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(3)">Bộ đề 3</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(4)">Bộ đề 4</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(5)">Bộ đề 5</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(6)">Bộ đề 6</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(7)">Bộ đề 7</div>
+                <div class="kd-tab" onclick="switchXuatPhatTurn(8)">Bộ đề 8</div>
                 <div class="kd-tab-controls" onclick="scrollXuatPhatTabs(-1)">◄</div>
                 <div class="kd-tab-controls" onclick="scrollXuatPhatTabs(1)">►</div>
             </div>
@@ -667,16 +680,16 @@
                 <span>Câu 1</span>
                 <div>
                     <input type="text" id="rk_q_1" placeholder="Nội dung câu hỏi đoạn băng 1" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn video / âm thanh câu 1')">Chọn video / audio</button>
-                        <input type="text" id="rk_m_1" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_m_1', 'video/*,audio/*')">Chọn video / clip</button>
+                        <input type="text" id="rk_m_1" placeholder="URL video đoạn băng (mp4/webm...)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
                 <div>
                     <input type="text" id="rk_a_1" placeholder="Đáp án câu 1" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn ảnh đáp án câu 1')">Chọn ảnh đáp án</button>
-                        <input type="text" id="rk_am_1" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_am_1', 'image/*')">Chọn ảnh đáp án</button>
+                        <input type="text" id="rk_am_1" placeholder="URL ảnh đáp án (nếu có)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
             </div>
@@ -685,16 +698,16 @@
                 <span>Câu 2</span>
                 <div>
                     <input type="text" id="rk_q_2" placeholder="Nội dung câu hỏi đoạn băng 2" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn video / âm thanh câu 2')">Chọn video / audio</button>
-                        <input type="text" id="rk_m_2" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_m_2', 'video/*,audio/*')">Chọn video / clip</button>
+                        <input type="text" id="rk_m_2" placeholder="URL video đoạn băng (mp4/webm...)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
                 <div>
                     <input type="text" id="rk_a_2" placeholder="Đáp án câu 2" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn ảnh đáp án câu 2')">Chọn ảnh đáp án</button>
-                        <input type="text" id="rk_am_2" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_am_2', 'image/*')">Chọn ảnh đáp án</button>
+                        <input type="text" id="rk_am_2" placeholder="URL ảnh đáp án (nếu có)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
             </div>
@@ -703,16 +716,16 @@
                 <span>Câu 3</span>
                 <div>
                     <input type="text" id="rk_q_3" placeholder="Nội dung câu hỏi đoạn băng 3" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn video / âm thanh câu 3')">Chọn video / audio</button>
-                        <input type="text" id="rk_m_3" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_m_3', 'video/*,audio/*')">Chọn video / clip</button>
+                        <input type="text" id="rk_m_3" placeholder="URL video đoạn băng (mp4/webm...)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
                 <div>
                     <input type="text" id="rk_a_3" placeholder="Đáp án câu 3" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn ảnh đáp án câu 3')">Chọn ảnh đáp án</button>
-                        <input type="text" id="rk_am_3" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_am_3', 'image/*')">Chọn ảnh đáp án</button>
+                        <input type="text" id="rk_am_3" placeholder="URL ảnh đáp án (nếu có)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
             </div>
@@ -721,16 +734,16 @@
                 <span>Câu 4</span>
                 <div>
                     <input type="text" id="rk_q_4" placeholder="Nội dung câu hỏi đoạn băng 4" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn video / âm thanh câu 4')">Chọn video / audio</button>
-                        <input type="text" id="rk_m_4" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_m_4', 'video/*,audio/*')">Chọn video / clip</button>
+                        <input type="text" id="rk_m_4" placeholder="URL video đoạn băng (mp4/webm...)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
                 <div>
                     <input type="text" id="rk_a_4" placeholder="Đáp án câu 4" onchange="saveAllData()">
-                    <div class="media-btn-group">
-                        <button class="btn" style="font-size: 11px;" onclick="showToast('Chọn ảnh đáp án câu 4')">Chọn ảnh đáp án</button>
-                        <input type="text" id="rk_am_4" value="..." readonly>
+                    <div class="media-btn-group" style="display: flex; gap: 5px; margin-top: 4px;">
+                        <button class="btn" style="font-size: 11px; white-space: nowrap; padding: 4px 8px;" onclick="triggerFilePicker('rk_am_4', 'image/*')">Chọn ảnh đáp án</button>
+                        <input type="text" id="rk_am_4" placeholder="URL ảnh đáp án (nếu có)" onchange="saveAllData()" style="flex: 1;">
                     </div>
                 </div>
             </div>
@@ -934,21 +947,6 @@
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
                     </div>
                 </div>
-
-                <!-- TS 5 -->
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <span id="ts5_score_disp" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
-                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(5)">✏️</span>
-                    </div>
-                    <div style="flex: 1; display: flex; flex-direction: column;">
-                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
-                            <input type="text" id="ts5_name" value="Thí sinh 5" onchange="updateContestantName(5, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
-                            <input type="text" id="ts5_extra" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px;">
-                        </div>
-                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
-                    </div>
-                </div>
             </div>
 
             <!-- RIGHT: LƯỢT THI BUTTONS -->
@@ -964,12 +962,6 @@
                 </div>
                 <div id="btn_luot_4" class="luot-thi-btn" onclick="selectLuotThi(4)">
                     <span>Lượt thi riêng (TS4)</span> <span class="badge">4</span>
-                </div>
-                <div id="btn_luot_5" class="luot-thi-btn" onclick="selectLuotThi(5)">
-                    <span>Lượt thi riêng (TS5)</span> <span class="badge">5</span>
-                </div>
-                <div id="btn_luot_6" class="luot-thi-btn" onclick="selectLuotThi(6)">
-                    <span>Lượt thi chung</span> <span class="badge">6</span>
                 </div>
             </div>
         </div>
@@ -998,6 +990,18 @@
                         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 4px;">
                             <span id="preview_turn_title">LƯỢT THI 1: THÍ SINH 1</span>
                             <span>CÂU HỎI: <span id="preview_q_num">1</span>/10</span>
+                            <span>BỘ ĐỀ: 
+                                <select id="preview_de_select" onchange="changeXuatPhatDe(this.value)" style="background: rgba(0,0,0,0.3); color: #ffeb3b; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; padding: 1px 4px; font-weight: bold; outline: none; cursor: pointer;">
+                                    <option value="1">Bộ đề 1</option>
+                                    <option value="2">Bộ đề 2</option>
+                                    <option value="3">Bộ đề 3</option>
+                                    <option value="4">Bộ đề 4</option>
+                                    <option value="5">Bộ đề 5</option>
+                                    <option value="6">Bộ đề 6</option>
+                                    <option value="7">Bộ đề 7</option>
+                                    <option value="8">Bộ đề 8</option>
+                                </select>
+                            </span>
                             <span>THỜI GIAN: <span id="preview_timer" style="color: #ffeb3b; font-size: 16px;">60</span>s</span>
                         </div>
                         <div style="font-size: 15px; font-weight: bold; line-height: 1.4; color: #f8fafc;" id="preview_q_text">
@@ -1015,52 +1019,264 @@
                     </div>
                 </div>
 
-                <!-- BUTTON ACTIONS ROW 1: Graphic chọn đề, Random, Đúng, Sai, Âm thanh -->
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <!-- BUTTON ACTIONS ROW 1: Graphic chọn đề, Graphic câu hỏi, Random, Bắt đầu, Đúng, Sai, Chuyển câu, Âm thanh -->
+                <div style="display: flex; gap: 6px; align-items: center;">
                     <button class="ctrl-btn-action" onclick="onClickHienGraphicChonDe()" style="flex: 1; background: #3b82f6; color: white;">
                         Graphic chọn đề
                     </button>
 
-                    <button id="btn_random_de" class="ctrl-btn-action" onclick="onClickRandomDe()" style="width: 110px; background: #eab308; color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <button class="ctrl-btn-action" onclick="onClickHienGraphicCauHoi()" style="flex: 1; background: #0284c7; color: white;">
+                        Graphic câu hỏi
+                    </button>
+
+                    <button id="btn_random_de" class="ctrl-btn-action" onclick="onClickRandomDe()" style="width: 80px; background: #eab308; color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 4px;">
                         🎲 Random
                     </button>
 
-                    <button class="ctrl-btn-action" onclick="onClickDung()" style="width: 70px; background: #d1d5db; color: #16a34a; font-size: 18px; font-weight: bold;">
+                    <button class="ctrl-btn-action" onclick="onClickBatDau60s()" style="width: 75px; background: #2563eb; color: white; font-weight: bold;">
+                        Bắt đầu
+                    </button>
+
+                    <button class="ctrl-btn-action" onclick="onClickDung()" style="width: 45px; background: #d1d5db; color: #16a34a; font-size: 18px; font-weight: bold;">
                         ✔
                     </button>
 
-                    <button class="ctrl-btn-action" onclick="onClickSai()" style="width: 70px; background: #d1d5db; color: #dc2626; font-size: 18px; font-weight: bold;">
+                    <button class="ctrl-btn-action" onclick="onClickSai()" style="width: 45px; background: #d1d5db; color: #dc2626; font-size: 18px; font-weight: bold;">
                         ✖
                     </button>
 
-                    <button class="ctrl-btn-action" onclick="onClickPhatAmThanh()" style="width: 45px; background: #d1d5db; color: #333;">
+                    <button class="ctrl-btn-action" onclick="onClickChuyenCau()" style="width: 95px; background: #8b5cf6; color: white; font-weight: bold;">
+                        Chuyển câu
+                    </button>
+
+                    <button class="ctrl-btn-action" onclick="onClickPhatAmThanh()" style="width: 40px; background: #d1d5db; color: #333;">
                         🔊...
                     </button>
                 </div>
 
-                <!-- BUTTON ACTIONS ROW 2: Khởi động, Bắt đầu, Hoàn thành, Dừng nhạc, Đặt lại, Chuyển câu, Tổng kết -->
+                <!-- BUTTON ACTIONS ROW 2: Khởi động, Hoàn thành, Dừng nhạc, Đặt lại, Tổng kết -->
                 <div style="display: flex; gap: 6px; justify-content: space-between;">
                     <button class="ctrl-btn-bottom" onclick="onClickKhoidong()">Khởi Động</button>
-                    <button class="ctrl-btn-bottom" onclick="onClickBatDau60s()" style="background: #2563eb; color: white;">Bắt đầu</button>
                     <button class="ctrl-btn-bottom" onclick="onClickHoanThanh()">Hoàn thành</button>
                     <button class="ctrl-btn-bottom" onclick="onClickDungNhac()">Dừng nhạc</button>
                     <button class="ctrl-btn-bottom" onclick="onClickDatLaiVongThi()">Đặt lại</button>
-                    <button class="ctrl-btn-bottom" onclick="onClickChuyenCau()">Chuyển câu</button>
                     <button class="ctrl-btn-bottom" onclick="onClickTongKet()" style="background: #0f172a; color: white;">Tổng kết</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- TAB 2: RA KHƠI -->
-    <div class="tab-content" id="tab2-content" style="padding: 20px; flex-direction: column;">
-        <div class="panel">
-            <h2>ĐIỀU KHIỂN VÒNG THI RA KHƠI (DẠNG ĐOẠN BĂNG)</h2>
-            <p style="margin: 10px 0; color: #666;">Chức năng trình chiếu đoạn băng video/âm thanh, tính giờ 30s/20s và hiển thị đáp án 4 câu hỏi Ra Khơi.</p>
-            <div class="btn-row" style="margin-top: 15px;">
-                <button class="btn btn-primary" onclick="showToast('Phát đoạn băng media câu hỏi Ra Khơi')">Phát Video/Audio</button>
-                <button class="btn btn-primary" onclick="showToast('Bắt đầu tính thời gian 30 giây')">Bắt đầu 30 giây</button>
-                <button class="btn" onclick="showToast('Hiện đáp án câu hỏi Ra Khơi')">Hiện Đáp Án</button>
+    <!-- TAB 2: RA KHƠI (TĂNG TỐC) -->
+    <div class="tab-content" id="tab2-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
+        
+        <!-- TOP TOOLBAR / HEADER FOR TAB 2 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Ra Khơi:</span>
+                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
+            </div>
+            <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                ĐIỀU KHIỂN VÒNG THI RA KHƠI
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT GRID: CONTESTANTS (LEFT) & QUESTION SELECTOR (RIGHT) -->
+        <div style="display: flex; gap: 20px; justify-content: space-between; margin-bottom: 15px; flex-shrink: 0;">
+            
+            <!-- LEFT: 5 CONTESTANT CARDS (WITH VERTICAL CONNECTOR LINE) -->
+            <div style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 10px; max-width: 600px; padding-left: 15px; flex-shrink: 0;">
+                <!-- Vertical connecting line -->
+                <div style="position: absolute; left: 4px; top: 15px; bottom: 15px; width: 4px; background: #eab308; border-radius: 2px;"></div>
+
+                <!-- TS 1 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts1_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(1)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts1_name_rk" value="Thí sinh 1" onchange="updateContestantName(1, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts1_extra_rk" placeholder="00.00s" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts1_ans_rk" placeholder="Đáp án TS1" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 2 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts2_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(2)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts2_name_rk" value="Thí sinh 2" onchange="updateContestantName(2, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts2_extra_rk" placeholder="00.00s" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts2_ans_rk" placeholder="Đáp án TS2" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 3 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts3_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(3)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts3_name_rk" value="Thí sinh 3" onchange="updateContestantName(3, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts3_extra_rk" placeholder="00.00s" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts3_ans_rk" placeholder="Đáp án TS3" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 4 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts4_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(4)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts4_name_rk" value="Thí sinh 4" onchange="updateContestantName(4, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts4_extra_rk" placeholder="00.00s" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts4_ans_rk" placeholder="Đáp án TS4" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 5 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts5_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(5)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts5_name_rk" value="Thí sinh 5" onchange="updateContestantName(5, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts5_extra_rk" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px;">
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: CÂU HỎI SELECTOR PANEL -->
+            <div style="background: #eaf2fc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; width: 280px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-self: flex-start; flex-shrink: 0;">
+                <div id="btn_rk_q1" class="rk-q-btn active" onclick="selectRKQuestion(1)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+                    <span>Câu hỏi thứ</span>
+                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">1</span>
+                </div>
+                <div id="btn_rk_q2" class="rk-q-btn" onclick="selectRKQuestion(2)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+                    <span>Câu hỏi thứ</span>
+                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">2</span>
+                </div>
+                <div id="btn_rk_q3" class="rk-q-btn" onclick="selectRKQuestion(3)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+                    <span>Câu hỏi thứ</span>
+                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">3</span>
+                </div>
+                <div id="btn_rk_q4" class="rk-q-btn" onclick="selectRKQuestion(4)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+                    <span>Câu hỏi thứ</span>
+                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">4</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM SECTION: CENTER DISPLAY CARDS & ACTION BUTTONS -->
+        <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: 15px; flex-shrink: 0;">
+            
+            <!-- LEFT SLIDE CONTROLS FIELDSET -->
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 150px; flex-shrink: 0;">
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
+                    <button class="ctrl-btn-sm" onclick="onClickBatDauDoanBang()">Bắt đầu đoạn băng</button>
+                    <button class="ctrl-btn-sm" onclick="onClickRKDapAnTS()">Đáp án thí sinh</button>
+                    <button class="ctrl-btn-sm" onclick="onClickGiaiMaMedia()">Giải mã Video/Ảnh</button>
+                    <button class="ctrl-btn-sm" onclick="onClickDiemTS()">Điểm TS</button>
+                </div>
+                <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
+            </div>
+
+            <!-- CENTER & RIGHT ACTION CONTROLS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+                
+                <!-- BLUE PREVIEW / STATUS CARDS -->
+                <div style="display: flex; gap: 8px; height: 140px;">
+                    <div style="flex: 1; background: #5b9bd5; border-radius: 4px; padding: 12px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 4px;">
+                            <span id="rk_preview_title">VÒNG THI RA KHƠI: CÂU HỎI THỨ 1</span>
+                            <span>THỜI GIAN: <span id="rk_preview_timer" style="color: #ffeb3b; font-size: 16px;">30</span>s</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: bold; line-height: 1.4; color: #f8fafc;" id="rk_preview_q_text">
+                            Nội dung câu hỏi Ra Khơi số 1...
+                        </div>
+                        <div style="font-size: 13px; font-weight: bold; color: #e2e8f0; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 4px;" id="rk_preview_a_text">
+                            Đáp án: ...
+                        </div>
+                    </div>
+
+                    <div style="width: 140px; background: #5b9bd5; border-radius: 4px; padding: 10px; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px;">
+                        <div style="font-size: 11px; font-weight: bold;">TRẠNG THÁI</div>
+                        <div id="rk_preview_status" style="font-size: 18px; font-weight: bold; color: #ffeb3b;">Sẵn sàng</div>
+                    </div>
+                </div>
+
+                <!-- ROW 1 CONTROLS: BLUE BAR + HIỆN ĐÁP ÁN + SOUND -->
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div style="flex: 1; background: #5b9bd5; height: 36px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: bold;">
+                        <span id="rk_select_bar_title">Câu hỏi thứ 1</span>
+                        <button onclick="cycleRKQuestion()" style="background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; outline: none;">⇅</button>
+                    </div>
+
+                    <button class="btn" onclick="onClickRKHienDapAn()" style="background: #ffffff; border: 1px solid #ccc; color: #333; font-weight: bold; padding: 6px 16px; border-radius: 3px;">
+                        Hiện Đáp án Đúng
+                    </button>
+
+                    <button class="btn" onclick="onClickPhatAmThanh()" style="background: #ffffff; border: 1px solid #ccc; padding: 6px 12px; border-radius: 3px;">
+                        🔊...
+                    </button>
+                </div>
+
+                <!-- ROW 2 CONTROLS: ACTION BUTTONS ROW -->
+                <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" onclick="onClickRKTangToc()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
+                        Tăng Tốc
+                    </button>
+                    <button class="btn" onclick="onClickBatDauDoanBang()" style="background: #2563eb; color: #ffffff; border: none; font-weight: bold; padding: 6px 16px; border-radius: 3px; box-shadow: 0 2px 4px rgba(37,99,235,0.3);">
+                        ▶ Bắt đầu đoạn băng
+                    </button>
+                    <button class="btn" onclick="onClickRKTinhThoiGian()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
+                        ⏱️ Tính thời gian (30s)
+                    </button>
+                    <button class="btn" onclick="onClickRKDapAnTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
+                        👥 Hiện đáp án thí sinh
+                    </button>
+                    <button class="btn" onclick="onClickDiemTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
+                        Điểm TS
+                    </button>
+                    <button class="btn" onclick="onClickRKDatLai()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
+                        Đặt lại
+                    </button>
+                    <button class="btn" onclick="onClickTongKet()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px; margin-left: auto;">
+                        Tổng kết
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1142,6 +1358,9 @@
             renderVinhQuangPackUI(10);
             loadSavedData();
             updateVuotSongState();
+            if (typeof selectRKQuestion === 'function') {
+                selectRKQuestion(1);
+            }
         });
 
         // Switch main tabs
@@ -1168,6 +1387,9 @@
             if (index === 1 && typeof updateTab1Preview === 'function') {
                 updateTab1Preview();
             }
+            if (index === 2 && typeof updateTab2Preview === 'function') {
+                selectRKQuestion(currentRKQuestion);
+            }
         }
 
         // Show Toast Notification
@@ -1192,21 +1414,22 @@
             }
         }
 
-        // Render Xuat Phat 10 rows
-        function renderXuatPhatTurnUI(turn) {
-            currentXuatPhatTurn = turn;
+        // Render Xuat Phat 10 rows for editing a set (1..8)
+        let editingXuatPhatDe = 1;
+        function renderXuatPhatTurnUI(deNum) {
+            editingXuatPhatDe = deNum || 1;
             const container = document.getElementById('xuatPhatRows');
             if (!container) return;
 
             // Highlight tab header
             const tabs = document.querySelectorAll('#xuatPhatTabHeader .kd-tab');
             tabs.forEach((tab, idx) => {
-                if (idx + 1 === turn) tab.classList.add('active');
+                if (idx + 1 === deNum) tab.classList.add('active');
                 else tab.classList.remove('active');
             });
 
             container.innerHTML = '';
-            const questions = gameData.xuatPhat[turn] || [];
+            const questions = gameData.xuatPhat[deNum] || [];
 
             for (let i = 0; i < 10; i++) {
                 const item = questions[i] || { q: '', a: '' };
@@ -1214,21 +1437,21 @@
                 row.className = 'kd-row';
                 row.innerHTML = `
                     <span style="font-weight: bold; color: #555;">Câu ${i + 1}</span>
-                    <input type="text" value="${escapeHtml(item.q)}" placeholder="Nội dung câu hỏi ${i + 1}" oninput="updateXuatPhatItem(${turn}, ${i}, 'q', this.value)">
-                    <input type="text" value="${escapeHtml(item.a)}" placeholder="Đáp án câu ${i + 1}" oninput="updateXuatPhatItem(${turn}, ${i}, 'a', this.value)">
+                    <input type="text" value="${escapeHtml(item.q)}" placeholder="Nội dung câu hỏi ${i + 1}" oninput="updateXuatPhatItem(${deNum}, ${i}, 'q', this.value)">
+                    <input type="text" value="${escapeHtml(item.a)}" placeholder="Đáp án câu ${i + 1}" oninput="updateXuatPhatItem(${deNum}, ${i}, 'a', this.value)">
                 `;
                 container.appendChild(row);
             }
         }
 
-        function switchXuatPhatTurn(turn) {
-            renderXuatPhatTurnUI(turn);
+        function switchXuatPhatTurn(deNum) {
+            renderXuatPhatTurnUI(deNum);
         }
 
         function scrollXuatPhatTabs(direction) {
-            let next = currentXuatPhatTurn + direction;
-            if (next < 1) next = 7;
-            if (next > 7) next = 1;
+            let next = editingXuatPhatDe + direction;
+            if (next < 1) next = 8;
+            if (next > 8) next = 1;
             switchXuatPhatTurn(next);
         }
 
@@ -1538,14 +1761,18 @@
         // Fill inputs from gameData object
         function fillRaKhoiInputs() {
             if (!Array.isArray(gameData.raKhoi)) {
-                gameData.raKhoi = [ {q:"",a:""}, {q:"",a:""}, {q:"",a:""}, {q:"",a:""} ];
+                gameData.raKhoi = [ {q:"",a:"",m:""}, {q:"",a:"",m:""}, {q:"",a:"",m:""}, {q:"",a:"",m:""} ];
             }
             for (let i = 1; i <= 4; i++) {
-                const item = gameData.raKhoi[i - 1] || { q: '', a: '' };
+                const item = gameData.raKhoi[i - 1] || { q: '', a: '', m: '' };
                 const qEl = document.getElementById(`rk_q_${i}`);
                 const aEl = document.getElementById(`rk_a_${i}`);
+                const mEl = document.getElementById(`rk_m_${i}`);
+                const amEl = document.getElementById(`rk_am_${i}`);
                 if (qEl) qEl.value = item.q || '';
                 if (aEl) aEl.value = item.a || '';
+                if (mEl) mEl.value = item.m || '';
+                if (amEl) amEl.value = item.am || '';
             }
         }
 
@@ -1580,44 +1807,91 @@
             }
         }
 
+        function safeGetStorage(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (e) {
+                console.warn("Storage access restricted:", e);
+                return null;
+            }
+        }
+
+        function safeSetStorage(key, val) {
+            try {
+                localStorage.setItem(key, val);
+            } catch (e) {
+                console.warn("Storage access restricted:", e);
+            }
+        }
+
+        function safeRemoveStorage(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn("Storage access restricted:", e);
+            }
+        }
+
         // Save and Load state to localStorage
         function saveAllData(notify = false) {
-            // Read Ra Khoi inputs (4 clip questions)
-            if (!Array.isArray(gameData.raKhoi)) gameData.raKhoi = [];
-            for (let i = 1; i <= 4; i++) {
-                const qVal = document.getElementById(`rk_q_${i}`)?.value || '';
-                const aVal = document.getElementById(`rk_a_${i}`)?.value || '';
-                gameData.raKhoi[i - 1] = { q: qVal, a: aVal, m: "...", am: "..." };
-            }
+            try {
+                // Read Ra Khoi inputs (4 clip questions)
+                if (!Array.isArray(gameData.raKhoi)) gameData.raKhoi = [];
+                for (let i = 1; i <= 4; i++) {
+                    const qEl = document.getElementById(`rk_q_${i}`);
+                    const aEl = document.getElementById(`rk_a_${i}`);
+                    const mEl = document.getElementById(`rk_m_${i}`);
+                    const amEl = document.getElementById(`rk_am_${i}`);
+                    if (qEl || aEl || mEl || amEl) {
+                        const qVal = qEl?.value || '';
+                        const aVal = aEl?.value || '';
+                        const mVal = mEl?.value || '';
+                        const amVal = amEl?.value || '';
+                        gameData.raKhoi[i - 1] = {
+                            q: qVal || gameData.raKhoi[i - 1]?.q || '',
+                            a: aVal || gameData.raKhoi[i - 1]?.a || '',
+                            m: mVal || gameData.raKhoi[i - 1]?.m || '',
+                            am: amVal || gameData.raKhoi[i - 1]?.am || ''
+                        };
+                    }
+                }
 
-            // Read Vuot Song inputs (crossword)
-            if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
-                gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
-            }
-            for (let i = 1; i <= 4; i++) {
-                const qVal = document.getElementById(`vs_q_${i}`)?.value || '';
-                const aVal = document.getElementById(`vs_a_${i}`)?.value || '';
-                gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
-            }
-            gameData.vuotSong.center = {
-                q: document.getElementById('vs_q_center')?.value || '',
-                a: document.getElementById('vs_a_center')?.value || ''
-            };
-            gameData.vuotSong.keyword = document.getElementById('vs_keyword')?.value || '';
+                // Read Vuot Song inputs (crossword)
+                if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
+                    gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
+                }
+                for (let i = 1; i <= 4; i++) {
+                    const qVal = document.getElementById(`vs_q_${i}`)?.value || '';
+                    const aVal = document.getElementById(`vs_a_${i}`)?.value || '';
+                    if (qVal || aVal) gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
+                }
+                if (document.getElementById('vs_q_center')) {
+                    gameData.vuotSong.center = {
+                        q: document.getElementById('vs_q_center')?.value || '',
+                        a: document.getElementById('vs_a_center')?.value || ''
+                    };
+                }
+                if (document.getElementById('vs_keyword')) {
+                    gameData.vuotSong.keyword = document.getElementById('vs_keyword')?.value || '';
+                }
 
-            // Ensure Vinh Quang is initialized
-            initVinhQuangData();
+                // Ensure Vinh Quang is initialized
+                initVinhQuangData();
 
-            // Read Cau Hoi Phu inputs
-            for (let i = 1; i <= 3; i++) {
-                const qVal = document.getElementById(`chp_q_${i}`)?.value || '';
-                const aVal = document.getElementById(`chp_a_${i}`)?.value || '';
-                gameData.cauHoiPhu[i - 1] = { q: qVal, a: aVal };
-            }
+                // Read Cau Hoi Phu inputs
+                if (!Array.isArray(gameData.cauHoiPhu)) gameData.cauHoiPhu = [];
+                for (let i = 1; i <= 3; i++) {
+                    const qVal = document.getElementById(`chp_q_${i}`)?.value || '';
+                    const aVal = document.getElementById(`chp_a_${i}`)?.value || '';
+                    if (qVal || aVal) gameData.cauHoiPhu[i - 1] = { q: qVal, a: aVal };
+                }
 
-            localStorage.setItem('duong_den_vinh_quang_data', JSON.stringify(gameData));
-            if (notify) {
-                showToast('Đã lưu tất cả dữ liệu câu hỏi vào hệ thống!');
+                safeSetStorage('duong_den_vinh_quang_data', JSON.stringify(gameData));
+                if (notify) {
+                    showToast('Đã lưu tất cả dữ liệu câu hỏi vào hệ thống!');
+                }
+            } catch(e) {
+                console.warn("saveAllData error:", e);
             }
         }
 
@@ -1629,16 +1903,21 @@
                     if (tab0Input) tab0Input.value = c.name || `Thí sinh ${idx}`;
                     const tab1Input = document.getElementById(`ts${idx}_name`);
                     if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
+                    const tab2Input = document.getElementById(`ts${idx}_name_rk`);
+                    if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
+                    
                     const disp = document.getElementById(`ts${idx}_score_disp`);
                     if (disp) disp.innerText = c.score || 0;
+                    const dispRK = document.getElementById(`ts${idx}_score_disp_rk`);
+                    if (dispRK) dispRK.innerText = c.score || 0;
                 });
             }
         }
 
         function loadSavedData() {
-            const saved = localStorage.getItem('duong_den_vinh_quang_data');
-            if (saved) {
-                try {
+            try {
+                const saved = safeGetStorage('duong_den_vinh_quang_data');
+                if (saved) {
                     const parsed = JSON.parse(saved);
                     gameData = Object.assign(gameData, parsed);
                     renderXuatPhatTurnUI(currentXuatPhatTurn);
@@ -1655,21 +1934,21 @@
                         step4.className = 'status-check green-check';
                         step4.innerText = '✅';
                     }
-                } catch(e) {
-                    console.error('Error loading saved data:', e);
                 }
+            } catch(e) {
+                console.error('Error loading saved data:', e);
             }
         }
 
         function resetAllData() {
             if (confirm("Bạn có chắc chắn muốn xóa và thiết lập lại toàn bộ dữ liệu không?")) {
-                localStorage.removeItem('duong_den_vinh_quang_data');
+                safeRemoveStorage('duong_den_vinh_quang_data');
                 location.reload();
             }
         }
 
         function updateContestantNames() {
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 4; i++) {
                 const val = document.getElementById(`ts_name_${i}`)?.value || `Thí sinh ${i}`;
                 if (!gameData.contestants) gameData.contestants = [];
                 if (!gameData.contestants[i - 1]) gameData.contestants[i - 1] = { name: val, score: 0 };
@@ -1677,6 +1956,9 @@
 
                 const tab1Input = document.getElementById(`ts${i}_name`);
                 if (tab1Input) tab1Input.value = val;
+            }
+            if (gameData.contestants.length > 4) {
+                gameData.contestants = gameData.contestants.slice(0, 4);
             }
             saveAllData();
             if (typeof updateTab1Preview === 'function') updateTab1Preview();
@@ -1696,7 +1978,7 @@
 
             // Sheet 1: XUẤT PHÁT
             const xpRows = [["XUẤT PHÁT"], ["STT ĐỀ", "NỘI DUNG", "ĐÁP ÁN"]];
-            for (let t = 1; t <= 7; t++) {
+            for (let t = 1; t <= 8; t++) {
                 const turnData = gameData.xuatPhat[t] || [];
                 for (let i = 0; i < 10; i++) {
                     const q = turnData[i]?.q || '';
@@ -1779,25 +2061,38 @@
         }
 
         /* CONTROLLER - PROJECTOR CONNECTION & TAB 1 LOGIC */
-        const controllerChannel = new BroadcastChannel('ddvq_game_channel');
-
-        function sendToProjector(type, payload = {}) {
-            controllerChannel.postMessage({ type, ...payload });
+        let controllerChannel = null;
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                controllerChannel = new BroadcastChannel('ddvq_game_channel');
+            }
+        } catch(e) {
+            console.warn("BroadcastChannel restricted:", e);
         }
 
-        if (!gameData.contestants) {
+        function sendToProjector(type, payload = {}) {
+            if (controllerChannel) {
+                try {
+                    controllerChannel.postMessage({ type, ...payload });
+                } catch(e) {
+                    console.warn("Error posting to projector channel:", e);
+                }
+            }
+        }
+
+        if (!gameData.contestants || gameData.contestants.length > 4) {
             gameData.contestants = [
                 { name: "Thí sinh 1", score: 0 },
                 { name: "Thí sinh 2", score: 0 },
                 { name: "Thí sinh 3", score: 0 },
-                { name: "Thí sinh 4", score: 0 },
-                { name: "Thí sinh 5", score: 0 }
+                { name: "Thí sinh 4", score: 0 }
             ];
         }
 
         if (typeof currentXuatPhatTurn === 'undefined') {
             currentXuatPhatTurn = 1;
         }
+        let currentXuatPhatDe = 1;
         let currentXuatPhatQIndex = 0;
         let xuatPhatTimerInterval = null;
         let xuatPhatTimeLeft = 60;
@@ -1805,10 +2100,12 @@
         function updateContestantName(idx, val) {
             if (gameData.contestants && gameData.contestants[idx - 1]) {
                 gameData.contestants[idx - 1].name = val;
-                const tab0Input = document.getElementById(`ts_name_${idx}`);
-                if (tab0Input && tab0Input.value !== val) tab0Input.value = val;
-                const tab1Input = document.getElementById(`ts${idx}_name`);
-                if (tab1Input && tab1Input.value !== val) tab1Input.value = val;
+                const inputs = [
+                    document.getElementById(`ts_name_${idx}`),
+                    document.getElementById(`ts${idx}_name`),
+                    document.getElementById(`ts${idx}_name_rk`)
+                ];
+                inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
                 saveAllData();
                 if (currentXuatPhatTurn === idx) {
                     updateTab1Preview();
@@ -1817,12 +2114,16 @@
         }
 
         function promptScore(idx) {
+            if (!gameData.contestants || !gameData.contestants[idx - 1]) return;
             const current = gameData.contestants[idx - 1]?.score || 0;
             const newScore = prompt(`Nhập điểm cho Thí sinh ${idx}:`, current);
             if (newScore !== null && !isNaN(parseInt(newScore))) {
                 gameData.contestants[idx - 1].score = parseInt(newScore);
-                const disp = document.getElementById(`ts${idx}_score_disp`);
-                if (disp) disp.innerText = gameData.contestants[idx - 1].score;
+                const disps = [
+                    document.getElementById(`ts${idx}_score_disp`),
+                    document.getElementById(`ts${idx}_score_disp_rk`)
+                ];
+                disps.forEach(disp => { if (disp) disp.innerText = gameData.contestants[idx - 1].score; });
                 saveAllData();
                 updateTab1Preview();
                 sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
@@ -1832,34 +2133,35 @@
             }
         }
 
+        function changeXuatPhatDe(val) {
+            currentXuatPhatDe = parseInt(val) || 1;
+            currentXuatPhatQIndex = 0;
+            updateTab1Preview();
+            showToast(`Đã chọn Bộ đề ${currentXuatPhatDe}`);
+        }
+
         function selectLuotThi(turnIndex) {
-            currentXuatPhatTurn = turnIndex;
+            currentXuatPhatTurn = Math.min(4, Math.max(1, turnIndex));
             currentXuatPhatQIndex = 0;
 
-            for (let i = 1; i <= 6; i++) {
+            for (let i = 1; i <= 4; i++) {
                 const btn = document.getElementById(`btn_luot_${i}`);
                 if (btn) {
-                    if (i === turnIndex) btn.classList.add('active');
+                    if (i === currentXuatPhatTurn) btn.classList.add('active');
                     else btn.classList.remove('active');
                 }
             }
 
-            const name = turnIndex <= 5 
-                ? (gameData.contestants[turnIndex - 1]?.name || `Thí sinh ${turnIndex}`)
-                : "Lượt thi chung";
-            const score = turnIndex <= 5 ? (gameData.contestants[turnIndex - 1]?.score || 0) : 0;
+            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
+            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
             updateTab1Preview();
             sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', { name, score });
         }
 
         function updateTab1Preview() {
-            const turnName = currentXuatPhatTurn <= 5 
-                ? (gameData.contestants[currentXuatPhatTurn - 1]?.name || `THÍ SINH ${currentXuatPhatTurn}`)
-                : "LƯỢT THI CHUNG";
-            const currentScore = currentXuatPhatTurn <= 5 
-                ? (gameData.contestants[currentXuatPhatTurn - 1]?.score || 0)
-                : 0;
+            const turnName = gameData.contestants[currentXuatPhatTurn - 1]?.name || `THÍ SINH ${currentXuatPhatTurn}`;
+            const currentScore = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
             const titleEl = document.getElementById('preview_turn_title');
             if (titleEl) titleEl.innerText = `LƯỢT THI ${currentXuatPhatTurn}: ${turnName.toUpperCase()}`;
@@ -1867,13 +2169,16 @@
             const qNumEl = document.getElementById('preview_q_num');
             if (qNumEl) qNumEl.innerText = currentXuatPhatQIndex + 1;
 
+            const deSelectEl = document.getElementById('preview_de_select');
+            if (deSelectEl) deSelectEl.value = currentXuatPhatDe;
+
             const timerEl = document.getElementById('preview_timer');
-            if (timerEl) timerEl.innerText = xuatPhatTimeLeft;
+            if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
 
             const scoreEl = document.getElementById('preview_current_score');
             if (scoreEl) scoreEl.innerText = currentScore;
 
-            const questions = gameData.xuatPhat[currentXuatPhatTurn] || [];
+            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
             const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
 
             const qTextEl = document.getElementById('preview_q_text');
@@ -1894,20 +2199,33 @@
         }
 
         function onClickHienGraphicChonDe() {
-            const name = currentXuatPhatTurn <= 5 
-                ? (gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`)
-                : "Lượt thi chung";
+            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
             sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { name });
             showToast('Đã hiện graphic Chọn Đề trên Projector');
         }
 
+        function onClickHienGraphicCauHoi() {
+            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
+            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
+            sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI', { 
+                name: name,
+                score: score
+            });
+            showToast('Đã hiện graphic khung Câu Hỏi trên Projector (chưa hiện câu hỏi)');
+        }
+
         function onClickRandomDe() {
-            sendToProjector('XUAT_PHAT_RANDOM_DE');
-            showToast('Đang quay số ngẫu nhiên bộ đề trên Projector (5s)...');
+            const chosenSet = Math.floor(Math.random() * 8) + 1;
+            currentXuatPhatDe = chosenSet;
+            currentXuatPhatQIndex = 0;
+            updateTab1Preview();
+            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
+            sendToProjector('XUAT_PHAT_RANDOM_DE', { deNumber: chosenSet, name: name });
+            showToast(`Đã random chọn Bộ đề ${chosenSet} cho ${name}`);
         }
 
         function onClickKhoidong() {
-            const name = currentXuatPhatTurn <= 5 ? (gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`) : "Lượt thi chung";
+            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
             sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { name });
             showToast('Khởi động lượt thi');
         }
@@ -1916,12 +2234,12 @@
             clearInterval(xuatPhatTimerInterval);
             xuatPhatTimeLeft = 60;
             const timerEl = document.getElementById('preview_timer');
-            if (timerEl) timerEl.innerText = xuatPhatTimeLeft;
+            if (timerEl) timerEl.innerText = "60";
 
-            const questions = gameData.xuatPhat[currentXuatPhatTurn] || [];
+            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
             const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-            const name = currentXuatPhatTurn <= 5 ? (gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`) : "Lượt thi chung";
-            const score = currentXuatPhatTurn <= 5 ? (gameData.contestants[currentXuatPhatTurn - 1]?.score || 0) : 0;
+            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
+            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
             sendToProjector('XUAT_PHAT_START_TIMER', {
                 questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
@@ -1933,7 +2251,7 @@
             const targetTime = Date.now() + 60000;
             xuatPhatTimerInterval = setInterval(() => {
                 xuatPhatTimeLeft = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
-                if (timerEl) timerEl.innerText = xuatPhatTimeLeft;
+                if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
                 if (xuatPhatTimeLeft <= 0) {
                     clearInterval(xuatPhatTimerInterval);
                     const statusEl = document.getElementById('preview_status_text');
@@ -1947,9 +2265,9 @@
         }
 
         function onClickDung() {
-            const questions = gameData.xuatPhat[currentXuatPhatTurn] || [];
+            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
             const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-            if (currentXuatPhatTurn <= 5 && gameData.contestants[currentXuatPhatTurn - 1]) {
+            if (gameData.contestants[currentXuatPhatTurn - 1]) {
                 gameData.contestants[currentXuatPhatTurn - 1].score += 10;
                 const newScore = gameData.contestants[currentXuatPhatTurn - 1].score;
                 const disp = document.getElementById(`ts${currentXuatPhatTurn}_score_disp`);
@@ -1964,9 +2282,10 @@
         }
 
         function onClickSai() {
-            const questions = gameData.xuatPhat[currentXuatPhatTurn] || [];
+            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
             const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-            sendToProjector('XUAT_PHAT_WRONG', { answerText: currentQ.a || 'Đáp án' });
+            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
+            sendToProjector('XUAT_PHAT_WRONG', { score, answerText: currentQ.a || 'Đáp án' });
             showToast('Trả lời SAI');
         }
 
@@ -1974,11 +2293,13 @@
             if (currentXuatPhatQIndex < 9) {
                 currentXuatPhatQIndex++;
                 updateTab1Preview();
-                const questions = gameData.xuatPhat[currentXuatPhatTurn] || [];
+                const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
                 const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
+                const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
                 sendToProjector('XUAT_PHAT_NEXT_QUESTION', {
                     questionIndex: currentXuatPhatQIndex + 1,
-                    questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`
+                    questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
+                    score
                 });
                 showToast(`Đã chuyển sang Câu ${currentXuatPhatQIndex + 1}`);
             } else {
@@ -1996,7 +2317,7 @@
             if (statusEl) statusEl.innerText = "Đã đặt lại";
             updateTab1Preview();
 
-            const score = currentXuatPhatTurn <= 5 ? (gameData.contestants[currentXuatPhatTurn - 1]?.score || 0) : 0;
+            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
             sendToProjector('XUAT_PHAT_RESET', { score });
             showToast('Đã đặt lại vòng thi Xuất Phát');
         }
@@ -2019,13 +2340,160 @@
         }
 
         function onClickTongKet() {
-            let summary = "TỔNG KẾT ĐIỂM XUẤT PHÁT:\n";
+            let summary = "TỔNG KẾT ĐIỂM SỐ CÁC THÍ SINH:\n";
             if (gameData.contestants) {
                 gameData.contestants.forEach((ts, idx) => {
                     summary += `${ts.name || 'Thí sinh ' + (idx+1)}: ${ts.score || 0} điểm\n`;
                 });
             }
             alert(summary);
+        }
+
+        /* --- RA KHƠI (TĂNG TỐC) CONTROLLER LOGIC --- */
+        let currentRKQuestion = 1;
+        let rkTimerInterval = null;
+        let rkTimeLeft = 30;
+
+        function selectRKQuestion(num) {
+            currentRKQuestion = num;
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`btn_rk_q${i}`);
+                if (btn) {
+                    if (i === num) {
+                        btn.style.background = '#2563eb';
+                        btn.style.color = '#ffffff';
+                    } else {
+                        btn.style.background = '#80bfff';
+                        btn.style.color = '#002060';
+                    }
+                }
+            }
+            rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
+            updateTab2Preview();
+        }
+
+        function cycleRKQuestion() {
+            let next = currentRKQuestion + 1;
+            if (next > 4) next = 1;
+            selectRKQuestion(next);
+        }
+
+        function updateTab2Preview() {
+            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+            const titleEl = document.getElementById('rk_preview_title');
+            if (titleEl) titleEl.innerText = `VÒNG THI RA KHƠI: CÂU HỎI THỨ ${currentRKQuestion}`;
+            const selectBarTitle = document.getElementById('rk_select_bar_title');
+            if (selectBarTitle) selectBarTitle.innerText = `Câu hỏi thứ ${currentRKQuestion}`;
+            const qTextEl = document.getElementById('rk_preview_q_text');
+            if (qTextEl) qTextEl.innerText = qItem.q || `Nội dung câu hỏi Ra Khơi số ${currentRKQuestion}...`;
+            const aTextEl = document.getElementById('rk_preview_a_text');
+            if (aTextEl) aTextEl.innerText = `Đáp án: ${qItem.a || '...'}`;
+            const timerEl = document.getElementById('rk_preview_timer');
+            if (timerEl) timerEl.innerText = rkTimeLeft;
+        }
+
+        function onClickBatDauDoanBang() {
+            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '', m: '' }) : { q: '', a: '', m: '' };
+            sendToProjector('RA_KHOI_PLAY_CLIP', {
+                questionIndex: currentRKQuestion,
+                questionText: qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`,
+                mediaUrl: qItem.m || ''
+            });
+            const statusEl = document.getElementById('rk_preview_status');
+            if (statusEl) statusEl.innerText = "Phát đoạn băng";
+            showToast(`Bắt đầu phát đoạn băng cho Câu ${currentRKQuestion}`);
+        }
+
+        function onClickVideoTangToc() {
+            onClickBatDauDoanBang();
+        }
+
+        function onClickGiaiMaMedia() {
+            sendToProjector('RA_KHOI_SHOW_GIAI_MA', { questionIndex: currentRKQuestion });
+            showToast(`Hiện Giải mã Video/Ảnh cho Câu ${currentRKQuestion}`);
+        }
+
+        function onClickDiemTS() {
+            sendToProjector('RA_KHOI_SHOW_SCORES');
+            showToast('Hiển thị Điểm Thí Sinh trên Projector');
+        }
+
+        function onClickRKTangToc() {
+            sendToProjector('RA_KHOI_INTRO');
+            showToast('Hiển thị Tăng Tốc / Ra Khơi trên Projector');
+        }
+
+        function onClickRKTinhThoiGian() {
+            clearInterval(rkTimerInterval);
+            rkTimeLeft = 30; // 30s suy nghĩ trả lời
+            const timerEl = document.getElementById('rk_preview_timer');
+            if (timerEl) timerEl.innerText = rkTimeLeft;
+            
+            rkTimerInterval = setInterval(() => {
+                rkTimeLeft--;
+                if (timerEl) timerEl.innerText = rkTimeLeft;
+                if (rkTimeLeft <= 0) {
+                    clearInterval(rkTimerInterval);
+                    const statusEl = document.getElementById('rk_preview_status');
+                    if (statusEl) statusEl.innerText = "Hết giờ!";
+                }
+            }, 1000);
+
+            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+            sendToProjector('RA_KHOI_START_TIMER', {
+                questionIndex: currentRKQuestion,
+                duration: 30,
+                questionText: qItem.q
+            });
+            const statusEl = document.getElementById('rk_preview_status');
+            if (statusEl) statusEl.innerText = "Đang đếm 30s";
+            showToast(`Bắt đầu tính thời gian 30s cho Câu ${currentRKQuestion}`);
+        }
+
+        function onClickRKDapAnTS() {
+            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+            const contestantsData = [];
+            for (let i = 1; i <= 4; i++) {
+                const ts = (gameData.contestants && gameData.contestants[i - 1]) || {};
+                const nameVal = document.getElementById(`ts${i}_name_rk`)?.value || ts.name || `Thí sinh ${i}`;
+                const timeVal = document.getElementById(`ts${i}_extra_rk`)?.value || ts.rk_time || '00.00';
+                const ansVal = document.getElementById(`ts${i}_ans_rk`)?.value || ts.rk_answer || '';
+                contestantsData.push({
+                    name: nameVal,
+                    rk_time: timeVal,
+                    rk_answer: ansVal
+                });
+            }
+
+            sendToProjector('RA_KHOI_SHOW_CONTESTANT_ANSWERS', {
+                questionIndex: currentRKQuestion,
+                correctAnswer: qItem.a,
+                contestants: contestantsData
+            });
+            const statusEl = document.getElementById('rk_preview_status');
+            if (statusEl) statusEl.innerText = "Hiện đáp án TS";
+            showToast('Hiển thị Scene Đáp án Thí Sinh Ra Khơi trên Projector');
+        }
+
+        function onClickRKHienDapAn() {
+            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+            sendToProjector('RA_KHOI_SHOW_ANSWER', {
+                questionIndex: currentRKQuestion,
+                answerText: qItem.a
+            });
+            showToast('Hiện Đáp án Đúng trên Projector');
+        }
+
+        function onClickRKDatLai() {
+            clearInterval(rkTimerInterval);
+            rkTimeLeft = (currentRKQuestion === 1 || currentRKQuestion === 2) ? 30 : 20;
+            const timerEl = document.getElementById('rk_preview_timer');
+            if (timerEl) timerEl.innerText = rkTimeLeft;
+            const statusEl = document.getElementById('rk_preview_status');
+            if (statusEl) statusEl.innerText = "Đã đặt lại";
+            updateTab2Preview();
+            sendToProjector('RA_KHOI_RESET');
+            showToast('Đã đặt lại vòng thi Ra Khơi');
         }
     </script>
 </body>

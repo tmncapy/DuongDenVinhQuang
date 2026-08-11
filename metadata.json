@@ -1,0 +1,6 @@
+{
+  "name": "Đường Đến Vinh Quang",
+  "description": "Projector web application for Đường đến Vinh quang game show",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
