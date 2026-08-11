@@ -185,7 +185,7 @@
         /* VIEW 3 */
         #view-file-3 { background-color: #0b0b0b; }
         #view-file-3 .scene-container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/bgV3.png'); background-size: 100% 100%; background-repeat: no-repeat; overflow: hidden; }
-        #view-file-3 .game-item { position: absolute; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; }
+        #view-file-3 .game-item { position: absolute; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; color: white; text-transform: uppercase; font-family: sans-serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 
         /* VIEW 4 */
         #view-file-4 { background-color: #0b132b; }
@@ -332,9 +332,16 @@
                 <!-- CENTER VIDEO PLAYER & CONTENT -->
                 <div style="flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin: 15px 0;">
                     <!-- VIDEO CONTAINER -->
-                    <div style="width: 1200px; height: 600px; background: #000; border: 4px solid #3b82f6; border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;">
-                        <video id="rk_video_player" style="width: 100%; height: 100%; object-fit: contain; display: none;" playsinline controls></video>
+                    <div style="width: 1840px; height: 860px; background: #000; border: 4px solid #3b82f6; border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;">
+                        <video id="rk_video_player" style="width: 100%; height: 100%; object-fit: contain; display: none;" playsinline controls autoplay></video>
                         
+                        <!-- PLAY BUTTON OVERLAY IF AUTOPLAY IS BLOCKED -->
+                        <div id="rk_video_play_overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 20; cursor: pointer;" onclick="playRKVideoExplicitly()">
+                            <div style="background: #3b82f6; color: #fff; padding: 16px 36px; border-radius: 40px; font-size: 28px; font-weight: bold; box-shadow: 0 0 25px rgba(59,130,246,0.8); display: flex; align-items: center; gap: 12px;">
+                                <span>▶</span> Bấm để phát video
+                            </div>
+                        </div>
+
                         <!-- SIMULATED/PLACEHOLDER MEDIA SCREEN IF NO REAL MP4 LOADED -->
                         <div id="rk_video_placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #94a3b8; text-align: center;">
                             <div style="font-size: 90px; filter: drop-shadow(0 0 20px #3b82f6);">🎥</div>
@@ -346,7 +353,7 @@
                     </div>
 
                     <!-- QUESTION DISPLAY TEXT -->
-                    <div id="rk_question_text" style="width: 1350px; min-height: 100px; background: rgba(15, 23, 42, 0.95); border: 2px solid #60a5fa; border-radius: 12px; padding: 18px 28px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 32px; font-weight: 700; color: #f8fafc; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
+                    <div id="rk_question_text" style="width: 1650px; min-height: 80px; background: rgba(15, 23, 42, 0.95); border: 2px solid #60a5fa; border-radius: 12px; padding: 14px 24px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 28px; font-weight: 700; color: #f8fafc; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
                         Nội dung câu hỏi đoạn băng...
                     </div>
                 </div>
@@ -370,20 +377,17 @@
                 <div class="text-box" id="ten_ts4" style="left: 602.223px; top: 813.024px; width: 947.688px; height: 60.624px;">TEN TS4</div>
                 <div class="text-box dap-an" id="dap_an_ts4" style="left: 602.223px; top: 873.648px; width: 947.688px; height: 60.624px;">DAP AN TS4</div>
 
-                <!-- OVERLAY FOR CORRECT ANSWER -->
-                <div id="rk_correct_answer_overlay" style="display: none; position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%); background: rgba(16, 185, 129, 0.95); border: 3px solid #34d399; color: white; padding: 12px 35px; border-radius: 40px; font-size: 30px; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 20;">
-                    ĐÁP ÁN ĐÚNG: <span id="rk_correct_answer_text">...</span>
-                </div>
+
             </div>
         </div>
 
         <!-- VIEW 3 -->
         <div id="view-file-3" class="view-section">
             <div class="scene-container">
-                <div class="game-item" style="left: 92.0px; top: 162.1px; width: 89.6px; height: 66.8px; background-image: url('Images/c1.png');"></div>
-                <div class="game-item" style="left: 92.0px; top: 264.8px; width: 89.6px; height: 66.8px; background-image: url('Images/c2.png');"></div>
-                <div class="game-item" style="left: 92.0px; top: 367.5px; width: 89.6px; height: 66.8px; background-image: url('Images/c3.png');"></div>
-                <div class="game-item" style="left: 92.0px; top: 468.3px; width: 89.6px; height: 66.8px; background-image: url('Images/c4.png');"></div>
+                <div class="game-item" id="vs_ind_1" style="left: 92.0px; top: 162.1px; width: 89.6px; height: 66.8px; background-image: url('Images/c1.png');"></div>
+                <div class="game-item" id="vs_ind_2" style="left: 92.0px; top: 264.8px; width: 89.6px; height: 66.8px; background-image: url('Images/c2.png');"></div>
+                <div class="game-item" id="vs_ind_3" style="left: 92.0px; top: 367.5px; width: 89.6px; height: 66.8px; background-image: url('Images/c3.png');"></div>
+                <div class="game-item" id="vs_ind_4" style="left: 92.0px; top: 468.3px; width: 89.6px; height: 66.8px; background-image: url('Images/c4.png');"></div>
                 <div id="file3-rows-container"></div>
                 <div id="file3-keys-container"></div>
             </div>
@@ -402,18 +406,19 @@
 
         <!-- VIEW 5 -->
         <div id="view-file-5" class="view-section">
-            <div class="element other" style="left: 377.136px; top: 273.312px; width: 190.08px; height: 141.696px;">00.00</div>
-            <div class="element other" style="left: 567.216px; top: 282.528px; width: 947.664px; height: 60.624px;">TEN TS1</div>
-            <div class="element dap-an" style="left: 567.216px; top: 343.152px; width: 947.664px; height: 60.624px;">DAP AN TS1</div>
-            <div class="element other" style="left: 377.136px; top: 437.184px; width: 190.08px; height: 141.696px;">00.00</div>
-            <div class="element other" style="left: 567.216px; top: 446.256px; width: 947.664px; height: 60.624px;">TEN TS2</div>
-            <div class="element dap-an" style="left: 567.216px; top: 506.88px; width: 947.664px; height: 60.624px;">DAP AN TS2</div>
-            <div class="element other" style="left: 377.136px; top: 599.328px; width: 190.08px; height: 141.696px;">00.00</div>
-            <div class="element other" style="left: 567.216px; top: 608.4px; width: 947.664px; height: 60.624px;">TEN TS3</div>
-            <div class="element dap-an" style="left: 567.216px; top: 669.024px; width: 947.664px; height: 60.624px;">DAP AN TS3</div>
-            <div class="element other" style="left: 377.136px; top: 763.488px; width: 190.08px; height: 141.696px;">00.00</div>
-            <div class="element other" style="left: 567.216px; top: 772.704px; width: 947.664px; height: 60.624px;">TEN TS4</div>
-            <div class="element dap-an" style="left: 567.216px; top: 833.328px; width: 947.664px; height: 60.624px;">DAP AN TS4</div>
+            <div id="vs_ans_time_1" class="element other" style="left: 377.136px; top: 273.312px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div id="vs_ans_name_1" class="element other" style="left: 567.216px; top: 282.528px; width: 947.664px; height: 60.624px;">TEN TS1</div>
+            <div id="vs_ans_val_1" class="element dap-an" style="left: 567.216px; top: 343.152px; width: 947.664px; height: 60.624px;">DAP AN TS1</div>
+            <div id="vs_ans_time_2" class="element other" style="left: 377.136px; top: 437.184px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div id="vs_ans_name_2" class="element other" style="left: 567.216px; top: 446.256px; width: 947.664px; height: 60.624px;">TEN TS2</div>
+            <div id="vs_ans_val_2" class="element dap-an" style="left: 567.216px; top: 506.88px; width: 947.664px; height: 60.624px;">DAP AN TS2</div>
+            <div id="vs_ans_time_3" class="element other" style="left: 377.136px; top: 599.328px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div id="vs_ans_name_3" class="element other" style="left: 567.216px; top: 608.4px; width: 947.664px; height: 60.624px;">TEN TS3</div>
+            <div id="vs_ans_val_3" class="element dap-an" style="left: 567.216px; top: 669.024px; width: 947.664px; height: 60.624px;">DAP AN TS3</div>
+            <div id="vs_ans_time_4" class="element other" style="left: 377.136px; top: 763.488px; width: 190.08px; height: 141.696px;">00.00</div>
+            <div id="vs_ans_name_4" class="element other" style="left: 567.216px; top: 772.704px; width: 947.664px; height: 60.624px;">TEN TS4</div>
+            <div id="vs_ans_val_4" class="element dap-an" style="left: 567.216px; top: 833.328px; width: 947.664px; height: 60.624px;">DAP AN TS4</div>
+            <audio id="soundVSAnswer" src="sounds/Answer.mp3"></audio>
         </div>
 
         <!-- VIEW 6 -->
@@ -507,7 +512,15 @@
         window.addEventListener('resize', scaleStage);
         window.addEventListener('DOMContentLoaded', () => {
             scaleStage();
-            initFile3Grid();
+            let vsData = null;
+            try {
+                const saved = localStorage.getItem('duong_den_vinh_quang_data');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    vsData = parsed.vuotSong;
+                }
+            } catch(e) {}
+            syncVuotSongGrid(vsData);
         });
 
         /* VIEW 1 LOGIC */
@@ -520,6 +533,9 @@
         let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
         let soundRight1 = new Audio('sounds/right.mp3');
         let soundWrong1 = new Audio('sounds/wrong.mp3');
+        let soundRKAnswer = new Audio('sounds/Answer.mp3');
+        let soundChooseQues = new Audio('sounds/ChooseQues.mp3');
+        let soundRightV3 = new Audio('sounds/RightV3.mp3');
 
         let isAudioUnlocked = false;
 
@@ -529,7 +545,7 @@
 
             const allAudios = [
                 soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, 
-                soundTick1, soundTimeUp1, soundRight1, soundWrong1,
+                soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3,
                 document.getElementById('vongThiAudio4'),
                 document.getElementById('vongThiAudio7')
             ];
@@ -705,7 +721,7 @@
         }
 
         /* VIEW 3 LOGIC */
-        function initFile3Grid() {
+        function syncVuotSongGrid(vsData) {
             const rowsContainer = document.getElementById('file3-rows-container');
             const keysContainer = document.getElementById('file3-keys-container');
             if (!rowsContainer || !keysContainer) return;
@@ -715,9 +731,12 @@
             let rowHtml = '';
             for (let h = 1; h <= 4; h++) {
                 let currentY = startY_Row + (h - 1) * deltaY_Row;
-                for (let n = 1; n <= 15; n++) {
+                const ans = vsData ? (vsData[`h${h}`]?.a || '') : '';
+                const cleanAns = ans.replace(/\s+/g, '').toUpperCase();
+                const L = Math.min(cleanAns.length, 15);
+                for (let n = 1; n <= L; n++) {
                     let currentX = startX_Row + (n - 1) * deltaX_Row;
-                    rowHtml += `<div class="game-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthRow}px; height: ${heightRow}px; background-image: url('Images/LetterDefault.png');"></div>`;
+                    rowHtml += `<div class="game-item row-${h}-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthRow}px; height: ${heightRow}px; background-image: url('Images/LetterDefault.png');"></div>`;
                 }
             }
             rowsContainer.innerHTML = rowHtml;
@@ -725,12 +744,14 @@
             const startX_Key = 255.6, startY_Key = 565.5, deltaX_Key = 98.5, deltaY_Key = 89.7;
             const widthKey = 86.7, heightKey = 75.7;
             let keyHtml = '';
-            for (let hang = 1; hang <= 3; hang++) {
-                let currentY = startY_Key + (hang - 1) * deltaY_Key;
-                for (let cot = 1; cot <= 15; cot++) {
-                    let currentX = startX_Key + (cot - 1) * deltaX_Key;
-                    keyHtml += `<div class="game-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthKey}px; height: ${heightKey}px; background-image: url('Images/LetterKey.png');"></div>`;
-                }
+            const kw = vsData ? (vsData.keyword || '') : '';
+            const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
+            const kwL = cleanKw.length;
+            const computedStartX_Key = (1920 - (kwL * deltaX_Key - (deltaX_Key - widthKey))) / 2;
+
+            for (let cot = 1; cot <= kwL; cot++) {
+                let currentX = computedStartX_Key + (cot - 1) * deltaX_Key;
+                keyHtml += `<div class="game-item key-item" style="left: ${currentX}px; top: ${startY_Key}px; width: ${widthKey}px; height: ${heightKey}px; background-image: url('Images/LetterKey.png');"></div>`;
             }
             keysContainer.innerHTML = keyHtml;
         }
@@ -789,7 +810,7 @@
             }, 1000);
         }
 
-        /* CONTROLLER - PROJECTOR CONNECTION (BroadcastChannel & localStorage) */
+        /* CONTROLLER - PROJECTOR CONNECTION (BroadcastChannel, localStorage & postMessage) */
         let projectorChannel = null;
         try {
             if (typeof BroadcastChannel !== 'undefined') {
@@ -803,6 +824,57 @@
         } catch(e) {
             console.warn("BroadcastChannel restricted in projector:", e);
         }
+
+        function notifyControllerReady() {
+            const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
+            if (projectorChannel) {
+                try { projectorChannel.postMessage(msg); } catch(e) {}
+            }
+            try {
+                localStorage.setItem('ddvq_projector_status', Date.now().toString());
+            } catch(e) {}
+            try {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage(msg, '*');
+                }
+            } catch(e) {}
+        }
+        notifyControllerReady();
+        setInterval(notifyControllerReady, 3000);
+
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'ddvq_latest_action' && event.newValue) {
+                try {
+                    const data = JSON.parse(event.newValue);
+                    if (data && data.type) {
+                        handleProjectorMessage(data);
+                    }
+                } catch(e) {
+                    console.warn("Storage parse error:", e);
+                }
+            }
+        });
+
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            if (data && data.type) {
+                handleProjectorMessage(data);
+            }
+        });
+
+        let lastProcessedActionId = '';
+        setInterval(() => {
+            try {
+                const raw = localStorage.getItem('ddvq_latest_action');
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data && data.id && data.id !== lastProcessedActionId) {
+                        lastProcessedActionId = data.id;
+                        handleProjectorMessage(data);
+                    }
+                }
+            } catch(e) {}
+        }, 150);
 
         function handleProjectorMessage(data) {
 
@@ -971,12 +1043,7 @@
                 handleRKShowContestantAnswers(data);
             } else if (data.type === 'RA_KHOI_SHOW_ANSWER') {
                 switchView(2);
-                const overlay = document.getElementById('rk_correct_answer_overlay');
-                const textEl = document.getElementById('rk_correct_answer_text');
-                if (overlay && textEl) {
-                    textEl.innerText = data.answerText || '...';
-                    overlay.style.display = 'block';
-                }
+                safePlay(soundRKAnswer);
             } else if (data.type === 'RA_KHOI_RESET') {
                 switchView(2);
                 if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
@@ -990,6 +1057,179 @@
                 const aScene = document.getElementById('rk-scene-answers');
                 if (qScene) qScene.style.display = 'flex';
                 if (aScene) aScene.style.display = 'none';
+            } else if (data.type === 'VUOT_SONG_SELECT_ROW') {
+                flashVuotSongRow(data.row);
+            } else if (data.type === 'VUOT_SONG_SHOW_QUESTION') {
+                handleVSShowQuestion(data);
+            } else if (data.type === 'VUOT_SONG_START_TIMER') {
+                handleVSStartTimer(data);
+            } else if (data.type === 'VUOT_SONG_SHOW_CONTESTANT_ANSWERS') {
+                handleVSShowAnswers(data);
+            } else if (data.type === 'VUOT_SONG_SYNC_GRID') {
+                syncVuotSongGrid(data.vuotSong);
+            } else if (data.type === 'VUOT_SONG_RESET') {
+                handleVSReset();
+            } else if (data.type === 'VUOT_SONG_OPEN_ROW_ANSWER') {
+                handleVSOpenRowAnswer(data);
+            } else if (data.type === 'VUOT_SONG_OPEN_ALL_ANSWERS') {
+                handleVSOpenAllAnswers(data);
+            }
+        }
+
+        function handleVSOpenRowAnswer(data) {
+            switchView(3);
+            const rowsContainer = document.getElementById('file3-rows-container');
+            if (!rowsContainer || !data.row) return;
+            const items = rowsContainer.querySelectorAll(`.row-${data.row}-item`);
+            const ans = data.answer.replace(/\s+/g, '').toUpperCase();
+            
+            items.forEach((item, index) => {
+                item.style.backgroundImage = "url('Images/LetterDefault.png')";
+                if (index < ans.length) {
+                    item.innerText = ans[index];
+                } else {
+                    item.innerText = "";
+                }
+            });
+            if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
+        }
+
+        function handleVSOpenAllAnswers(data) {
+            switchView(3);
+            safePlay(soundRightV3);
+            const rowsContainer = document.getElementById('file3-rows-container');
+            const keysContainer = document.getElementById('file3-keys-container');
+            
+            if (rowsContainer && data.vuotSong) {
+                for (let h = 1; h <= 4; h++) {
+                    const items = rowsContainer.querySelectorAll(`.row-${h}-item`);
+                    const ans = (data.vuotSong[`h${h}`]?.a || '').replace(/\s+/g, '').toUpperCase();
+                    items.forEach((item, index) => {
+                        item.style.backgroundImage = "url('Images/LetterDefault.png')";
+                        if (index < ans.length) {
+                            item.innerText = ans[index];
+                        } else {
+                            item.innerText = "";
+                        }
+                    });
+                }
+            }
+
+            if (keysContainer && data.vuotSong && data.vuotSong.keyword) {
+                const kwItems = keysContainer.querySelectorAll('.key-item');
+                const kwAns = data.vuotSong.keyword.replace(/\s+/g, '').toUpperCase();
+                kwItems.forEach((item, index) => {
+                    if (index < kwAns.length) {
+                        item.innerText = kwAns[index];
+                        item.style.backgroundImage = "url('Images/LetterKeyOpen.png')";
+                    } else {
+                        item.innerText = "";
+                    }
+                });
+            }
+            if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
+        }
+
+        function handleVSReset() {
+            switchView(3);
+            const rowsContainer = document.getElementById('file3-rows-container');
+            const keysContainer = document.getElementById('file3-keys-container');
+            if (rowsContainer) {
+                const items = rowsContainer.querySelectorAll('.game-item');
+                items.forEach(item => {
+                    item.style.backgroundImage = "url('Images/LetterDefault.png')";
+                    item.innerText = "";
+                });
+            }
+            if (keysContainer) {
+                const kwItems = keysContainer.querySelectorAll('.key-item');
+                kwItems.forEach(item => {
+                    item.innerText = "";
+                    item.style.backgroundImage = "url('Images/LetterKey.png')";
+                });
+            }
+            for (let h = 1; h <= 4; h++) {
+                const ind = document.getElementById(`vs_ind_${h}`);
+                if (ind) {
+                    ind.style.backgroundImage = `url('Images/c${h}.png')`;
+                }
+            }
+            if (window.vsFlashInterval) {
+                clearInterval(window.vsFlashInterval);
+            }
+        }
+
+        function flashVuotSongRow(row) {
+            switchView(3);
+            safePlay(soundChooseQues);
+            for (let h = 1; h <= 4; h++) {
+                const ind = document.getElementById(`vs_ind_${h}`);
+                if (ind) {
+                    if (h === row) {
+                        ind.style.backgroundImage = `url('Images/c${h}c.png')`;
+                    } else {
+                        ind.style.backgroundImage = `url('Images/c${h}.png')`;
+                    }
+                }
+            }
+
+            if (row === 'center' || typeof row !== 'number') return;
+            const rowsContainer = document.getElementById('file3-rows-container');
+            if (!rowsContainer) return;
+            const items = rowsContainer.querySelectorAll(`.row-${row}-item`);
+            
+            let count = 0;
+            if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
+            window.vsFlashInterval = setInterval(() => {
+                count++;
+                const useChoose = (count % 2 === 1);
+                const bg = useChoose ? "url('Images/LetterChoose.png')" : "url('Images/LetterDefault.png')";
+                items.forEach(item => {
+                    item.style.backgroundImage = bg;
+                });
+                if (count >= 10) {
+                    clearInterval(window.vsFlashInterval);
+                    items.forEach(item => {
+                        item.style.backgroundImage = "url('Images/LetterChoose.png')";
+                    });
+                }
+            }, 100);
+        }
+
+        function handleVSShowQuestion(data) {
+            switchView(4);
+            safePlay(soundBeginQues1);
+            const qEl = document.querySelector('#view-file-4 .question-box');
+            if (qEl) {
+                qEl.innerText = data.questionText || "Nội dung câu hỏi Vượt Sóng...";
+                qEl.classList.remove('animate-question-slide');
+                void qEl.offsetWidth; // trigger reflow
+                qEl.classList.add('animate-question-slide');
+            }
+            timeLeft4 = 20;
+            const clockEl = document.getElementById('clock4');
+            if (clockEl) clockEl.innerText = "20";
+            isRunning4 = false;
+        }
+
+        function handleVSStartTimer(data) {
+            switchView(4);
+            startCountdown4();
+        }
+
+        function handleVSShowAnswers(data) {
+            switchView(5);
+            const audio = document.getElementById('soundVSAnswer');
+            if (audio) { audio.currentTime = 0; audio.play().catch(e => console.log(e)); }
+            const contestants = data.contestants || [];
+            for (let i = 1; i <= 4; i++) {
+                const ts = contestants[i - 1] || {};
+                const nameEl = document.getElementById(`vs_ans_name_${i}`);
+                const valEl = document.getElementById(`vs_ans_val_${i}`);
+                const timeEl = document.getElementById(`vs_ans_time_${i}`);
+                if (nameEl) nameEl.innerText = ts.name || `Thí sinh ${i}`;
+                if (valEl) valEl.innerText = ts.answer || '';
+                if (timeEl) timeEl.innerText = ts.time || '00.00';
             }
         }
 
@@ -1023,6 +1263,18 @@
             }, 1000);
         }
 
+        function playRKVideoExplicitly() {
+            const video = document.getElementById('rk_video_player');
+            const overlay = document.getElementById('rk_video_play_overlay');
+            if (video) {
+                video.play().then(() => {
+                    if (overlay) overlay.style.display = 'none';
+                }).catch(err => {
+                    console.warn("Explicit play failed:", err);
+                });
+            }
+        }
+
         function handleRKPlayClip(data) {
             switchView(2);
             const qScene = document.getElementById('rk-scene-question');
@@ -1042,6 +1294,7 @@
             const video = document.getElementById('rk_video_player');
             const placeholder = document.getElementById('rk_video_placeholder');
             const placeholderText = document.getElementById('rk_placeholder_text');
+            const overlay = document.getElementById('rk_video_play_overlay');
 
             if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
             if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
@@ -1050,34 +1303,26 @@
             if (data.mediaUrl && data.mediaUrl.trim() !== '' && data.mediaUrl.trim() !== '...') {
                 if (video) {
                     video.src = data.mediaUrl;
+                    video.load();
                     video.style.display = 'block';
                     if (placeholder) placeholder.style.display = 'none';
 
-                    video.play().catch(err => {
-                        console.warn("Video playback error or user gesture needed:", err);
+                    video.play().then(() => {
+                        if (overlay) overlay.style.display = 'none';
+                    }).catch(err => {
+                        console.warn("Video autoplay blocked or error:", err);
+                        if (overlay) overlay.style.display = 'flex';
                     });
 
-                    video.ontimeupdate = function() {
-                        if (!video.duration) return;
-                        const remaining = video.duration - video.currentTime;
-                        if (remaining <= 32 && !rkTimerAlreadyTriggered) {
-                            rkTimerAlreadyTriggered = true;
-                            startRKTimer30s(30);
-                        }
-                    };
+                    video.ontimeupdate = null;
                 }
             } else {
                 if (video) video.style.display = 'none';
+                if (overlay) overlay.style.display = 'none';
                 if (placeholder) placeholder.style.display = 'flex';
                 if (placeholderText) placeholderText.innerText = `Đang phát đoạn băng câu ${data.questionIndex || 1}...`;
 
-                // Auto-trigger 30s timer when clip has 32s remaining (e.g., at 28s mark)
-                rkAutoTimerTimeout = setTimeout(() => {
-                    if (!rkTimerAlreadyTriggered) {
-                        rkTimerAlreadyTriggered = true;
-                        startRKTimer30s(30);
-                    }
-                }, 28000);
+                // No auto timer sound when playing clip placeholder
             }
         }
 
@@ -1087,6 +1332,8 @@
             const aScene = document.getElementById('rk-scene-answers');
             if (qScene) qScene.style.display = 'none';
             if (aScene) aScene.style.display = 'block';
+
+            safePlay(soundRKAnswer);
 
             const video = document.getElementById('rk_video_player');
             if (video) video.pause();
@@ -1103,15 +1350,7 @@
                 if (daEl) daEl.innerText = ts.rk_answer || ts.answer || `ĐÁP ÁN TS${i}`;
             }
 
-            const overlay = document.getElementById('rk_correct_answer_overlay');
-            const textEl = document.getElementById('rk_correct_answer_text');
-            if (data.correctAnswer && overlay && textEl) {
-                textEl.innerText = data.correctAnswer;
-                overlay.style.display = 'block';
-            } else if (overlay) {
-                overlay.style.display = 'none';
-            }
-        }
+
         }
     </script>
 </body>

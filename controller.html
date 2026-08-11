@@ -302,7 +302,14 @@
             margin-bottom: 12px;
             align-items: center;
         }
-        .q-row input[type="text"] {
+        .vq-q-row {
+            display: grid;
+            grid-template-columns: 130px 1.5fr 3fr 1.5fr;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .q-row input[type="text"], .vq-q-row input[type="text"] {
             width: 100%;
             padding: 4px;
             border: 1px solid #ccc;
@@ -541,22 +548,22 @@
                 <table class="conn-table">
                     <tr>
                         <td style="width: 90px; color: #28a745; font-weight: bold;">Đã kết nối</td>
-                        <td style="width: 110px;"><input type="text" value="Thí sinh 1" id="ts_name_1"></td>
+                        <td style="width: 110px;"><input type="text" value="Thí sinh 1" id="ts_name_1" oninput="updateContestantName(1, this.value)"></td>
                         <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
                     </tr>
                     <tr>
                         <td style="color: #28a745; font-weight: bold;">Đã kết nối</td>
-                        <td><input type="text" value="Thí sinh 2" id="ts_name_2"></td>
+                        <td><input type="text" value="Thí sinh 2" id="ts_name_2" oninput="updateContestantName(2, this.value)"></td>
                         <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
                     </tr>
                     <tr>
                         <td style="color: #28a745; font-weight: bold;">Đã kết nối</td>
-                        <td><input type="text" value="Thí sinh 3" id="ts_name_3"></td>
+                        <td><input type="text" value="Thí sinh 3" id="ts_name_3" oninput="updateContestantName(3, this.value)"></td>
                         <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
                     </tr>
                     <tr>
                         <td style="color: #28a745; font-weight: bold;">Đã kết nối</td>
-                        <td><input type="text" value="Thí sinh 4" id="ts_name_4"></td>
+                        <td><input type="text" value="Thí sinh 4" id="ts_name_4" oninput="updateContestantName(4, this.value)"></td>
                         <td><input type="text" placeholder="Ghi chú / Trạng thái"></td>
                     </tr>
                     <tr>
@@ -589,7 +596,10 @@
             <div class="panel section-control">
                 <div style="font-weight: bold; margin-bottom: 3px;">Phần thi & Điều khiển</div>
                 <div class="btn-row">
-                    <button class="btn" onclick="window.open('/projector.html', '_blank')">Mở Màn hình Máy Chiếu</button>
+                    <button class="btn" onclick="projectorWindow = window.open('./projector.html', 'ddvq_projector')">Mở Màn hình Máy Chiếu</button>
+                    <span id="projector_status_badge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; color: #ef4444; background: rgba(239,68,68,0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(239,68,68,0.2);">
+                        🔴 Chưa kết nối máy chiếu
+                    </span>
                     <button class="btn" onclick="showToast('Phát âm thanh kiểm tra...')">Phát âm thanh</button>
                     <button class="btn" onclick="resetAllData()">Thiết lập lại dữ liệu</button>
                     <button class="btn" style="background-color: #f1f1f1;">Cài đặt</button>
@@ -778,7 +788,7 @@
                 <input type="text" id="vs_a_center" placeholder="Đáp án trung tâm" oninput="updateVuotSongState()">
             </div>
 
-            <div style="font-weight: bold; margin: 10px 0 5px 0;">* Mô phỏng Ô chữ Vượt Sóng:</div>
+            <div style="font-weight: bold; margin: 10px 0 5px 0;">* Ô chữ đáp án vòng thi:</div>
             <div class="grid-boxes">
                 <div class="grid-row-boxes">
                     <span style="width: 50px; font-weight: bold;">Hàng 1:</span>
@@ -803,42 +813,9 @@
             </div>
 
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                <span style="font-weight: bold;">* Hình ảnh chướng ngại vật:</span>
-                <button class="btn" onclick="showToast('Chức năng chọn ảnh chướng ngại vật Vượt Sóng')">Chọn ảnh</button>
-                <span style="font-weight: bold; margin-left: 10px;">* Từ khóa Vượt Sóng:</span>
+                <span style="font-weight: bold;">* Từ khóa Vượt Sóng:</span>
                 <input type="text" id="vs_keyword" style="flex: 1; padding: 4px; border: 1px solid #ccc;" placeholder="Từ khóa chính của vòng thi Vượt Sóng" oninput="updateVuotSongState()">
                 <span class="char-count" id="vs_keyword_count">0 kí tự</span>
-            </div>
-
-            <!-- PHẦN THI VINH QUANG -->
-            <div class="sub-section-title">... Phần thi VINH QUANG ...</div>
-
-            <div class="packages" style="display: flex; gap: 15px; margin-bottom: 12px; align-items: center; background: #e0f2fe; padding: 10px; border-radius: 6px;">
-                <span style="font-weight: bold; color: #0369a1;">Chọn gói điểm:</span>
-                <label style="cursor: pointer; font-weight: bold; color: #0056b3;">
-                    <input type="radio" name="vq_pack" value="10" checked onclick="switchVinhQuangPack(10)"> Gói 10 Điểm (12 câu)
-                </label>
-                <label style="cursor: pointer; font-weight: bold; color: #d97706;">
-                    <input type="radio" name="vq_pack" value="20" onclick="switchVinhQuangPack(20)"> Gói 20 Điểm (12 câu)
-                </label>
-                <label style="cursor: pointer; font-weight: bold; color: #dc2626;">
-                    <input type="radio" name="vq_pack" value="30" onclick="switchVinhQuangPack(30)"> Gói 30 Điểm (12 câu)
-                </label>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #555; margin-bottom: 5px;">
-                <span>Nội dung câu hỏi</span>
-                <span>Đáp án</span>
-            </div>
-
-            <div id="vinhQuangRows"></div>
-
-            <!-- PHẦN THI CÂU HỎI PHỤ -->
-            <div class="sub-section-title">... Phần thi CÂU HỎI PHỤ ...</div>
-
-            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #555; margin-bottom: 5px;">
-                <span>Câu hỏi</span>
-                <span>Đáp án</span>
             </div>
 
             <div class="q-row">
@@ -1282,28 +1259,230 @@
     </div>
 
     <!-- TAB 3: VƯỢT SÓNG -->
-    <div class="tab-content" id="tab3-content" style="padding: 20px; flex-direction: column;">
-        <div class="panel">
-            <h2>ĐIỀU KHIỂN VÒNG THI VƯỢT SÓNG (GIẢI Ô CHỮ)</h2>
-            <p style="margin: 10px 0; color: #666;">Chức năng mở ô chữ, lật hàng ngang, hiển thị góc ảnh chướng ngại vật và kiểm tra tín hiệu chuông.</p>
-            <div class="btn-row" style="margin-top: 15px;">
-                <button class="btn btn-primary" onclick="showToast('Mở hàng ngang 1')">Mở Hàng 1</button>
-                <button class="btn btn-primary" onclick="showToast('Mở hàng ngang 2')">Mở Hàng 2</button>
-                <button class="btn btn-primary" onclick="showToast('Mở hàng ngang 3')">Mở Hàng 3</button>
-                <button class="btn btn-primary" onclick="showToast('Mở hàng ngang 4')">Mở Hàng 4</button>
-                <button class="btn" onclick="showToast('Mở hàng Trung Tâm')">Mở Trung Tâm</button>
+    <div class="tab-content" id="tab3-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
+        <!-- TOP TOOLBAR -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Vượt Sóng:</span>
+                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
+            </div>
+            <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                ĐIỀU KHIỂN VÒNG THI VƯỢT SÓNG (GIẢI Ô CHỮ)
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT GRID -->
+        <div style="display: flex; gap: 20px; justify-content: space-between; margin-bottom: 15px; flex-shrink: 0;">
+            <!-- LEFT: CONTESTANTS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; max-width: 550px;">
+                <!-- TS 1 -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts1_score_disp_vs" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(1)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts1_name_vs" value="Thí sinh 1" onchange="updateContestantName(1, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 1 bấm chuông CNV!')">🔔 Chuông TS1</button>
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
+                            <input type="text" id="ts1_ans_vs" placeholder="Đáp án CNV của TS1" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 2 -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts2_score_disp_vs" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(2)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts2_name_vs" value="Thí sinh 2" onchange="updateContestantName(2, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 2 bấm chuông CNV!')">🔔 Chuông TS2</button>
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
+                            <input type="text" id="ts2_ans_vs" placeholder="Đáp án CNV của TS2" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 3 -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts3_score_disp_vs" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(3)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts3_name_vs" value="Thí sinh 3" onchange="updateContestantName(3, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 3 bấm chuông CNV!')">🔔 Chuông TS3</button>
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
+                            <input type="text" id="ts3_ans_vs" placeholder="Đáp án CNV của TS3" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TS 4 -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts4_score_disp_vs" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(4)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts4_name_vs" value="Thí sinh 4" onchange="updateContestantName(4, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 4 bấm chuông CNV!')">🔔 Chuông TS4</button>
+                        </div>
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
+                            <input type="text" id="ts4_ans_vs" placeholder="Đáp án CNV của TS4" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: ROW SELECTOR -->
+            <div style="background: #eaf2fc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; width: 300px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-self: flex-start; flex-shrink: 0;">
+                <div style="font-weight: bold; color: #002060; margin-bottom: 4px; font-size: 13px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">CHỌN HÀNG NGANG / Ô CHỮ</div>
+                <div class="vs-row-btn active" onclick="selectVSRow(1)" style="display: flex; justify-content: space-between; align-items: center; background: #0056b3; color: #fff; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    <span>Hàng ngang số 1</span>
+                    <span style="background: #fff; color: #0056b3; padding: 2px 8px; border-radius: 3px; font-size: 12px;">Row 1</span>
+                </div>
+                <div class="vs-row-btn" onclick="selectVSRow(2)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    <span>Hàng ngang số 2</span>
+                    <span style="background: #fff; color: #002060; padding: 2px 8px; border-radius: 3px; font-size: 12px;">Row 2</span>
+                </div>
+                <div class="vs-row-btn" onclick="selectVSRow(3)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    <span>Hàng ngang số 3</span>
+                    <span style="background: #fff; color: #002060; padding: 2px 8px; border-radius: 3px; font-size: 12px;">Row 3</span>
+                </div>
+                <div class="vs-row-btn" onclick="selectVSRow(4)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    <span>Hàng ngang số 4</span>
+                    <span style="background: #fff; color: #002060; padding: 2px 8px; border-radius: 3px; font-size: 12px;">Row 4</span>
+                </div>
+                <div class="vs-row-btn" onclick="selectVSRow('center')" style="display: flex; justify-content: space-between; align-items: center; background: #38bdf8; color: #fff; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    <span>Ô Chữ Trung Tâm</span>
+                    <span style="background: #fff; color: #0369a1; padding: 2px 8px; border-radius: 3px; font-size: 12px;">Center</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM SECTION: PREVIEW & ACTION CONTROLS -->
+        <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: 15px; flex-shrink: 0;">
+            <!-- LEFT SLIDE CONTROLS -->
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 150px; flex-shrink: 0;">
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
+                    <button class="ctrl-btn-sm" onclick="showToast('Video giới thiệu Vượt Sóng')">Video Giới thiệu</button>
+                    <button class="ctrl-btn-sm" onclick="showToast('Hình ảnh Chướng ngại vật')">Hình ảnh CNV</button>
+                    <button class="ctrl-btn-sm" onclick="showToast('Tổng kết Vượt Sóng')">Tổng kết Vượt Sóng</button>
+                </div>
+                <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
+            </div>
+
+            <!-- CENTER & RIGHT CONTROLS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+                <!-- PREVIEW DISPLAY CARD -->
+                <div style="display: flex; gap: 8px; height: 140px;">
+                    <div style="flex: 1; background: #5b9bd5; border-radius: 4px; padding: 12px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 4px;">
+                            <span id="vs_preview_title">VÒNG THI VƯỢT SÓNG: HÀNG NGANG 1</span>
+                            <span>THỜI GIAN: <span id="vs_preview_timer" style="color: #ffeb3b; font-size: 16px;">20</span>s</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: bold; line-height: 1.4; color: #f8fafc;" id="vs_preview_q_text">
+                            Nội dung câu hỏi hàng ngang 1...
+                        </div>
+                        <div style="font-size: 13px; font-weight: bold; color: #e2e8f0; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 4px;" id="vs_preview_a_text">
+                            Đáp án: ... | Từ khóa CNV: [Chưa mở]
+                        </div>
+                    </div>
+
+                    <div style="width: 140px; background: #5b9bd5; border-radius: 4px; padding: 10px; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px;">
+                        <div style="font-size: 11px; font-weight: bold;">TRẠNG THÁI</div>
+                        <div id="vs_preview_status" style="font-size: 18px; font-weight: bold; color: #ffeb3b;">Sẵn sàng</div>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS ROW 1 -->
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button class="ctrl-btn-action" onclick="onClickVSFlipRow()" style="flex: 1; background: #3b82f6; color: white;">
+                        🔓 Chọn ô chữ (Flash)
+                    </button>
+                    <button class="ctrl-btn-action" onclick="onClickVSOpenRowAnswer()" style="flex: 1; background: #3b82f6; color: white;">
+                        🔓 Mở đáp án HN
+                    </button>
+                    <button class="ctrl-btn-action" onclick="onClickVSShowQuestion()" style="flex: 1; background: #0284c7; color: white;">
+                        📋 Hiện câu hỏi
+                    </button>
+                    <button class="ctrl-btn-action" onclick="onClickVSShowAnswers()" style="flex: 1; background: #d97706; color: white; font-weight: bold;">
+                        👥 Hiện ĐA thí sinh
+                    </button>
+                    <button class="ctrl-btn-action" onclick="onClickVSOpenAllAnswers()" style="flex: 1; background: #16a34a; color: white; font-weight: bold;">
+                        🌟 Mở đáp án Vòng thi
+                    </button>
+                </div>
+
+                <!-- ACTION BUTTONS ROW 2 -->
+                <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
+                    <button class="btn" onclick="onClickVSStartTimer()" style="background: #2563eb; color: #ffffff; font-weight: bold; padding: 6px 16px;">
+                        ▶ Bắt đầu 20s
+                    </button>
+                    <button class="btn" onclick="showToast('Trả lời đúng (+10đ)')" style="background: #d1d5db; color: #16a34a; font-weight: bold; padding: 6px 12px;">
+                        ✔ Đúng (+10đ)
+                    </button>
+                    <button class="btn" onclick="showToast('Trả lời sai')" style="background: #d1d5db; color: #dc2626; font-weight: bold; padding: 6px 12px;">
+                        ✖ Sai
+                    </button>
+                    <button class="btn" onclick="showToast('Đã dừng nhạc')" style="background: #fff; border: 1px solid #ccc; padding: 6px 12px;">
+                        Dừng nhạc
+                    </button>
+                    <button class="btn" onclick="onClickVSDatLai()" style="background: #fff; border: 1px solid #ccc; padding: 6px 12px;">
+                        Đặt lại
+                    </button>
+                    <button class="btn" onclick="onClickTongKet()" style="background: #0f172a; color: white; padding: 6px 16px; margin-left: auto;">
+                        Tổng kết
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- TAB 4: VINH QUANG -->
-    <div class="tab-content" id="tab4-content" style="padding: 20px; flex-direction: column;">
-        <div class="panel">
+    <div class="tab-content" id="tab4-content" style="padding: 20px; flex-direction: column; background: #e8e6da; overflow-y: auto;">
+        <!-- CONTESTANT BARS (Top Left) -->
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+            <!-- TS 1..4 (Similar layout to tab 1) -->
+            <div id="vq_contestants"></div>
+        </div>
+
+        <!-- MAIN PANEL FOR CONTROLS -->
+        <div class="panel" style="margin-top: auto;">
             <h2>ĐIỀU KHIỂN VÒNG THI VINH QUANG</h2>
-            <p style="margin: 10px 0; color: #666;">Chọn gói câu hỏi, chọn Ngôi sao hy vọng và tính điểm trực tiếp.</p>
-            <div class="btn-row" style="margin-top: 15px;">
+            
+            <div class="packages" style="display: flex; gap: 15px; margin-bottom: 12px; align-items: center; background: #e0f2fe; padding: 10px; border-radius: 6px;">
+                <span style="font-weight: bold; color: #0369a1;">Chọn gói điểm:</span>
+                <label style="cursor: pointer; font-weight: bold; color: #0056b3;">
+                    <input type="radio" name="vq_pack" value="10" checked onclick="switchVinhQuangPack(10)"> Gói 10 Điểm (12 câu)
+                </label>
+                <label style="cursor: pointer; font-weight: bold; color: #d97706;">
+                    <input type="radio" name="vq_pack" value="20" onclick="switchVinhQuangPack(20)"> Gói 20 Điểm (12 câu)
+                </label>
+                <label style="cursor: pointer; font-weight: bold; color: #dc2626;">
+                    <input type="radio" name="vq_pack" value="30" onclick="switchVinhQuangPack(30)"> Gói 30 Điểm (12 câu)
+                </label>
+            </div>
+
+            <div id="vinhQuangRows" style="margin-bottom: 20px;"></div>
+
+            <!-- CONTROL BAR -->
+            <div class="btn-row" style="margin-top: 15px; gap: 10px;">
                 <button class="btn btn-primary" onclick="showToast('Kích hoạt Ngôi sao hy vọng!')">Ngôi Sao Hy Vọng ⭐</button>
                 <button class="btn" onclick="showToast('Bắt đầu 25s Vinh Quang')">Bắt đầu 25s</button>
+                <button class="btn" onclick="showToast('Đã đặt lại vòng Vinh Quang')">Đặt lại</button>
+                <button class="btn" onclick="showToast('Tổng kết điểm Vinh Quang')">Tổng kết</button>
             </div>
         </div>
     </div>
@@ -1313,6 +1492,27 @@
         <div class="panel">
             <h2>ĐIỀU KHIỂN CÂU HỎI PHỤ</h2>
             <p style="margin: 10px 0; color: #666;">Dành cho các trường hợp hòa điểm giữa các thí sinh.</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #555; margin-bottom: 5px; margin-top: 20px;">
+            <span>Câu hỏi</span>
+            <span>Đáp án</span>
+        </div>
+
+        <div class="q-row">
+            <span>Câu Phụ 1</span>
+            <div><input type="text" id="chp_q_1" placeholder="Nội dung câu phụ 1" onchange="saveAllData()"></div>
+            <div><input type="text" id="chp_a_1" placeholder="Đáp án" onchange="saveAllData()"></div>
+        </div>
+        <div class="q-row">
+            <span>Câu Phụ 2</span>
+            <div><input type="text" id="chp_q_2" placeholder="Nội dung câu phụ 2" onchange="saveAllData()"></div>
+            <div><input type="text" id="chp_a_2" placeholder="Đáp án" onchange="saveAllData()"></div>
+        </div>
+        <div class="q-row">
+            <span>Câu Phụ 3</span>
+            <div><input type="text" id="chp_q_3" placeholder="Nội dung câu phụ 3" onchange="saveAllData()"></div>
+            <div><input type="text" id="chp_a_3" placeholder="Đáp án" onchange="saveAllData()"></div>
         </div>
     </div>
 
@@ -1390,6 +1590,130 @@
             if (index === 2 && typeof updateTab2Preview === 'function') {
                 selectRKQuestion(currentRKQuestion);
             }
+            if (index === 3) {
+                selectVSRow(1);
+            }
+        }
+
+        let currentVSRow = 1;
+        let vsTimerInterval = null;
+        let vsTimeLeft = 20;
+        function selectVSRow(row) {
+            currentVSRow = row;
+            const buttons = document.querySelectorAll('#tab3-content .vs-row-btn');
+            buttons.forEach((btn, idx) => {
+                if ((idx + 1 === row) || (row === 'center' && idx === 4)) {
+                    btn.style.background = '#0056b3';
+                    btn.style.color = '#fff';
+                } else {
+                    btn.style.background = idx === 4 ? '#38bdf8' : '#80bfff';
+                    btn.style.color = idx === 4 ? '#fff' : '#002060';
+                }
+            });
+            const titleEl = document.getElementById('vs_preview_title');
+            const qTextEl = document.getElementById('vs_preview_q_text');
+            const aTextEl = document.getElementById('vs_preview_a_text');
+            
+            if (row === 'center') {
+                if (titleEl) titleEl.innerText = "VÒNG THI VƯỢT SÓNG: Ô CHỮ TRUNG TÂM";
+                const q = document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm";
+                const a = document.getElementById('vs_a_center')?.value || "Chưa nhập đáp án";
+                if (qTextEl) qTextEl.innerText = q;
+                if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
+            } else {
+                if (titleEl) titleEl.innerText = `VÒNG THI VƯỢT SÓNG: HÀNG NGANG ${row}`;
+                const q = document.getElementById(`vs_q_${row}`)?.value || `Chưa nhập câu hỏi hàng ${row}`;
+                const a = document.getElementById(`vs_a_${row}`)?.value || `Chưa nhập đáp án`;
+                if (qTextEl) qTextEl.innerText = q;
+                if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
+            }
+            sendToProjector('VUOT_SONG_SELECT_ROW', { row: row });
+            showToast(`Đã chọn Hàng ngang ${row}`);
+        }
+
+        function onClickVSFlipRow() {
+            sendToProjector('VUOT_SONG_SELECT_ROW', { row: currentVSRow });
+            showToast(`Đã lật ô chữ hàng ngang ${currentVSRow} trên Projector`);
+        }
+
+        function onClickVSOpenRowAnswer() {
+            if (!currentVSRow) {
+                showToast('Chưa chọn hàng ngang nào!');
+                return;
+            }
+            let a = "";
+            if (currentVSRow === 'center') {
+                a = document.getElementById('vs_a_center')?.value || "";
+            } else {
+                a = document.getElementById(`vs_a_${currentVSRow}`)?.value || "";
+            }
+            sendToProjector('VUOT_SONG_OPEN_ROW_ANSWER', { row: currentVSRow, answer: a });
+            showToast(`Đã mở đáp án hàng ngang ${currentVSRow}`);
+        }
+
+        function onClickVSOpenAllAnswers() {
+            sendToProjector('VUOT_SONG_OPEN_ALL_ANSWERS', { vuotSong: gameData.vuotSong });
+            showToast('Đã mở đáp án Vòng thi Vượt Sóng!');
+        }
+
+        function onClickVSShowQuestion() {
+            const q = currentVSRow === 'center' ? (document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm") : (document.getElementById(`vs_q_${currentVSRow}`)?.value || `Chưa nhập câu hỏi hàng ${currentVSRow}`);
+            sendToProjector('VUOT_SONG_SHOW_QUESTION', { row: currentVSRow, questionText: q });
+            showToast('Đã hiển thị câu hỏi Vượt Sóng trên Projector');
+        }
+
+        function onClickVSStartTimer() {
+            clearInterval(vsTimerInterval);
+            vsTimeLeft = 20;
+            const timerEl = document.getElementById('vs_preview_timer');
+            if (timerEl) timerEl.innerText = vsTimeLeft;
+            
+            vsTimerInterval = setInterval(() => {
+                vsTimeLeft--;
+                if (timerEl) timerEl.innerText = vsTimeLeft;
+                if (vsTimeLeft <= 0) {
+                    clearInterval(vsTimerInterval);
+                }
+            }, 1000);
+
+            sendToProjector('VUOT_SONG_START_TIMER', { duration: 20 });
+            showToast('Bắt đầu 20s Vượt Sóng trên Projector');
+        }
+
+        function onClickVSShowAnswers() {
+            const contestants = [];
+            for (let i = 1; i <= 4; i++) {
+                contestants.push({
+                    name: gameData.contestants?.[i-1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`,
+                    answer: document.getElementById(`ts${i}_ans_vs`)?.value || '',
+                    time: '00.00'
+                });
+            }
+            sendToProjector('VUOT_SONG_SHOW_CONTESTANT_ANSWERS', { contestants: contestants });
+            showToast('Hiển thị đáp án thí sinh Vượt Sóng trên Projector');
+        }
+
+        function onClickVSDatLai() {
+            clearInterval(vsTimerInterval);
+            vsTimeLeft = 20;
+            const timerEl = document.getElementById('vs_preview_timer');
+            if (timerEl) timerEl.innerText = vsTimeLeft;
+
+            currentVSRow = null;
+            const buttons = document.querySelectorAll('#tab3-content .vs-row-btn');
+            buttons.forEach((btn, idx) => {
+                btn.style.background = idx === 4 ? '#38bdf8' : '#80bfff';
+                btn.style.color = idx === 4 ? '#fff' : '#002060';
+            });
+            const titleEl = document.getElementById('vs_preview_title');
+            const qTextEl = document.getElementById('vs_preview_q_text');
+            const aTextEl = document.getElementById('vs_preview_a_text');
+            if (titleEl) titleEl.innerText = "CHƯA CHỌN HÀNG NGANG";
+            if (qTextEl) qTextEl.innerText = "Nội dung câu hỏi...";
+            if (aTextEl) aTextEl.innerText = "Đáp án...";
+            
+            sendToProjector('VUOT_SONG_RESET');
+            showToast('Đã đặt lại vòng Vượt Sóng');
         }
 
         // Show Toast Notification
@@ -1507,6 +1831,7 @@
             }
 
             saveAllData();
+            sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
         }
 
         // Vinh Quang 3 packs (10, 20, 30 point tiers x 12 questions each)
@@ -1519,7 +1844,7 @@
                     gameData.vinhQuang[pt] = [];
                 }
                 while (gameData.vinhQuang[pt].length < 12) {
-                    gameData.vinhQuang[pt].push({ q: '', a: '' });
+                    gameData.vinhQuang[pt].push({ m: '', q: '', a: '' });
                 }
             }
         }
@@ -1531,6 +1856,32 @@
 
         function renderVinhQuangPackUI(pack) {
             initVinhQuangData();
+            
+            // Render Contestants
+            const vqContestants = document.getElementById('vq_contestants');
+            if (vqContestants) {
+                vqContestants.innerHTML = '';
+                for (let i = 1; i <= 4; i++) {
+                    const contestant = gameData.contestants?.[i-1] || { name: `Thí sinh ${i}`, score: 0 };
+                    const div = document.createElement('div');
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.gap = '8px';
+                    div.innerHTML = `
+                        <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <span id="vq_ts${i}_score_disp" style="font-size: 30px; font-weight: bold; color: #dc2626;">${contestant.score || 0}</span>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column;">
+                            <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                                <input type="text" value="${contestant.name}" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;" readonly>
+                            </div>
+                            <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
+                        </div>
+                    `;
+                    vqContestants.appendChild(div);
+                }
+            }
+
             const container = document.getElementById('vinhQuangRows');
             if (!container) return;
 
@@ -1542,16 +1893,19 @@
             if (pack === 30) color = '#dc2626';
 
             for (let i = 0; i < 12; i++) {
-                const item = questions[i] || { q: '', a: '' };
+                const item = questions[i] || { m: '', q: '', a: '' };
                 const row = document.createElement('div');
-                row.className = 'q-row';
+                row.className = 'vq-q-row';
                 row.innerHTML = `
                     <span style="font-weight: bold; color: ${color}; width: 130px;">Gói ${pack}Đ - Câu ${i + 1}</span>
                     <div>
-                        <input type="text" value="${escapeHtml(item.q)}" placeholder="Nội dung câu ${pack}đ - ${i + 1}" oninput="updateVinhQuangItem(${pack}, ${i}, 'q', this.value)">
+                        <input type="text" value="${escapeHtml(item.m || '')}" placeholder="Môn học" oninput="updateVinhQuangItem(${pack}, ${i}, 'm', this.value)">
                     </div>
                     <div>
-                        <input type="text" value="${escapeHtml(item.a)}" placeholder="Đáp án câu ${pack}đ - ${i + 1}" oninput="updateVinhQuangItem(${pack}, ${i}, 'a', this.value)">
+                        <input type="text" value="${escapeHtml(item.q || '')}" placeholder="Nội dung câu ${pack}đ - ${i + 1}" oninput="updateVinhQuangItem(${pack}, ${i}, 'q', this.value)">
+                    </div>
+                    <div>
+                        <input type="text" value="${escapeHtml(item.a || '')}" placeholder="Đáp án câu ${pack}đ - ${i + 1}" oninput="updateVinhQuangItem(${pack}, ${i}, 'a', this.value)">
                     </div>
                 `;
                 container.appendChild(row);
@@ -1561,7 +1915,7 @@
         function updateVinhQuangItem(pack, index, field, value) {
             initVinhQuangData();
             if (!gameData.vinhQuang[pack][index]) {
-                gameData.vinhQuang[pack][index] = { q: '', a: '' };
+                gameData.vinhQuang[pack][index] = { m: '', q: '', a: '' };
             }
             gameData.vinhQuang[pack][index][field] = value;
             saveAllData();
@@ -1726,16 +2080,19 @@
                 const colA = (row[0] || "").toString().trim().toUpperCase();
                 if (colA.includes("STT") || colA.includes("CÂU") || colA.includes("GÓI") || colA.includes("NỘI DUNG")) continue;
 
-                const q10 = (row[1] || "").toString().trim();
-                const a10 = (row[2] || "").toString().trim();
-                const q20 = (row[3] || "").toString().trim();
-                const a20 = (row[4] || "").toString().trim();
-                const q30 = (row[5] || "").toString().trim();
-                const a30 = (row[6] || "").toString().trim();
+                const m10 = (row[1] || "").toString().trim();
+                const q10 = (row[2] || "").toString().trim();
+                const a10 = (row[3] || "").toString().trim();
+                const m20 = (row[4] || "").toString().trim();
+                const q20 = (row[5] || "").toString().trim();
+                const a20 = (row[6] || "").toString().trim();
+                const m30 = (row[7] || "").toString().trim();
+                const q30 = (row[8] || "").toString().trim();
+                const a30 = (row[9] || "").toString().trim();
 
-                if (q10 || a10) gameData.vinhQuang[10][questionIndex] = { q: q10, a: a10 };
-                if (q20 || a20) gameData.vinhQuang[20][questionIndex] = { q: q20, a: a20 };
-                if (q30 || a30) gameData.vinhQuang[30][questionIndex] = { q: q30, a: a30 };
+                if (q10 || a10) gameData.vinhQuang[10][questionIndex] = { m: m10, q: q10, a: a10 };
+                if (q20 || a20) gameData.vinhQuang[20][questionIndex] = { m: m20, q: q20, a: a20 };
+                if (q30 || a30) gameData.vinhQuang[30][questionIndex] = { m: m30, q: q30, a: a30 };
 
                 questionIndex++;
             }
@@ -2018,18 +2375,18 @@
             initVinhQuangData();
             const vqRows = [
                 ["VINH QUANG"],
-                ["STT", "GÓI 10 ĐIỂM", "", "GÓI 20 ĐIỂM", "", "GÓI 30 ĐIỂM", ""],
-                ["", "NỘI DUNG", "ĐÁP ÁN", "NỘI DUNG", "ĐÁP ÁN", "NỘI DUNG", "ĐÁP ÁN"]
+                ["", "GÓI 10 ĐIỂM", "", "", "GÓI 20 ĐIỂM", "", "", "GÓI 30 ĐIỂM", "", ""],
+                ["CÂU", "MÔN HỌC", "NỘI DUNG", "ĐÁP ÁN", "MÔN HỌC", "NỘI DUNG", "ĐÁP ÁN", "MÔN HỌC", "NỘI DUNG", "ĐÁP ÁN"]
             ];
             for (let i = 0; i < 12; i++) {
-                const item10 = gameData.vinhQuang[10][i] || { q: "", a: "" };
-                const item20 = gameData.vinhQuang[20][i] || { q: "", a: "" };
-                const item30 = gameData.vinhQuang[30][i] || { q: "", a: "" };
+                const item10 = gameData.vinhQuang[10][i] || { m: "", q: "", a: "" };
+                const item20 = gameData.vinhQuang[20][i] || { m: "", q: "", a: "" };
+                const item30 = gameData.vinhQuang[30][i] || { m: "", q: "", a: "" };
                 vqRows.push([
                     i + 1,
-                    item10.q, item10.a,
-                    item20.q, item20.a,
-                    item30.q, item30.a
+                    item10.m, item10.q, item10.a,
+                    item20.m, item20.q, item20.a,
+                    item30.m, item30.q, item30.a
                 ]);
             }
             const wsVQ = XLSX.utils.aoa_to_sheet(vqRows);
@@ -2062,22 +2419,79 @@
 
         /* CONTROLLER - PROJECTOR CONNECTION & TAB 1 LOGIC */
         let controllerChannel = null;
+        let projectorWindow = null;
+        let lastProjectorPing = 0;
+
         try {
             if (typeof BroadcastChannel !== 'undefined') {
                 controllerChannel = new BroadcastChannel('ddvq_game_channel');
+                controllerChannel.onmessage = function(event) {
+                    if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
+                        lastProjectorPing = Date.now();
+                        updateProjectorStatus(true);
+                    }
+                };
             }
         } catch(e) {
             console.warn("BroadcastChannel restricted:", e);
         }
 
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'ddvq_projector_status' && event.newValue) {
+                lastProjectorPing = Date.now();
+                updateProjectorStatus(true);
+            }
+        });
+
+        window.addEventListener('message', function(event) {
+            if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
+                lastProjectorPing = Date.now();
+                updateProjectorStatus(true);
+            }
+        });
+
+        setInterval(() => {
+            if (Date.now() - lastProjectorPing > 5000) {
+                updateProjectorStatus(false);
+            }
+        }, 2000);
+
+        function updateProjectorStatus(isConnected) {
+            const badge = document.getElementById('projector_status_badge');
+            if (badge) {
+                if (isConnected) {
+                    badge.innerHTML = '🟢 Máy chiếu đã kết nối';
+                    badge.style.color = '#22c55e';
+                    badge.style.background = 'rgba(34,197,94,0.1)';
+                    badge.style.borderColor = 'rgba(34,197,94,0.2)';
+                } else {
+                    badge.innerHTML = '🔴 Chưa kết nối máy chiếu';
+                    badge.style.color = '#ef4444';
+                    badge.style.background = 'rgba(239,68,68,0.1)';
+                    badge.style.borderColor = 'rgba(239,68,68,0.2)';
+                }
+            }
+        }
+
         function sendToProjector(type, payload = {}) {
+            const message = { type, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
             if (controllerChannel) {
                 try {
-                    controllerChannel.postMessage({ type, ...payload });
+                    controllerChannel.postMessage(message);
                 } catch(e) {
                     console.warn("Error posting to projector channel:", e);
                 }
             }
+            try {
+                localStorage.setItem('ddvq_latest_action', JSON.stringify(message));
+            } catch(e) {}
+            try {
+                if (projectorWindow && !projectorWindow.closed) {
+                    projectorWindow.postMessage(message, '*');
+                } else if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage(message, '*');
+                }
+            } catch(e) {}
         }
 
         if (!gameData.contestants || gameData.contestants.length > 4) {
@@ -2494,6 +2908,42 @@
             updateTab2Preview();
             sendToProjector('RA_KHOI_RESET');
             showToast('Đã đặt lại vòng thi Ra Khơi');
+        }
+
+        function triggerFilePicker(targetInputId, acceptType) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = acceptType || '*/*';
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                showToast(`Đang tải lên file: ${file.name}...`);
+
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    const base64Result = uploadEvent.target.result;
+                    const inputEl = document.getElementById(targetInputId);
+                    if (inputEl) {
+                        inputEl.value = base64Result;
+                        inputEl.dispatchEvent(new Event('change'));
+                    }
+                    saveAllData();
+                    showToast(`Đã tải lên thành công: ${file.name}`);
+                };
+                reader.onerror = function() {
+                    const blobUrl = URL.createObjectURL(file);
+                    const inputEl = document.getElementById(targetInputId);
+                    if (inputEl) {
+                        inputEl.value = blobUrl;
+                        inputEl.dispatchEvent(new Event('change'));
+                    }
+                    saveAllData();
+                    showToast(`Đã chọn file thành công: ${file.name}`);
+                };
+                reader.readAsDataURL(file);
+            };
+            fileInput.click();
         }
     </script>
 </body>
