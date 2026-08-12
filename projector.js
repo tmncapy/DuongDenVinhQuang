@@ -349,8 +349,8 @@ function startCountdown4() {
     }
     countdown4 = setInterval(() => {
         timeLeft4--;
-        if (clockElement) clockElement.textContent = timeLeft4;
-        if (timeLeft4 <= 0) { clearInterval(countdown4); if (clockElement) clockElement.textContent = "0"; }
+        if (clockElement) clockElement.textContent = timeLeft4 < 10 ? ('0' + Math.max(0, timeLeft4)) : timeLeft4;
+        if (timeLeft4 <= 0) { clearInterval(countdown4); if (clockElement) clockElement.textContent = "00"; isRunning4 = false; }
     }, 1000);
 }
 
@@ -541,7 +541,7 @@ function startCountdown7(duration = 25) {
     isRunning7 = true;
     timeLeft7 = duration;
     const clockElement = document.getElementById('clock7');
-    if (clockElement) clockElement.textContent = timeLeft7;
+    if (clockElement) clockElement.textContent = timeLeft7 < 10 ? ('0' + timeLeft7) : timeLeft7;
     const audio = document.getElementById('vongThiAudio7');
     if (audio) {
         audio.currentTime = 0;
@@ -554,10 +554,10 @@ function startCountdown7(duration = 25) {
     }
     countdown7 = setInterval(() => {
         timeLeft7--;
-        if (clockElement) clockElement.textContent = timeLeft7;
+        if (clockElement) clockElement.textContent = timeLeft7 < 10 ? ('0' + Math.max(0, timeLeft7)) : timeLeft7;
         if (timeLeft7 <= 0) { 
             clearInterval(countdown7); 
-            if (clockElement) clockElement.textContent = "0"; 
+            if (clockElement) clockElement.textContent = "00"; 
             isRunning7 = false; 
             try {
                 safePlay(soundTimeUp1);
@@ -581,6 +581,28 @@ try {
     console.warn("BroadcastChannel restricted in projector:", e);
 }
 
+// Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector)
+if (typeof EventSource !== 'undefined') {
+    try {
+        const projSse = new EventSource('/api/events');
+        projSse.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data && data.type && data.type !== 'PING' && data.type !== 'PROJECTOR_READY') {
+                    if (data.id && data.id !== lastProcessedActionId) {
+                        lastProcessedActionId = data.id;
+                        handleProjectorMessage(data);
+                    } else if (!data.id) {
+                        handleProjectorMessage(data);
+                    }
+                }
+            } catch(e) {}
+        };
+    } catch(e) {
+        console.warn("SSE projector connection error:", e);
+    }
+}
+
 function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
     if (projectorChannel) {
@@ -593,6 +615,13 @@ function notifyControllerReady() {
         if (window.opener && !window.opener.closed) {
             window.opener.postMessage(msg, '*');
         }
+    } catch(e) {}
+    try {
+        fetch('/api/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(msg)
+        }).catch(() => {});
     } catch(e) {}
 }
 notifyControllerReady();
@@ -931,6 +960,40 @@ function handleProjectorMessage(data) {
             if (nameEl) nameEl.innerText = ts.name || `THÍ SINH ${i}`;
             if (ansEl) ansEl.innerText = ts.answer || '';
         }
+    } else if (data.type === 'RESET_ALL_DATA') {
+        clearInterval(timerInterval1);
+        stopAllAudio1();
+        timeLeft1 = 60;
+        score1 = 0;
+        const s1 = document.getElementById('score1');
+        if (s1) s1.innerText = "0";
+        const q1 = document.getElementById('questionText1');
+        if (q1) q1.innerText = "";
+        const ab1 = document.getElementById('answerBox1');
+        if (ab1) ab1.style.display = 'none';
+
+        if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
+        if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
+        const clockEl2 = document.getElementById('rk_clock_box');
+        if (clockEl2) clockEl2.innerText = "30";
+        const video2 = document.getElementById('rk_video_player');
+        if (video2) { video2.pause(); video2.currentTime = 0; }
+        const qTitle2 = document.getElementById('rk_question_title');
+        if (qTitle2) qTitle2.innerText = "";
+        const qText2 = document.getElementById('rk_question_text');
+        if (qText2) qText2.innerText = "";
+        for (let i = 1; i <= 4; i++) {
+            const t = document.getElementById('thoi_gian_ts' + i);
+            const n = document.getElementById('ten_ts' + i);
+            const a = document.getElementById('dap_an_ts' + i);
+            if (t) t.innerText = "";
+            if (n) n.innerText = "";
+            if (a) a.innerText = "";
+        }
+
+        handleVSReset();
+        resetVQProjector();
+        switchView(1);
     }
 }
 
@@ -1031,6 +1094,20 @@ function handleVSReset() {
     if (window.vsFlashInterval) {
         clearInterval(window.vsFlashInterval);
     }
+    if (countdown4) clearInterval(countdown4);
+    isRunning4 = false;
+    const qBox4 = document.querySelector('#view-file-4 .question-box');
+    if (qBox4) qBox4.innerText = "";
+    const clockEl4 = document.getElementById('clock4');
+    if (clockEl4) clockEl4.innerText = "20";
+    for (let i = 1; i <= 4; i++) {
+        const timeEl = document.getElementById(`vs_time_ts${i}`);
+        const nameEl = document.getElementById(`vs_name_ts${i}`);
+        const ansEl = document.getElementById(`vs_ans_ts${i}`);
+        if (timeEl) timeEl.innerText = "";
+        if (nameEl) nameEl.innerText = "";
+        if (ansEl) ansEl.innerText = "";
+    }
 }
 
 function flashVuotSongRow(row) {
@@ -1125,10 +1202,10 @@ function startRKTimer30s(duration = 30) {
 
     rkTimerIntervalProj = setInterval(() => {
         timeLeft--;
-        if (clockEl) clockEl.innerText = timeLeft;
+        if (clockEl) clockEl.innerText = timeLeft < 10 ? ('0' + Math.max(0, timeLeft)) : timeLeft;
         if (timeLeft <= 0) {
             clearInterval(rkTimerIntervalProj);
-            if (clockEl) clockEl.innerText = "0";
+            if (clockEl) clockEl.innerText = "00";
             try {
                 const timeUpAudio = new Audio('sounds/TImeUp.mp3');
                 timeUpAudio.play().catch(e => {});

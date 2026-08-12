@@ -698,6 +698,12 @@ function loadSavedData() {
 
 function resetAllData() {
     if (confirm("Bạn có chắc chắn muốn xóa và thiết lập lại toàn bộ dữ liệu không?")) {
+        if (gameData && gameData.contestants) {
+            gameData.contestants.forEach((c, i) => {
+                c.score = 0;
+            });
+        }
+        sendToProjector('RESET_ALL_DATA');
         safeRemoveStorage('duong_den_vinh_quang_data');
         location.reload();
     }
@@ -819,6 +825,24 @@ try {
     console.warn("BroadcastChannel restricted:", e);
 }
 
+// Server-Sent Events (SSE) for cross-device real-time sync (Mobile, PC, Projector)
+if (typeof EventSource !== 'undefined') {
+    try {
+        const sseSource = new EventSource('/api/events');
+        sseSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data && (data.type === 'PROJECTOR_READY' || data.type === 'PROJECTOR_PONG')) {
+                    lastProjectorPing = Date.now();
+                    updateProjectorStatus(true);
+                }
+            } catch(e) {}
+        };
+    } catch(e) {
+        console.warn("SSE connection error:", e);
+    }
+}
+
 window.addEventListener('storage', function(event) {
     if (event.key === 'ddvq_projector_status' && event.newValue) {
         lastProjectorPing = Date.now();
@@ -874,6 +898,13 @@ function sendToProjector(type, payload = {}) {
         } else if (window.opener && !window.opener.closed) {
             window.opener.postMessage(message, '*');
         }
+    } catch(e) {}
+    try {
+        fetch('/api/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(message)
+        }).catch(() => {});
     } catch(e) {}
 }
 

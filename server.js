@@ -52,7 +52,61 @@ app.use((req, res, next) => {
 });
 
 // Serve static assets
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
+
+// SSE Real-time Synchronization across all devices (Mobile, PC, Projector)
+let sseClients = [];
+let latestAction = null;
+
+app.get('/api/events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*'
+  });
+
+  const clientId = Date.now() + Math.random().toString(36).substring(2, 7);
+  const newClient = { id: clientId, res };
+  sseClients.push(newClient);
+
+  // Send initial retry interval and latest action if available
+  res.write('retry: 1000\n\n');
+  if (latestAction) {
+    res.write(`data: ${JSON.stringify(latestAction)}\n\n`);
+  }
+
+  req.on('close', () => {
+    sseClients = sseClients.filter(c => c.id !== clientId);
+  });
+});
+
+app.post('/api/action', (req, res) => {
+  const actionData = req.body;
+  if (actionData && typeof actionData === 'object') {
+    latestAction = actionData;
+    const payload = `data: ${JSON.stringify(actionData)}\n\n`;
+    sseClients.forEach(client => {
+      try {
+        client.res.write(payload);
+      } catch (e) {
+        // Client might be closed
+      }
+    });
+  }
+  res.json({ success: true, timestamp: Date.now() });
+});
+
+// Periodic heartbeat to keep connections alive on mobile networks/proxies
+setInterval(() => {
+  const pingPayload = `data: ${JSON.stringify({ type: 'PING', timestamp: Date.now() })}\n\n`;
+  sseClients.forEach(client => {
+    try {
+      client.res.write(pingPayload);
+    } catch (e) {}
+  });
+}, 10000);
 
 // Serve index.html or controller.html at root route
 app.get('/', (req, res) => {
