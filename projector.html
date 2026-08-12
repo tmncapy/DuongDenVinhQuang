@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projector- Đường đến Vinh quang</title>
+    <title>Projector - Đường đến Vinh quang</title>
     <style>
         /* Global & Reset Styles */
         * {
@@ -18,52 +18,17 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
+            background-image: url('Images/bg.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             background-color: #050b14;
             color: #ffffff;
+            pointer-events: none; /* Disable mouse interactions */
+            user-select: none;
         }
 
-        /* View Navigation Bar */
-        #view-nav-bar {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10000;
-            display: flex;
-            gap: 8px;
-            background: rgba(15, 23, 42, 0.92);
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-        }
 
-        #view-nav-bar button {
-            padding: 8px 14px;
-            font-size: 13px;
-            font-weight: bold;
-            color: #e2e8f0;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        #view-nav-bar button:hover {
-            background: #3b82f6;
-            color: #ffffff;
-            border-color: #60a5fa;
-            transform: translateY(-1px);
-        }
-
-        #view-nav-bar button.active-view-btn {
-            background: #2563eb;
-            color: #ffffff;
-            border-color: #93c5fd;
-            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
-        }
 
         /* Stage Container chuẩn 1920x1080 */
         .stage-wrapper {
@@ -134,8 +99,8 @@
         .popup-btn:hover { background: #2563eb; }
 
         /* VIEW 1 */
-        #view-file-1 { background-color: #050b14; }
-        #view-file-1 .stage { position: relative; width: 1920px; height: 1080px; background: #1e1b4b; overflow: hidden; }
+        #view-file-1 { background-color: transparent; }
+        #view-file-1 .stage { position: relative; width: 1920px; height: 1080px; background: transparent; overflow: hidden; }
         #view-file-1 .sub-scene { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         #view-file-1 .sub-scene.active { display: block; }
         #view-file-1 .blinking { animation: blink-blue-red 0.5s infinite; }
@@ -152,7 +117,7 @@
         #view-file-1 #numberBox1 { position: absolute; left: 118px; top: 800px; width: 365px; height: 240px; font-size: 110px; color: #ffffff; display: none; justify-content: center; align-items: center; font-weight: bold; z-index: 10; }
         #view-file-1 #displayContestantName1 { position: absolute; left: 520px; top: 800px; width: 1300px; height: 240px; font-size: 60px; color: #ffffff; font-weight: bold; display: none; align-items: center; padding-left: 30px; z-index: 10; }
         #view-file-1 .btn-bam-de { display: none !important; }
-        #view-file-1 #scene-cau-hoi1 { background-color: #0f172a; }
+        #view-file-1 #scene-cau-hoi1 { background-color: transparent; }
         #view-file-1 .ques-box-bg { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; object-fit: cover; z-index: 1; }
         #view-file-1 .timer-board { position: absolute; left: 1610px; top: 775px; width: 166px; height: 166px; font-size: 54px; font-weight: bold; z-index: 5; display: flex; align-items: center; justify-content: center; }
         #view-file-1 .score-board { position: absolute; left: 1465px; top: 640px; width: 247px; height: 114px; font-size: 45px; font-weight: bold; z-index: 5; display: flex; align-items: center; justify-content: center; }
@@ -183,12 +148,12 @@
         #view-file-2 .dap-an { color: rgb(0, 32, 96); background-color: rgba(255, 255, 255, 0.8); }
 
         /* VIEW 3 */
-        #view-file-3 { background-color: #0b0b0b; }
+        #view-file-3 { background-color: transparent; }
         #view-file-3 .scene-container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/bgV3.png'); background-size: 100% 100%; background-repeat: no-repeat; overflow: hidden; }
         #view-file-3 .game-item { position: absolute; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; color: white; text-transform: uppercase; font-family: sans-serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 
         /* VIEW 4 */
-        #view-file-4 { background-color: #0b132b; }
+        #view-file-4 { background-color: transparent; }
         #view-file-4 .scene-container { position: relative; width: 1920px; height: 1080px; }
         #view-file-4 .ques-box { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; z-index: 1; object-fit: cover; }
         #view-file-4 .round-name { position: absolute; left: 7%; top: 71%; width: 30%; height: 4.4%; z-index: 2; display: flex; align-items: center; justify-content: center; color: #002060; font-size: 26px; font-weight: bold; text-transform: uppercase; }
@@ -203,30 +168,65 @@
 
         /* VIEW 6 */
         #view-file-6 {
-            background-image: url('Images/pack.png');
-            background-size: cover;
-            background-position: center;
-            transition: background-image 0.3s ease;
+            background-color: transparent;
+            overflow: hidden;
         }
         #view-file-6 #pageWrapper {
             position: absolute; top: 0; left: 0; width: 1920px; height: 1080px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: transform 1s ease-in, opacity 1s ease-in;
+            background-image: url('Images/pack.png');
+            background-size: cover;
+            background-position: center;
+            transition: transform 2.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 2.5s ease-in, background-image 0.2s ease;
         }
+        #view-file-6 #pageWrapper.no-transition { transition: none !important; }
         #view-file-6 #pageWrapper.fly-down { transform: translateY(1080px); opacity: 0; }
-        #view-file-6 .subject-container { height: 10px; margin-bottom: 80px; display: flex; justify-content: center; align-items: center; }
-        #view-file-6 .subject-title { font-size: 36px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 2px; visibility: hidden; }
+        #view-file-6 .subject-container {
+            position: absolute;
+            left: 618px;
+            top: 994px;
+            width: 684px;
+            height: 86px;
+            background-image: url('Images/title.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        #view-file-6 .subject-container.show {
+            opacity: 1;
+        }
+        #view-file-6 .subject-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 90%;
+            visibility: hidden;
+        }
         #view-file-6 .subject-title.show { visibility: visible; }
         #view-file-6 .container { position: relative; display: flex; gap: 245px; top: 255px; }
         #view-file-6 .pack-item {
             position: relative; width: 180px; height: 90px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; border-radius: 10px; transition: all 0.3s ease; background: rgba(0, 0, 0, 0); border: 2px solid rgba(255, 255, 255, 0);
         }
-        #view-file-6 .pack-item.selected { background-color: rgb(192, 79, 21) !important; border-color: #fff; transform: scale(1.05); }
-        #view-file-6 .score { font-size: 52px; font-weight: bold; color: #fff; z-index: 2; }
+        #view-file-6 .pack-item.selected { transform: scale(1.05); }
+        #view-file-6 .score { display: none !important; }
 
         /* VIEW 7 */
-        #view-file-7 { background-color: #0b132b; }
+        #view-file-7 { background-color: transparent; }
         #view-file-7 .scene-container { position: relative; width: 1920px; height: 1080px; }
         #view-file-7 .ques-box { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; z-index: 1; object-fit: cover; }
         #view-file-7 .round-name { position: absolute; left: 7%; top: 71%; width: 30%; height: 4.4%; z-index: 2; display: flex; align-items: center; justify-content: center; color: #002060; font-size: 26px; font-weight: bold; text-transform: uppercase; }
@@ -245,17 +245,7 @@
 </head>
 <body>
 
-    <!-- Navigation Bar -->
-    <nav id="view-nav-bar">
-        <button onclick="switchView(1)" id="btn-view-1" class="active-view-btn">1. Xuất Phát</button>
-        <button onclick="switchView(2)" id="btn-view-2">2. C/Hỏi Ra Khơi</button>
-        <button onclick="switchView(3)" id="btn-view-3">3. Đ/Á Ra Khơi</button>
-        <button onclick="switchView(4)" id="btn-view-4">4. Ô Chữ Vượt Sóng</button>
-        <button onclick="switchView(5)" id="btn-view-5">5. Đ/Á Vượt Sóng</button>
-        <button onclick="switchView(6)" id="btn-view-6">6. Chọn Điểm</button>
-        <button onclick="switchView(7)" id="btn-view-7">7. C/Hỏi Vinh Quang</button>
-        <button onclick="switchView(8)" id="btn-view-8">8. Đ/Á Vinh Quang</button>
-    </nav>
+
 
     <!-- Global Custom Popup Component -->
     <div id="custom-popup">
@@ -314,9 +304,9 @@
         <!-- VIEW 2: RA KHƠI (VÒNG THI ĐOẠN BĂNG) -->
         <div id="view-file-2" class="view-section">
             <!-- SUB-SCENE 1: QUESTION & VIDEO CLIP PLAYBACK -->
-            <div id="rk-scene-question" style="display: flex; flex-direction: column; width: 1920px; height: 1080px; position: relative; background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); color: #fff; align-items: center; justify-content: space-between; padding: 40px; box-sizing: border-box;">
+            <div id="rk-scene-question" style="display: flex; flex-direction: column; width: 1920px; height: 1080px; position: relative; background: transparent; color: #fff; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;">
                 <!-- TOP BAR WITH TITLE & 30s COUNTDOWN CLOCK -->
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 3px solid #3b82f6; padding-bottom: 15px;">
+                <div style="display: none; justify-content: space-between; align-items: center; width: 100%; border-bottom: 3px solid #3b82f6; padding-bottom: 15px;">
                     <div id="rk_ques_header_title" style="font-size: 38px; font-weight: 800; color: #fbbf24; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">
                         VÒNG THI RA KHƠI - CÂU HỎI THỨ 1
                     </div>
@@ -330,9 +320,9 @@
                 </div>
 
                 <!-- CENTER VIDEO PLAYER & CONTENT -->
-                <div style="flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin: 15px 0;">
+                <div style="width: 1920px; height: 1080px; position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center;">
                     <!-- VIDEO CONTAINER -->
-                    <div style="width: 1840px; height: 860px; background: #000; border: 4px solid #3b82f6; border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 100%; height: 100%; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                         <video id="rk_video_player" style="width: 100%; height: 100%; object-fit: contain; display: none;" playsinline controls autoplay></video>
                         
                         <!-- PLAY BUTTON OVERLAY IF AUTOPLAY IS BLOCKED -->
@@ -346,18 +336,19 @@
                         <div id="rk_video_placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #94a3b8; text-align: center;">
                             <div style="font-size: 90px; filter: drop-shadow(0 0 20px #3b82f6);">🎥</div>
                             <div id="rk_placeholder_text" style="font-size: 32px; font-weight: bold; color: #60a5fa;">Đoạn băng clip đang phát...</div>
-                            <div id="rk_video_status_sub" style="font-size: 20px; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 8px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div id="rk_video_status_sub" style="display: none; font-size: 20px; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 8px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);">
                                 (Đồng hồ 30s sẽ tự động tính giờ khi clip còn 32 giây)
                             </div>
                         </div>
                     </div>
 
                     <!-- QUESTION DISPLAY TEXT -->
-                    <div id="rk_question_text" style="width: 1650px; min-height: 80px; background: rgba(15, 23, 42, 0.95); border: 2px solid #60a5fa; border-radius: 12px; padding: 14px 24px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 28px; font-weight: 700; color: #f8fafc; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
+                    <div id="rk_question_text" style="display: none;">
                         Nội dung câu hỏi đoạn băng...
                     </div>
                 </div>
             </div>
+
 
             <!-- SUB-SCENE 2: CONTESTANT ANSWERS SCENE -->
             <div id="rk-scene-answers" style="display: none; position: relative; width: 1920px; height: 1080px; background-image: url('Images/RKAnswer.png'); background-size: cover;">
@@ -376,8 +367,6 @@
                 <div class="text-box" id="thoi_gian_ts4" style="left: 412.138px; top: 803.808px; width: 190.085px; height: 141.696px;">00.00</div>
                 <div class="text-box" id="ten_ts4" style="left: 602.223px; top: 813.024px; width: 947.688px; height: 60.624px;">TEN TS4</div>
                 <div class="text-box dap-an" id="dap_an_ts4" style="left: 602.223px; top: 873.648px; width: 947.688px; height: 60.624px;">DAP AN TS4</div>
-
-
             </div>
         </div>
 
@@ -426,12 +415,12 @@
             <div id="pageWrapper">
                 <div class="subject-container"><div class="subject-title" id="subjectTitle6"></div></div>
                 <div class="container" id="packContainer6">
-                    <div class="pack-item" onclick="selectPack6(this, '10', 'Toán Học')"><div class="score">10</div></div>
-                    <div class="pack-item" onclick="selectPack6(this, '20', 'Vật Lý')"><div class="score">20</div></div>
-                    <div class="pack-item" onclick="selectPack6(this, '30', 'Hóa Học')"><div class="score">30</div></div>
+                    <div class="pack-item" id="vq_pack_item_10" onclick="selectPack6(this, '10', '')"></div>
+                    <div class="pack-item" id="vq_pack_item_20" onclick="selectPack6(this, '20', '')"></div>
+                    <div class="pack-item" id="vq_pack_item_30" onclick="selectPack6(this, '30', '')"></div>
                 </div>
             </div>
-            <audio id="audioChoose6" src="sounds/ChooseQues.mp3"></audio>
+            <audio id="audioChoose6" src="sounds/ShowTitle.mp3"></audio>
             <audio id="audioClose6" src="sounds/ClosePack.mp3"></audio>
         </div>
 
@@ -439,8 +428,8 @@
         <div id="view-file-7" class="view-section">
             <div class="scene-container">
                 <img src="Images/QuesBox3.png" alt="QuesBox" class="ques-box">
-                <div class="round-name">VINH QUANG</div>
-                <div class="question-box">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
+                <div class="round-name" id="vq_round_title">VINH QUANG</div>
+                <div class="question-box" id="vq_question_text">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
                 <div id="clock7" class="clock-box" onclick="startCountdown7()">25</div>
             </div>
             <audio id="vongThiAudio7" src="sounds/25sV1.mp3"></audio>
@@ -448,910 +437,23 @@
 
         <!-- VIEW 8 -->
         <div id="view-file-8" class="view-section">
-            <div class="item" style="left: 390.16659162539395px; top: 268.848px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS1</div>
-            <div class="item" style="left: 580.3511931562358px; top: 279.504px; width: 927.5821701936064px; height: 60.624px;">TÊN TS1</div>
-            <div class="item ans-ts" style="left: 580.3511931562358px; top: 340.128px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS1</div>
-            <div class="item" style="left: 390.16659162539395px; top: 442.368px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS2</div>
-            <div class="item" style="left: 580.3511931562358px; top: 452.88px; width: 927.5821701936064px; height: 60.624px;">TÊN TS2</div>
-            <div class="item ans-ts" style="left: 580.3511931562358px; top: 513.504px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS2</div>
-            <div class="item" style="left: 390.16659162539395px; top: 617.904px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS3</div>
-            <div class="item" style="left: 580.3511931562358px; top: 628.4159999999999px; width: 927.5821701936064px; height: 60.624px;">TÊN TS3</div>
-            <div class="item ans-ts" style="left: 580.3511931562358px; top: 689.04px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS3</div>
-            <div class="item" style="left: 390.16659162539395px; top: 787.8240000000001px; width: 190.18460153084197px; height: 141.696px;">ĐIỂM TS4</div>
-            <div class="item" style="left: 580.3511931562358px; top: 798.4799999999999px; width: 927.5821701936064px; height: 60.624px;">TÊN TS4</div>
-            <div class="item ans-ts" style="left: 580.3511931562358px; top: 859.104px; width: 927.5821701936064px; height: 60.624px;">ĐÁP ÁN TS4</div>
+            <div class="item" id="vq_score_ts1" style="left: 390px; top: 268px; width: 190px; height: 141px;">0</div>
+            <div class="item" id="vq_name_ts1" style="left: 580px; top: 279px; width: 927px; height: 60px;">TÊN TS1</div>
+            <div class="item ans-ts" id="vq_ans_ts1" style="left: 580px; top: 340px; width: 927px; height: 60px;">ĐÁP ÁN TS1</div>
+            <div class="item" id="vq_score_ts2" style="left: 390px; top: 442px; width: 190px; height: 141px;">0</div>
+            <div class="item" id="vq_name_ts2" style="left: 580px; top: 452px; width: 927px; height: 60px;">TÊN TS2</div>
+            <div class="item ans-ts" id="vq_ans_ts2" style="left: 580px; top: 513px; width: 927px; height: 60px;">ĐÁP ÁN TS2</div>
+            <div class="item" id="vq_score_ts3" style="left: 390px; top: 617px; width: 190px; height: 141px;">0</div>
+            <div class="item" id="vq_name_ts3" style="left: 580px; top: 628px; width: 927px; height: 60px;">TÊN TS3</div>
+            <div class="item ans-ts" id="vq_ans_ts3" style="left: 580px; top: 689px; width: 927px; height: 60px;">ĐÁP ÁN TS3</div>
+            <div class="item" id="vq_score_ts4" style="left: 390px; top: 787px; width: 190px; height: 141px;">0</div>
+            <div class="item" id="vq_name_ts4" style="left: 580px; top: 798px; width: 927px; height: 60px;">TÊN TS4</div>
+            <div class="item ans-ts" id="vq_ans_ts4" style="left: 580px; top: 859px; width: 927px; height: 60px;">ĐÁP ÁN TS4</div>
+            <audio id="audioVQAnswer" src="sounds/Answer.mp3"></audio>
         </div>
 
     </div>
 
-    <script>
-        function showPopup(message) {
-            document.getElementById('popup-message').innerText = message;
-            document.getElementById('custom-popup').style.display = 'flex';
-        }
-
-        function closePopup() {
-            document.getElementById('custom-popup').style.display = 'none';
-        }
-
-        window.alert = function(msg) { showPopup(msg); };
-        window.prompt = function(msg) { showPopup(msg); return null; };
-        window.confirm = function(msg) { showPopup(msg); return false; };
-
-        let currentViewIndex = 1;
-
-        function switchView(viewNum) {
-            currentViewIndex = viewNum;
-            for (let i = 1; i <= 8; i++) {
-                const viewEl = document.getElementById(`view-file-${i}`);
-                const btnEl = document.getElementById(`btn-view-${i}`);
-                if (viewEl) viewEl.classList.remove('active-view');
-                if (btnEl) btnEl.classList.remove('active-view-btn');
-            }
-            const activeView = document.getElementById(`view-file-${viewNum}`);
-            const activeBtn = document.getElementById(`btn-view-${viewNum}`);
-            if (activeView) activeView.classList.add('active-view');
-            if (activeBtn) activeBtn.classList.add('active-view-btn');
-        }
-
-        function scaleStage() {
-            const wrapper = document.querySelector('.stage-wrapper');
-            if (!wrapper) return;
-            const targetWidth = 1920;
-            const targetHeight = 1080;
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-
-            const scale = Math.min(windowWidth / targetWidth, windowHeight / targetHeight);
-
-            wrapper.style.transform = `scale(${scale})`;
-            wrapper.style.left = `${(windowWidth - targetWidth * scale) / 2}px`;
-            wrapper.style.top = `${(windowHeight - targetHeight * scale) / 2}px`;
-        }
-
-        window.addEventListener('resize', scaleStage);
-        window.addEventListener('DOMContentLoaded', () => {
-            scaleStage();
-            let vsData = null;
-            try {
-                const saved = localStorage.getItem('duong_den_vinh_quang_data');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    vsData = parsed.vuotSong;
-                }
-            } catch(e) {}
-            syncVuotSongGrid(vsData);
-        });
-
-        /* VIEW 1 LOGIC */
-        let score1 = 0, timeLeft1 = 60, timerInterval1 = null, isRolling1 = false, currentQuestionIndex1 = 1;
-        let soundShowTitle1 = new Audio('sounds/ShowTitle.mp3');
-        let soundRandomSet1 = new Audio('sounds/RandomSet.mp3');
-        let soundBeginQues1 = new Audio('sounds/BeginQues.mp3');
-        let sound60s1 = new Audio('sounds/60s.mp3');
-        let soundTick1 = new Audio('sounds/Tick.mp3');
-        let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
-        let soundRight1 = new Audio('sounds/right.mp3');
-        let soundWrong1 = new Audio('sounds/wrong.mp3');
-        let soundRKAnswer = new Audio('sounds/Answer.mp3');
-        let soundChooseQues = new Audio('sounds/ChooseQues.mp3');
-        let soundRightV3 = new Audio('sounds/RightV3.mp3');
-
-        let isAudioUnlocked = false;
-
-        function unlockAudio() {
-            if (isAudioUnlocked) return;
-            isAudioUnlocked = true;
-
-            const allAudios = [
-                soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, 
-                soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3,
-                document.getElementById('vongThiAudio4'),
-                document.getElementById('vongThiAudio7')
-            ];
-
-            allAudios.forEach(aud => {
-                if (aud) {
-                    try {
-                        aud.load();
-                        let p = aud.play();
-                        if (p && typeof p.then === 'function') {
-                            p.then(() => {
-                                aud.pause();
-                                aud.currentTime = 0;
-                            }).catch(() => {});
-                        }
-                    } catch(e) {}
-                }
-            });
-        }
-
-        ['click', 'keydown', 'pointerdown', 'touchstart', 'mousemove', 'wheel'].forEach(evt => {
-            window.addEventListener(evt, unlockAudio, { once: true, capture: true });
-        });
-        window.addEventListener('DOMContentLoaded', unlockAudio);
-
-        function safePlay(audio) {
-            if (!audio) return;
-            try {
-                audio.currentTime = 0;
-                let p = audio.play();
-                if (p && typeof p.then === 'function') {
-                    p.catch(e => {
-                        console.log("Audio play blocked, attempting silent unlock and retry:", e);
-                        unlockAudio();
-                        try {
-                            audio.currentTime = 0;
-                            audio.play().catch(err => console.log("Retry play failed:", err));
-                        } catch(err) {}
-                    });
-                }
-            } catch(e) {
-                console.log("Audio exception:", e);
-            }
-        }
-
-        function safePause(audio) {
-            if (!audio) return;
-            try {
-                audio.pause();
-                audio.currentTime = 0;
-            } catch(e) {}
-        }
-
-        function stopAllAudio1() {
-            safePause(soundShowTitle1);
-            safePause(soundRandomSet1);
-            safePause(soundBeginQues1);
-            safePause(sound60s1);
-            safePause(soundTick1);
-            safePause(soundTimeUp1);
-            safePause(soundRight1);
-            safePause(soundWrong1);
-        }
-
-        function updateBlink1() {
-            document.querySelectorAll('#view-file-1 .ket-qua-cau').forEach(el => el.classList.remove('blinking'));
-            let currentBox = document.getElementById('kq1-' + currentQuestionIndex1);
-            if (currentBox) currentBox.classList.add('blinking');
-        }
-
-        function xuatPhat1() { 
-            document.getElementById('xuatPhatContainer').style.display = 'none'; 
-            document.getElementById('contestantList1').style.display = 'flex'; 
-        }
-
-        function chonThiSinh1(name) { 
-            document.getElementById('contestantList1').style.display = 'none'; 
-            document.getElementById('randomImg1').style.display = 'block'; 
-            document.getElementById('displayContestantName1').style.display = 'flex'; 
-            document.getElementById('displayContestantName1').innerText = name; 
-            document.getElementById('quesContestantName1').innerText = name; 
-            document.getElementById('numberBox1').style.display = 'flex'; 
-            document.getElementById('btnBamDe1').style.display = 'block'; 
-        }
-
-        function triggerQuestionMotion(text) {
-            const qEl = document.getElementById('questionText1');
-            if (!qEl) return;
-            if (text !== undefined && text !== null) {
-                qEl.innerText = text;
-            }
-            qEl.classList.remove('animate-question-slide');
-            void qEl.offsetWidth; // trigger reflow
-            qEl.classList.add('animate-question-slide');
-        }
-
-        function bamDe1(targetDe) {
-            if (isRolling1) return;
-            isRolling1 = true;
-            document.getElementById('btnBamDe1').style.display = 'none';
-            safePlay(soundRandomSet1);
-
-            let startTime = Date.now();
-            let rollInterval = setInterval(() => {
-                document.getElementById('numberBox1').innerText = Math.floor(Math.random() * 8) + 1;
-                if (Date.now() - startTime >= 5000) { 
-                    clearInterval(rollInterval);
-                    if (targetDe !== undefined && targetDe !== null) {
-                        document.getElementById('numberBox1').innerText = targetDe;
-                    }
-                    isRolling1 = false;
-                }
-            }, 100);
-        }
-
-        function batDauCauHoi1(qText) {
-            const txt = qText || "Nội dung câu hỏi số 1";
-            triggerQuestionMotion(txt);
-            let firstBox = document.getElementById('kq1-1');
-            if (firstBox) firstBox.classList.remove('inactive');
-            updateBlink1();
-
-            clearInterval(timerInterval1);
-            safePlay(soundBeginQues1);
-            safePlay(sound60s1);
-
-            timeLeft1 = 60;
-            document.getElementById('timer1').innerText = "60";
-            let targetTime = Date.now() + 60000;
-            timerInterval1 = setInterval(() => {
-                let prevTime = timeLeft1;
-                timeLeft1 = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
-                document.getElementById('timer1').innerText = timeLeft1 < 10 ? ('0' + timeLeft1) : timeLeft1;
-
-                if (timeLeft1 <= 5 && timeLeft1 > 0 && timeLeft1 !== prevTime) {
-                    safePlay(soundTick1);
-                }
-
-                if (timeLeft1 === 0) {
-                    clearInterval(timerInterval1);
-                    safePlay(soundTimeUp1);
-                }
-            }, 200);
-        }
-
-        function traLoiDung1(skipScoreAdd = false) {
-            safePlay(soundRight1);
-            if (!skipScoreAdd) {
-                score1 += 10; 
-                document.getElementById('score1').innerText = score1;
-            }
-            let el = document.getElementById('kq1-' + currentQuestionIndex1);
-            if(el) { el.classList.remove('blinking'); el.style.backgroundColor = '#3b82f6'; }
-            document.getElementById('answerBox1').style.display = 'flex';
-        }
-
-        function traLoiSai1() {
-            safePlay(soundWrong1);
-            let el = document.getElementById('kq1-' + currentQuestionIndex1);
-            if(el) { el.classList.remove('blinking'); el.style.backgroundColor = '#ef4444'; }
-            document.getElementById('answerBox1').style.display = 'flex';
-        }
-
-        function chuyenCau1() {
-            document.getElementById('answerBox1').style.display = 'none';
-            if(currentQuestionIndex1 < 10) {
-                currentQuestionIndex1++;
-                let nextBox = document.getElementById('kq1-' + currentQuestionIndex1);
-                if(nextBox) nextBox.classList.remove('inactive');
-                document.getElementById('questionText1').innerText = "Nội dung câu hỏi số " + currentQuestionIndex1;
-                updateBlink1();
-            }
-        }
-
-        /* VIEW 3 LOGIC */
-        function syncVuotSongGrid(vsData) {
-            const rowsContainer = document.getElementById('file3-rows-container');
-            const keysContainer = document.getElementById('file3-keys-container');
-            if (!rowsContainer || !keysContainer) return;
-
-            const startX_Row = 237.2, startY_Row = 157.7, deltaX_Row = 99.2, deltaY_Row = 102.7;
-            const widthRow = 95.6, heightRow = 75.7;
-            let rowHtml = '';
-            for (let h = 1; h <= 4; h++) {
-                let currentY = startY_Row + (h - 1) * deltaY_Row;
-                const ans = vsData ? (vsData[`h${h}`]?.a || '') : '';
-                const cleanAns = ans.replace(/\s+/g, '').toUpperCase();
-                const L = Math.min(cleanAns.length, 15);
-                for (let n = 1; n <= L; n++) {
-                    let currentX = startX_Row + (n - 1) * deltaX_Row;
-                    rowHtml += `<div class="game-item row-${h}-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthRow}px; height: ${heightRow}px; background-image: url('Images/LetterDefault.png');"></div>`;
-                }
-            }
-            rowsContainer.innerHTML = rowHtml;
-
-            const startX_Key = 255.6, startY_Key = 565.5, deltaX_Key = 98.5, deltaY_Key = 89.7;
-            const widthKey = 86.7, heightKey = 75.7;
-            let keyHtml = '';
-            const kw = vsData ? (vsData.keyword || '') : '';
-            const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
-            const kwL = cleanKw.length;
-            const computedStartX_Key = (1920 - (kwL * deltaX_Key - (deltaX_Key - widthKey))) / 2;
-
-            for (let cot = 1; cot <= kwL; cot++) {
-                let currentX = computedStartX_Key + (cot - 1) * deltaX_Key;
-                keyHtml += `<div class="game-item key-item" style="left: ${currentX}px; top: ${startY_Key}px; width: ${widthKey}px; height: ${heightKey}px; background-image: url('Images/LetterKey.png');"></div>`;
-            }
-            keysContainer.innerHTML = keyHtml;
-        }
-
-        /* VIEW 4 LOGIC */
-        let countdown4, timeLeft4 = 20, isRunning4 = false;
-        function startCountdown4() {
-            if (isRunning4) return;
-            isRunning4 = true;
-            const clockElement = document.getElementById('clock4');
-            const audio = document.getElementById('vongThiAudio4');
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log(e));
-            countdown4 = setInterval(() => {
-                timeLeft4--;
-                clockElement.textContent = timeLeft4;
-                if (timeLeft4 <= 0) { clearInterval(countdown4); clockElement.textContent = "0"; }
-            }, 1000);
-        }
-
-        /* VIEW 6 LOGIC */
-        let isSelected6 = false;
-        function selectPack6(element, score, subjectName) {
-            if (isSelected6) return;
-            isSelected6 = true;
-            document.getElementById('view-file-6').style.backgroundImage = "url('Images/packchoose.png')";
-            element.classList.add('selected');
-            const subjectTitleEl = document.getElementById('subjectTitle6');
-            subjectTitleEl.innerText = subjectName;
-            subjectTitleEl.classList.add('show');
-            document.getElementById('audioChoose6').play().catch(e => console.log(e));
-        }
-
-        window.addEventListener('keydown', function(event) {
-            if (currentViewIndex === 6 && event.code === 'Space' && isSelected6) {
-                event.preventDefault();
-                document.getElementById('audioClose6').play().catch(e => console.log(e));
-                const pageWrapper = document.querySelector('#view-file-6 #pageWrapper');
-                if (pageWrapper) pageWrapper.classList.add('fly-down');
-            }
-        });
-
-        /* VIEW 7 LOGIC */
-        let countdown7, timeLeft7 = 25, isRunning7 = false;
-        function startCountdown7() {
-            if (isRunning7) return;
-            isRunning7 = true;
-            const clockElement = document.getElementById('clock7');
-            const audio = document.getElementById('vongThiAudio7');
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log(e));
-            countdown7 = setInterval(() => {
-                timeLeft7--;
-                clockElement.textContent = timeLeft7;
-                if (timeLeft7 <= 0) { clearInterval(countdown7); clockElement.textContent = "0"; }
-            }, 1000);
-        }
-
-        /* CONTROLLER - PROJECTOR CONNECTION (BroadcastChannel, localStorage & postMessage) */
-        let projectorChannel = null;
-        try {
-            if (typeof BroadcastChannel !== 'undefined') {
-                projectorChannel = new BroadcastChannel('ddvq_game_channel');
-                projectorChannel.onmessage = function(event) {
-                    const data = event.data;
-                    if (!data || !data.type) return;
-                    handleProjectorMessage(data);
-                };
-            }
-        } catch(e) {
-            console.warn("BroadcastChannel restricted in projector:", e);
-        }
-
-        function notifyControllerReady() {
-            const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
-            if (projectorChannel) {
-                try { projectorChannel.postMessage(msg); } catch(e) {}
-            }
-            try {
-                localStorage.setItem('ddvq_projector_status', Date.now().toString());
-            } catch(e) {}
-            try {
-                if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage(msg, '*');
-                }
-            } catch(e) {}
-        }
-        notifyControllerReady();
-        setInterval(notifyControllerReady, 3000);
-
-        window.addEventListener('storage', function(event) {
-            if (event.key === 'ddvq_latest_action' && event.newValue) {
-                try {
-                    const data = JSON.parse(event.newValue);
-                    if (data && data.type) {
-                        handleProjectorMessage(data);
-                    }
-                } catch(e) {
-                    console.warn("Storage parse error:", e);
-                }
-            }
-        });
-
-        window.addEventListener('message', function(event) {
-            const data = event.data;
-            if (data && data.type) {
-                handleProjectorMessage(data);
-            }
-        });
-
-        let lastProcessedActionId = '';
-        setInterval(() => {
-            try {
-                const raw = localStorage.getItem('ddvq_latest_action');
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    if (data && data.id && data.id !== lastProcessedActionId) {
-                        lastProcessedActionId = data.id;
-                        handleProjectorMessage(data);
-                    }
-                }
-            } catch(e) {}
-        }, 150);
-
-        function handleProjectorMessage(data) {
-
-            if (data.type === 'SWITCH_VIEW') {
-                if (data.viewNum) switchView(data.viewNum);
-            } else if (data.type === 'XUAT_PHAT_INTRO') {
-                switchView(1);
-                stopAllAudio1();
-                safePlay(soundShowTitle1);
-                document.getElementById('scene-chon-de').classList.add('active');
-                document.getElementById('scene-cau-hoi1').classList.remove('active');
-                document.getElementById('xuatPhatContainer').style.display = 'block';
-                document.getElementById('contestantList1').style.display = 'none';
-                document.getElementById('randomImg1').style.display = 'none';
-                document.getElementById('displayContestantName1').style.display = 'none';
-                document.getElementById('numberBox1').style.display = 'none';
-                document.getElementById('btnBamDe1').style.display = 'none';
-            } else if (data.type === 'XUAT_PHAT_LUAT') {
-                switchView(1);
-                stopAllAudio1();
-                safePlay(soundShowTitle1);
-                showPopup('VÒNG THI XUẤT PHÁT:\nMỗi thí sinh khởi động với các câu hỏi trong vòng 60 giây. Trả lời đúng mỗi câu được 10 điểm, trả lời sai không bị trừ điểm.');
-            } else if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
-                switchView(1);
-                const name = data.name || "Thí sinh";
-                chonThiSinh1(name);
-                if (data.score !== undefined) {
-                    score1 = data.score;
-                    document.getElementById('score1').innerText = score1;
-                }
-            } else if (data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE') {
-                switchView(1);
-                document.getElementById('scene-chon-de').classList.add('active');
-                document.getElementById('scene-cau-hoi1').classList.remove('active');
-                document.getElementById('xuatPhatContainer').style.display = 'none';
-                document.getElementById('contestantList1').style.display = 'none';
-                document.getElementById('randomImg1').style.display = 'block';
-                document.getElementById('displayContestantName1').style.display = 'flex';
-                if (data.name) {
-                    document.getElementById('displayContestantName1').innerText = data.name;
-                    document.getElementById('quesContestantName1').innerText = data.name;
-                }
-                document.getElementById('numberBox1').style.display = 'flex';
-                document.getElementById('btnBamDe1').style.display = 'block';
-            } else if (data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI') {
-                switchView(1);
-                document.getElementById('scene-chon-de').classList.remove('active');
-                document.getElementById('scene-cau-hoi1').classList.add('active');
-                if (data.name) {
-                    document.getElementById('quesContestantName1').innerText = data.name;
-                }
-                if (data.score !== undefined) {
-                    score1 = data.score;
-                    document.getElementById('score1').innerText = score1;
-                }
-                const qEl = document.getElementById('questionText1');
-                if (qEl) {
-                    qEl.innerText = "";
-                    qEl.classList.remove('animate-question-slide');
-                }
-                document.getElementById('answerBox1').style.display = 'none';
-                for (let i = 1; i <= 10; i++) {
-                    let box = document.getElementById('kq1-' + i);
-                    if (box) {
-                        box.className = 'ket-qua-cau inactive';
-                        box.style.backgroundColor = '';
-                    }
-                }
-                document.querySelectorAll('#view-file-1 .ket-qua-cau').forEach(el => el.classList.remove('blinking'));
-            } else if (data.type === 'XUAT_PHAT_RANDOM_DE') {
-                switchView(1);
-                document.getElementById('scene-chon-de').classList.add('active');
-                document.getElementById('scene-cau-hoi1').classList.remove('active');
-                document.getElementById('randomImg1').style.display = 'block';
-                document.getElementById('displayContestantName1').style.display = 'flex';
-                if (data.name) {
-                    document.getElementById('displayContestantName1').innerText = data.name;
-                    document.getElementById('quesContestantName1').innerText = data.name;
-                }
-                document.getElementById('numberBox1').style.display = 'flex';
-                bamDe1(data.deNumber);
-            } else if (data.type === 'XUAT_PHAT_START_TIMER') {
-                switchView(1);
-                document.getElementById('scene-chon-de').classList.remove('active');
-                document.getElementById('scene-cau-hoi1').classList.add('active');
-                if (data.questionIndex) {
-                    currentQuestionIndex1 = data.questionIndex;
-                }
-                if (data.contestantName) {
-                    document.getElementById('quesContestantName1').innerText = data.contestantName;
-                }
-                if (data.score !== undefined) {
-                    score1 = data.score;
-                    document.getElementById('score1').innerText = score1;
-                }
-                batDauCauHoi1(data.questionText);
-            } else if (data.type === 'XUAT_PHAT_RIGHT') {
-                if (data.score !== undefined) {
-                    score1 = data.score;
-                    document.getElementById('score1').innerText = score1;
-                }
-                if (data.answerText) {
-                    document.getElementById('answerBox1').innerText = data.answerText;
-                }
-                traLoiDung1(data.score !== undefined);
-            } else if (data.type === 'XUAT_PHAT_WRONG') {
-                if (data.score !== undefined) {
-                    score1 = data.score;
-                    document.getElementById('score1').innerText = score1;
-                }
-                if (data.answerText) {
-                    document.getElementById('answerBox1').innerText = data.answerText;
-                }
-                traLoiSai1();
-            } else if (data.type === 'XUAT_PHAT_FINISH') {
-                clearInterval(timerInterval1);
-                stopAllAudio1();
-                document.getElementById('scene-chon-de').classList.remove('active');
-                document.getElementById('scene-cau-hoi1').classList.remove('active');
-            } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
-                if (data.questionIndex) {
-                    currentQuestionIndex1 = data.questionIndex;
-                }
-                if (data.score !== undefined) {
-                    score1 = data.score;
-                    document.getElementById('score1').innerText = score1;
-                }
-                document.getElementById('answerBox1').style.display = 'none';
-                let nextBox = document.getElementById('kq1-' + currentQuestionIndex1);
-                if (nextBox) nextBox.classList.remove('inactive');
-                const txt = data.questionText || ("Nội dung câu hỏi số " + currentQuestionIndex1);
-                triggerQuestionMotion(txt);
-                updateBlink1();
-            } else if (data.type === 'XUAT_PHAT_RESET') {
-                clearInterval(timerInterval1);
-                stopAllAudio1();
-                timeLeft1 = 60;
-                document.getElementById('timer1').innerText = "60";
-                score1 = data.score !== undefined ? data.score : 0;
-                document.getElementById('score1').innerText = score1;
-                currentQuestionIndex1 = 1;
-                document.getElementById('answerBox1').style.display = 'none';
-                document.getElementById('scene-chon-de').classList.add('active');
-                document.getElementById('scene-cau-hoi1').classList.remove('active');
-                document.getElementById('xuatPhatContainer').style.display = 'block';
-                document.getElementById('contestantList1').style.display = 'none';
-                document.getElementById('randomImg1').style.display = 'none';
-                document.getElementById('displayContestantName1').style.display = 'none';
-                document.getElementById('numberBox1').style.display = 'none';
-                document.getElementById('btnBamDe1').style.display = 'none';
-                for (let i = 1; i <= 10; i++) {
-                    let box = document.getElementById('kq1-' + i);
-                    if (box) {
-                        box.className = 'ket-qua-cau inactive';
-                        box.style.backgroundColor = '';
-                    }
-                }
-            } else if (data.type === 'XUAT_PHAT_STOP_SOUND') {
-                stopAllAudio1();
-            } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO') {
-                handleRKPlayClip(data);
-            } else if (data.type === 'RA_KHOI_START_TIMER') {
-                switchView(2);
-                startRKTimer30s(data.duration || 30);
-            } else if (data.type === 'RA_KHOI_SHOW_CONTESTANT_ANSWERS') {
-                handleRKShowContestantAnswers(data);
-            } else if (data.type === 'RA_KHOI_SHOW_ANSWER') {
-                switchView(2);
-                safePlay(soundRKAnswer);
-            } else if (data.type === 'RA_KHOI_RESET') {
-                switchView(2);
-                if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
-                if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
-                rkTimerAlreadyTriggered = false;
-                const clockEl = document.getElementById('rk_clock_box');
-                if (clockEl) clockEl.innerText = "30";
-                const video = document.getElementById('rk_video_player');
-                if (video) { video.pause(); video.currentTime = 0; }
-                const qScene = document.getElementById('rk-scene-question');
-                const aScene = document.getElementById('rk-scene-answers');
-                if (qScene) qScene.style.display = 'flex';
-                if (aScene) aScene.style.display = 'none';
-            } else if (data.type === 'VUOT_SONG_SELECT_ROW') {
-                flashVuotSongRow(data.row);
-            } else if (data.type === 'VUOT_SONG_SHOW_QUESTION') {
-                handleVSShowQuestion(data);
-            } else if (data.type === 'VUOT_SONG_START_TIMER') {
-                handleVSStartTimer(data);
-            } else if (data.type === 'VUOT_SONG_SHOW_CONTESTANT_ANSWERS') {
-                handleVSShowAnswers(data);
-            } else if (data.type === 'VUOT_SONG_SYNC_GRID') {
-                syncVuotSongGrid(data.vuotSong);
-            } else if (data.type === 'VUOT_SONG_RESET') {
-                handleVSReset();
-            } else if (data.type === 'VUOT_SONG_OPEN_ROW_ANSWER') {
-                handleVSOpenRowAnswer(data);
-            } else if (data.type === 'VUOT_SONG_OPEN_ALL_ANSWERS') {
-                handleVSOpenAllAnswers(data);
-            }
-        }
-
-        function handleVSOpenRowAnswer(data) {
-            switchView(3);
-            const rowsContainer = document.getElementById('file3-rows-container');
-            if (!rowsContainer || !data.row) return;
-            const items = rowsContainer.querySelectorAll(`.row-${data.row}-item`);
-            const ans = data.answer.replace(/\s+/g, '').toUpperCase();
-            
-            items.forEach((item, index) => {
-                item.style.backgroundImage = "url('Images/LetterDefault.png')";
-                if (index < ans.length) {
-                    item.innerText = ans[index];
-                } else {
-                    item.innerText = "";
-                }
-            });
-            if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
-        }
-
-        function handleVSOpenAllAnswers(data) {
-            switchView(3);
-            safePlay(soundRightV3);
-            const rowsContainer = document.getElementById('file3-rows-container');
-            const keysContainer = document.getElementById('file3-keys-container');
-            
-            if (rowsContainer && data.vuotSong) {
-                for (let h = 1; h <= 4; h++) {
-                    const items = rowsContainer.querySelectorAll(`.row-${h}-item`);
-                    const ans = (data.vuotSong[`h${h}`]?.a || '').replace(/\s+/g, '').toUpperCase();
-                    items.forEach((item, index) => {
-                        item.style.backgroundImage = "url('Images/LetterDefault.png')";
-                        if (index < ans.length) {
-                            item.innerText = ans[index];
-                        } else {
-                            item.innerText = "";
-                        }
-                    });
-                }
-            }
-
-            if (keysContainer && data.vuotSong && data.vuotSong.keyword) {
-                const kwItems = keysContainer.querySelectorAll('.key-item');
-                const kwAns = data.vuotSong.keyword.replace(/\s+/g, '').toUpperCase();
-                kwItems.forEach((item, index) => {
-                    if (index < kwAns.length) {
-                        item.innerText = kwAns[index];
-                        item.style.backgroundImage = "url('Images/LetterKeyOpen.png')";
-                    } else {
-                        item.innerText = "";
-                    }
-                });
-            }
-            if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
-        }
-
-        function handleVSReset() {
-            switchView(3);
-            const rowsContainer = document.getElementById('file3-rows-container');
-            const keysContainer = document.getElementById('file3-keys-container');
-            if (rowsContainer) {
-                const items = rowsContainer.querySelectorAll('.game-item');
-                items.forEach(item => {
-                    item.style.backgroundImage = "url('Images/LetterDefault.png')";
-                    item.innerText = "";
-                });
-            }
-            if (keysContainer) {
-                const kwItems = keysContainer.querySelectorAll('.key-item');
-                kwItems.forEach(item => {
-                    item.innerText = "";
-                    item.style.backgroundImage = "url('Images/LetterKey.png')";
-                });
-            }
-            for (let h = 1; h <= 4; h++) {
-                const ind = document.getElementById(`vs_ind_${h}`);
-                if (ind) {
-                    ind.style.backgroundImage = `url('Images/c${h}.png')`;
-                }
-            }
-            if (window.vsFlashInterval) {
-                clearInterval(window.vsFlashInterval);
-            }
-        }
-
-        function flashVuotSongRow(row) {
-            switchView(3);
-            safePlay(soundChooseQues);
-            for (let h = 1; h <= 4; h++) {
-                const ind = document.getElementById(`vs_ind_${h}`);
-                if (ind) {
-                    if (h === row) {
-                        ind.style.backgroundImage = `url('Images/c${h}c.png')`;
-                    } else {
-                        ind.style.backgroundImage = `url('Images/c${h}.png')`;
-                    }
-                }
-            }
-
-            if (row === 'center' || typeof row !== 'number') return;
-            const rowsContainer = document.getElementById('file3-rows-container');
-            if (!rowsContainer) return;
-            const items = rowsContainer.querySelectorAll(`.row-${row}-item`);
-            
-            let count = 0;
-            if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
-            window.vsFlashInterval = setInterval(() => {
-                count++;
-                const useChoose = (count % 2 === 1);
-                const bg = useChoose ? "url('Images/LetterChoose.png')" : "url('Images/LetterDefault.png')";
-                items.forEach(item => {
-                    item.style.backgroundImage = bg;
-                });
-                if (count >= 10) {
-                    clearInterval(window.vsFlashInterval);
-                    items.forEach(item => {
-                        item.style.backgroundImage = "url('Images/LetterChoose.png')";
-                    });
-                }
-            }, 100);
-        }
-
-        function handleVSShowQuestion(data) {
-            switchView(4);
-            safePlay(soundBeginQues1);
-            const qEl = document.querySelector('#view-file-4 .question-box');
-            if (qEl) {
-                qEl.innerText = data.questionText || "Nội dung câu hỏi Vượt Sóng...";
-                qEl.classList.remove('animate-question-slide');
-                void qEl.offsetWidth; // trigger reflow
-                qEl.classList.add('animate-question-slide');
-            }
-            timeLeft4 = 20;
-            const clockEl = document.getElementById('clock4');
-            if (clockEl) clockEl.innerText = "20";
-            isRunning4 = false;
-        }
-
-        function handleVSStartTimer(data) {
-            switchView(4);
-            startCountdown4();
-        }
-
-        function handleVSShowAnswers(data) {
-            switchView(5);
-            const audio = document.getElementById('soundVSAnswer');
-            if (audio) { audio.currentTime = 0; audio.play().catch(e => console.log(e)); }
-            const contestants = data.contestants || [];
-            for (let i = 1; i <= 4; i++) {
-                const ts = contestants[i - 1] || {};
-                const nameEl = document.getElementById(`vs_ans_name_${i}`);
-                const valEl = document.getElementById(`vs_ans_val_${i}`);
-                const timeEl = document.getElementById(`vs_ans_time_${i}`);
-                if (nameEl) nameEl.innerText = ts.name || `Thí sinh ${i}`;
-                if (valEl) valEl.innerText = ts.answer || '';
-                if (timeEl) timeEl.innerText = ts.time || '00.00';
-            }
-        }
-
-        // Ra Khoi Helper Functions
-        let rkTimerIntervalProj = null;
-        let rkAutoTimerTimeout = null;
-        let rkTimerAlreadyTriggered = false;
-
-        function startRKTimer30s(duration = 30) {
-            if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
-            let timeLeft = duration;
-            const clockEl = document.getElementById('rk_clock_box');
-            if (clockEl) clockEl.innerText = timeLeft;
-
-            try {
-                const timerAudio = new Audio('sounds/25sV1.mp3');
-                timerAudio.play().catch(e => console.warn(e));
-            } catch(e) {}
-
-            rkTimerIntervalProj = setInterval(() => {
-                timeLeft--;
-                if (clockEl) clockEl.innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(rkTimerIntervalProj);
-                    if (clockEl) clockEl.innerText = "0";
-                    try {
-                        const timeUpAudio = new Audio('sounds/TImeUp.mp3');
-                        timeUpAudio.play().catch(e => {});
-                    } catch(e) {}
-                }
-            }, 1000);
-        }
-
-        function playRKVideoExplicitly() {
-            const video = document.getElementById('rk_video_player');
-            const overlay = document.getElementById('rk_video_play_overlay');
-            if (video) {
-                video.play().then(() => {
-                    if (overlay) overlay.style.display = 'none';
-                }).catch(err => {
-                    console.warn("Explicit play failed:", err);
-                });
-            }
-        }
-
-        function handleRKPlayClip(data) {
-            switchView(2);
-            const qScene = document.getElementById('rk-scene-question');
-            const aScene = document.getElementById('rk-scene-answers');
-            if (qScene) qScene.style.display = 'flex';
-            if (aScene) aScene.style.display = 'none';
-
-            const headerTitle = document.getElementById('rk_ques_header_title');
-            if (headerTitle) headerTitle.innerText = `VÒNG THI RA KHƠI - CÂU HỎI THỨ ${data.questionIndex || 1}`;
-
-            const qText = document.getElementById('rk_question_text');
-            if (qText) qText.innerText = data.questionText || `Nội dung câu hỏi đoạn băng số ${data.questionIndex || 1}...`;
-
-            const clockEl = document.getElementById('rk_clock_box');
-            if (clockEl) clockEl.innerText = "30";
-
-            const video = document.getElementById('rk_video_player');
-            const placeholder = document.getElementById('rk_video_placeholder');
-            const placeholderText = document.getElementById('rk_placeholder_text');
-            const overlay = document.getElementById('rk_video_play_overlay');
-
-            if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
-            if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
-            rkTimerAlreadyTriggered = false;
-
-            if (data.mediaUrl && data.mediaUrl.trim() !== '' && data.mediaUrl.trim() !== '...') {
-                if (video) {
-                    video.src = data.mediaUrl;
-                    video.load();
-                    video.style.display = 'block';
-                    if (placeholder) placeholder.style.display = 'none';
-
-                    video.play().then(() => {
-                        if (overlay) overlay.style.display = 'none';
-                    }).catch(err => {
-                        console.warn("Video autoplay blocked or error:", err);
-                        if (overlay) overlay.style.display = 'flex';
-                    });
-
-                    video.ontimeupdate = null;
-                }
-            } else {
-                if (video) video.style.display = 'none';
-                if (overlay) overlay.style.display = 'none';
-                if (placeholder) placeholder.style.display = 'flex';
-                if (placeholderText) placeholderText.innerText = `Đang phát đoạn băng câu ${data.questionIndex || 1}...`;
-
-                // No auto timer sound when playing clip placeholder
-            }
-        }
-
-        function handleRKShowContestantAnswers(data) {
-            switchView(2);
-            const qScene = document.getElementById('rk-scene-question');
-            const aScene = document.getElementById('rk-scene-answers');
-            if (qScene) qScene.style.display = 'none';
-            if (aScene) aScene.style.display = 'block';
-
-            safePlay(soundRKAnswer);
-
-            const video = document.getElementById('rk_video_player');
-            if (video) video.pause();
-
-            const contestants = data.contestants || [];
-            for (let i = 1; i <= 4; i++) {
-                const ts = contestants[i - 1] || {};
-                const tenEl = document.getElementById(`ten_ts${i}`);
-                const tgEl = document.getElementById(`thoi_gian_ts${i}`);
-                const daEl = document.getElementById(`dap_an_ts${i}`);
-
-                if (tenEl) tenEl.innerText = ts.name || `THÍ SINH ${i}`;
-                if (tgEl) tgEl.innerText = ts.rk_time || ts.time || '00.00';
-                if (daEl) daEl.innerText = ts.rk_answer || ts.answer || `ĐÁP ÁN TS${i}`;
-            }
-
-
-        }
-    </script>
+    <script src="projector.js"></script>
 </body>
 </html>

@@ -54,8 +54,21 @@ app.use((req, res, next) => {
 // Serve static assets
 app.use(express.static(__dirname));
 
-// Serve projector.html at root route
+// Serve index.html or controller.html at root route
 app.get('/', (req, res) => {
+  if (fs.existsSync(path.join(__dirname, 'index.html'))) {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  } else {
+    res.sendFile(path.join(__dirname, 'controller.html'));
+  }
+});
+
+// Serve projector.html explicitly
+app.get('/projector', (req, res) => {
+  res.sendFile(path.join(__dirname, 'projector.html'));
+});
+
+app.get('/projector.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'projector.html'));
 });
 

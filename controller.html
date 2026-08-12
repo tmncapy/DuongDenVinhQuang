@@ -357,6 +357,7 @@
         }
         .grid-row-boxes {
             display: flex;
+            flex-wrap: wrap;
             gap: 3px;
             align-items: center;
             min-height: 26px;
@@ -817,6 +818,22 @@
                 <input type="text" id="vs_keyword" style="flex: 1; padding: 4px; border: 1px solid #ccc;" placeholder="Từ khóa chính của vòng thi Vượt Sóng" oninput="updateVuotSongState()">
                 <span class="char-count" id="vs_keyword_count">0 kí tự</span>
             </div>
+
+            <!-- PHẦN THI VINH QUANG (NHẬP ĐỀ CÂU HỎI) -->
+            <div class="sub-section-title" style="color: #dc2626;">... Phần thi VINH QUANG (NHẬP ĐỀ CÂU HỎI) ...</div>
+            <div class="packages" style="display: flex; gap: 15px; margin-bottom: 10px; align-items: center; background: #e0f2fe; padding: 10px; border-radius: 6px;">
+                <span style="font-weight: bold; color: #0369a1;">Chọn gói điểm:</span>
+                <label style="cursor: pointer; font-weight: bold; color: #0056b3;">
+                    <input type="radio" name="tab0_vq_pack" value="10" checked onclick="switchVinhQuangPack(10)"> Gói 10 Điểm (12 câu)
+                </label>
+                <label style="cursor: pointer; font-weight: bold; color: #d97706;">
+                    <input type="radio" name="tab0_vq_pack" value="20" onclick="switchVinhQuangPack(20)"> Gói 20 Điểm (12 câu)
+                </label>
+                <label style="cursor: pointer; font-weight: bold; color: #dc2626;">
+                    <input type="radio" name="tab0_vq_pack" value="30" onclick="switchVinhQuangPack(30)"> Gói 30 Điểm (12 câu)
+                </label>
+            </div>
+            <div id="tab0_vinhQuangRows" style="margin-bottom: 15px;"></div>
 
             <div class="q-row">
                 <span>Câu Phụ 1</span>
@@ -1451,38 +1468,226 @@
     </div>
 
     <!-- TAB 4: VINH QUANG -->
-    <div class="tab-content" id="tab4-content" style="padding: 20px; flex-direction: column; background: #e8e6da; overflow-y: auto;">
-        <!-- CONTESTANT BARS (Top Left) -->
-        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
-            <!-- TS 1..4 (Similar layout to tab 1) -->
-            <div id="vq_contestants"></div>
-        </div>
-
-        <!-- MAIN PANEL FOR CONTROLS -->
-        <div class="panel" style="margin-top: auto;">
-            <h2>ĐIỀU KHIỂN VÒNG THI VINH QUANG</h2>
+    <div class="tab-content" id="tab4-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
+        
+        <!-- TOP SECTION: CONTESTANTS (LEFT) & CHỌN GÓI ĐIỂM (RIGHT) -->
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; flex-shrink: 0; width: 100%;">
             
-            <div class="packages" style="display: flex; gap: 15px; margin-bottom: 12px; align-items: center; background: #e0f2fe; padding: 10px; border-radius: 6px;">
-                <span style="font-weight: bold; color: #0369a1;">Chọn gói điểm:</span>
-                <label style="cursor: pointer; font-weight: bold; color: #0056b3;">
-                    <input type="radio" name="vq_pack" value="10" checked onclick="switchVinhQuangPack(10)"> Gói 10 Điểm (12 câu)
-                </label>
-                <label style="cursor: pointer; font-weight: bold; color: #d97706;">
-                    <input type="radio" name="vq_pack" value="20" onclick="switchVinhQuangPack(20)"> Gói 20 Điểm (12 câu)
-                </label>
-                <label style="cursor: pointer; font-weight: bold; color: #dc2626;">
-                    <input type="radio" name="vq_pack" value="30" onclick="switchVinhQuangPack(30)"> Gói 30 Điểm (12 câu)
-                </label>
+            <!-- LEFT: CONTESTANTS -->
+            <div style="position: relative; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 300px; max-width: 520px; padding-left: 15px;">
+                <!-- Vertical connecting timeline line -->
+                <div style="position: absolute; left: 4px; top: 15px; bottom: 15px; width: 4px; background: #94a3b8; border-radius: 2px;"></div>
+
+                <!-- TS 1 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 50px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts1_score_disp_vq" style="font-size: 26px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(1)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 3px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts1_name_vq" value="Thí sinh 1" onchange="updateContestantName(1, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 13px; flex: 1; outline: none;">
+                            <span style="font-size: 11px; opacity: 0.8;">👤</span>
+                            <input type="text" id="ts1_extra_vq" placeholder="Đáp án" style="width: 80px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; padding: 0 4px;">
+                        </div>
+                        <div style="height: 20px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
+                    </div>
+                </div>
+
+                <!-- TS 2 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 50px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts2_score_disp_vq" style="font-size: 26px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(2)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 3px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts2_name_vq" value="Thí sinh 2" onchange="updateContestantName(2, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 13px; flex: 1; outline: none;">
+                            <span style="font-size: 11px; opacity: 0.8;">👤</span>
+                            <input type="text" id="ts2_extra_vq" placeholder="Đáp án" style="width: 80px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; padding: 0 4px;">
+                        </div>
+                        <div style="height: 20px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
+                    </div>
+                </div>
+
+                <!-- TS 3 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 50px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts3_score_disp_vq" style="font-size: 26px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(3)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 3px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts3_name_vq" value="Thí sinh 3" onchange="updateContestantName(3, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 13px; flex: 1; outline: none;">
+                            <span style="font-size: 11px; opacity: 0.8;">👤</span>
+                            <input type="text" id="ts3_extra_vq" placeholder="Đáp án" style="width: 80px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; padding: 0 4px;">
+                        </div>
+                        <div style="height: 20px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
+                    </div>
+                </div>
+
+                <!-- TS 4 -->
+                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                    <div style="position: relative; width: 75px; height: 50px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <span id="ts4_score_disp_vq" style="font-size: 26px; font-weight: bold; color: #dc2626;">0</span>
+                        <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(4)">✏️</span>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; background: #f59e0b; padding: 3px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
+                            <input type="text" id="ts4_name_vq" value="Thí sinh 4" onchange="updateContestantName(4, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 13px; flex: 1; outline: none;">
+                            <span style="font-size: 11px; opacity: 0.8;">👤</span>
+                            <input type="text" id="ts4_extra_vq" placeholder="Đáp án" style="width: 80px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; padding: 0 4px;">
+                        </div>
+                        <div style="height: 20px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
+                    </div>
+                </div>
             </div>
 
-            <div id="vinhQuangRows" style="margin-bottom: 20px;"></div>
+            <!-- RIGHT: BẢNG CHỌN GÓI ĐIỂM VINH QUANG PANEL -->
+            <div style="flex: 1; min-width: 360px; background: #ffffff; border: 2px solid #94a3b8; border-radius: 8px; padding: 12px 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">
+                    <span style="font-weight: bold; font-size: 15px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                        🏆 BẢNG CHỌN GÓI ĐIỂM VINH QUANG
+                    </span>
+                    <span id="vq_current_pack_badge" style="font-size: 11px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 10px;">
+                        Chưa chọn gói
+                    </span>
+                </div>
 
-            <!-- CONTROL BAR -->
-            <div class="btn-row" style="margin-top: 15px; gap: 10px;">
-                <button class="btn btn-primary" onclick="showToast('Kích hoạt Ngôi sao hy vọng!')">Ngôi Sao Hy Vọng ⭐</button>
-                <button class="btn" onclick="showToast('Bắt đầu 25s Vinh Quang')">Bắt đầu 25s</button>
-                <button class="btn" onclick="showToast('Đã đặt lại vòng Vinh Quang')">Đặt lại</button>
-                <button class="btn" onclick="showToast('Tổng kết điểm Vinh Quang')">Tổng kết</button>
+                <!-- 3 POINT BUTTONS -->
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="onClickVQChonGoiDiem(10)" style="flex: 1; height: 60px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 3px 5px rgba(37,99,235,0.3); transition: transform 0.1s;">
+                        <span style="font-size: 22px; font-weight: 900; line-height: 1;">10</span>
+                        <span style="font-size: 11px; font-weight: bold; opacity: 0.9;">GÓI 10 ĐIỂM</span>
+                    </button>
+                    <button onclick="onClickVQChonGoiDiem(20)" style="flex: 1; height: 60px; background: linear-gradient(135deg, #d97706, #b45309); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 3px 5px rgba(217,119,6,0.3); transition: transform 0.1s;">
+                        <span style="font-size: 22px; font-weight: 900; line-height: 1;">20</span>
+                        <span style="font-size: 11px; font-weight: bold; opacity: 0.9;">GÓI 20 ĐIỂM</span>
+                    </button>
+                    <button onclick="onClickVQChonGoiDiem(30)" style="flex: 1; height: 60px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 3px 5px rgba(220,38,38,0.3); transition: transform 0.1s;">
+                        <span style="font-size: 22px; font-weight: 900; line-height: 1;">30</span>
+                        <span style="font-size: 11px; font-weight: bold; opacity: 0.9;">GÓI 30 ĐIỂM</span>
+                    </button>
+                </div>
+
+                <!-- ACTION BUTTONS ROW -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <button onclick="onClickVQHienChonGoiDiem()" style="background: #1e3a8a; color: white; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        ⬆ Hiện chọn số điểm
+                    </button>
+                    <button onclick="onClickVQAnChonGoiDiem()" style="background: #475569; color: white; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        ⬇ Ẩn chọn số điểm
+                    </button>
+                    <button onclick="onClickVQHienCauHoi()" style="background: #0284c7; color: white; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 4px; grid-column: span 2;">
+                        ❓ Hiện câu hỏi
+                    </button>
+                    <button onclick="onClickVQ25s()" style="background: #16a34a; color: white; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        ⏱ 25s
+                    </button>
+                    <button onclick="onClickVQHienDapAnTS()" style="background: #7c3aed; color: white; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        📊 Hiện đáp án thí sinh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM SECTION: DISPLAY CARDS & CONTROL BUTTONS -->
+        <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: auto;">
+            
+            <!-- LEFT COLUMN: CHUYỂN SLIDE GROUP & PHÁT ÂM THANH -->
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 200px; flex-shrink: 0;">
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQVideoVeDich()">Video Về Đích</button>
+                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQPhanThi()">Phần Thi</button>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQVideoCauHoi()">Video Câu hỏi</button>
+                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQTGThucNghiem()">TG Thực nghiệm</button>
+                    </div>
+                    <button class="ctrl-btn-sm" onclick="onClickVQChuyenSlidePPT()">Chuyển slide PPT</button>
+                </div>
+                <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%; height: 30px;">Phát âm thanh</button>
+            </div>
+
+            <!-- CENTER & RIGHT: BLUE DISPLAY CARDS AND CONTROL ACTION ROWS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+                
+                <!-- BLUE PREVIEW / STATUS CARDS -->
+                <div style="display: flex; gap: 8px; height: 130px;">
+                    <div style="flex: 1; background: #5b9bd5; border-radius: 4px; padding: 10px 12px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 4px;">
+                            <span id="vq_preview_title">VÒNG THI VINH QUANG (VỀ ĐÍCH)</span>
+                            <span>THỜI GIAN: <span id="vq_preview_timer" style="color: #ffeb3b; font-size: 16px;">25</span>s</span>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; line-height: 1.3; color: #f8fafc;" id="vq_preview_q_text">
+                            Nội dung câu hỏi Vinh Quang...
+                        </div>
+                        <div style="font-size: 12px; font-weight: bold; color: #e2e8f0; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;" id="vq_preview_a_text">
+                            Đáp án: ...
+                        </div>
+                    </div>
+
+                    <div style="width: 140px; background: #5b9bd5; border-radius: 4px; padding: 10px; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px;">
+                        <div style="font-size: 11px; font-weight: bold;">TRẠNG THÁI</div>
+                        <div id="vq_preview_status" style="font-size: 16px; font-weight: bold; color: #ffeb3b;">Sẵn sàng</div>
+                    </div>
+                </div>
+
+                <!-- ROW 1 CONTROLS: BLUE BAR + CHECKBOX + WRONG/RIGHT SOUND -->
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <div style="flex: 1; background: #5b9bd5; height: 36px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: bold;">
+                        <span id="vq_select_bar_title">Lượt thi Về Đích</span>
+                        <button onclick="cycleVQQuestion()" style="background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; outline: none;">⇅</button>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                        <label style="font-size: 11px; font-weight: bold; color: #333; cursor: pointer;">
+                            <input type="checkbox" id="vq_check_5s"> Đếm 5s trả lời
+                        </label>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn" onclick="onClickVQDung()" style="background: #d1d5db; color: #16a34a; font-weight: bold; font-size: 18px; width: 65px; height: 36px; border-radius: 3px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                ✔
+                            </button>
+                            <button class="btn" onclick="onClickVQSai()" style="background: #d1d5db; color: #dc2626; font-weight: bold; font-size: 18px; width: 65px; height: 36px; border-radius: 3px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                ✖
+                            </button>
+                            <button class="btn" onclick="onClickPhatAmThanh()" style="background: #ffffff; border: 1px solid #ccc; height: 36px; padding: 0 10px; border-radius: 3px; cursor: pointer;">
+                                🔊...
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 2 CONTROLS: ACTION BUTTONS -->
+                <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" onclick="onClickVQHienChonGoiDiem()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        Hiện chọn số điểm
+                    </button>
+                    <button class="btn" onclick="onClickVQAnChonGoiDiem()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        Ẩn chọn số điểm
+                    </button>
+                    <button class="btn" onclick="onClickVQHienCauHoi()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        Hiện câu hỏi
+                    </button>
+                    <button class="btn" onclick="onClickVQ25s()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        25s
+                    </button>
+                    <button class="btn" onclick="onClickVQHienDapAnTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        Hiện đáp án TS
+                    </button>
+                    <button class="btn" onclick="onClickVQDatLai()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        Đặt lại
+                    </button>
+                    <button class="btn" onclick="onClickTongKet()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px; margin-left: auto;">
+                        Tổng kết
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1516,1435 +1721,12 @@
         </div>
     </div>
 
-    <!-- JavaScript Logic -->
-    <script>
-        // State storage for questions and app data
-        let gameData = {
-            xuatPhat: {}, // Turn 1..7 -> [ { q: "", a: "" }, ... 10 items ]
-            raKhoi: [
-                { q: "", a: "", m: "...", am: "..." },
-                { q: "", a: "", m: "...", am: "..." },
-                { q: "", a: "", m: "...", am: "..." },
-                { q: "", a: "", m: "...", am: "..." }
-            ],
-            vuotSong: {
-                h1: { q: "", a: "" },
-                h2: { q: "", a: "" },
-                h3: { q: "", a: "" },
-                h4: { q: "", a: "" },
-                center: { q: "", a: "" },
-                keyword: ""
-            },
-            vinhQuang: {
-                10: [],
-                20: [],
-                30: []
-            },
-            cauHoiPhu: [
-                { q: "", a: "" },
-                { q: "", a: "" },
-                { q: "", a: "" }
-            ]
-        };
-
-        let currentXuatPhatTurn = 1;
-        let currentVinhQuangPack = 10;
-
-        // Initialize state on DOM ready
-        window.addEventListener('DOMContentLoaded', () => {
-            initXuatPhatTurnData();
-            renderXuatPhatTurnUI(1);
-            initVinhQuangData();
-            renderVinhQuangPackUI(10);
-            loadSavedData();
-            updateVuotSongState();
-            if (typeof selectRKQuestion === 'function') {
-                selectRKQuestion(1);
-            }
-        });
-
-        // Switch main tabs
-        function switchTab(index) {
-            const navItems = document.querySelectorAll('.nav-item');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            navItems.forEach((item, idx) => {
-                if (idx === index) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
-            });
-
-            tabContents.forEach((content, idx) => {
-                if (idx === index) {
-                    content.classList.add('active');
-                } else {
-                    content.classList.remove('active');
-                }
-            });
-
-            if (index === 1 && typeof updateTab1Preview === 'function') {
-                updateTab1Preview();
-            }
-            if (index === 2 && typeof updateTab2Preview === 'function') {
-                selectRKQuestion(currentRKQuestion);
-            }
-            if (index === 3) {
-                selectVSRow(1);
-            }
-        }
-
-        let currentVSRow = 1;
-        let vsTimerInterval = null;
-        let vsTimeLeft = 20;
-        function selectVSRow(row) {
-            currentVSRow = row;
-            const buttons = document.querySelectorAll('#tab3-content .vs-row-btn');
-            buttons.forEach((btn, idx) => {
-                if ((idx + 1 === row) || (row === 'center' && idx === 4)) {
-                    btn.style.background = '#0056b3';
-                    btn.style.color = '#fff';
-                } else {
-                    btn.style.background = idx === 4 ? '#38bdf8' : '#80bfff';
-                    btn.style.color = idx === 4 ? '#fff' : '#002060';
-                }
-            });
-            const titleEl = document.getElementById('vs_preview_title');
-            const qTextEl = document.getElementById('vs_preview_q_text');
-            const aTextEl = document.getElementById('vs_preview_a_text');
-            
-            if (row === 'center') {
-                if (titleEl) titleEl.innerText = "VÒNG THI VƯỢT SÓNG: Ô CHỮ TRUNG TÂM";
-                const q = document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm";
-                const a = document.getElementById('vs_a_center')?.value || "Chưa nhập đáp án";
-                if (qTextEl) qTextEl.innerText = q;
-                if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
-            } else {
-                if (titleEl) titleEl.innerText = `VÒNG THI VƯỢT SÓNG: HÀNG NGANG ${row}`;
-                const q = document.getElementById(`vs_q_${row}`)?.value || `Chưa nhập câu hỏi hàng ${row}`;
-                const a = document.getElementById(`vs_a_${row}`)?.value || `Chưa nhập đáp án`;
-                if (qTextEl) qTextEl.innerText = q;
-                if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
-            }
-            sendToProjector('VUOT_SONG_SELECT_ROW', { row: row });
-            showToast(`Đã chọn Hàng ngang ${row}`);
-        }
-
-        function onClickVSFlipRow() {
-            sendToProjector('VUOT_SONG_SELECT_ROW', { row: currentVSRow });
-            showToast(`Đã lật ô chữ hàng ngang ${currentVSRow} trên Projector`);
-        }
-
-        function onClickVSOpenRowAnswer() {
-            if (!currentVSRow) {
-                showToast('Chưa chọn hàng ngang nào!');
-                return;
-            }
-            let a = "";
-            if (currentVSRow === 'center') {
-                a = document.getElementById('vs_a_center')?.value || "";
-            } else {
-                a = document.getElementById(`vs_a_${currentVSRow}`)?.value || "";
-            }
-            sendToProjector('VUOT_SONG_OPEN_ROW_ANSWER', { row: currentVSRow, answer: a });
-            showToast(`Đã mở đáp án hàng ngang ${currentVSRow}`);
-        }
-
-        function onClickVSOpenAllAnswers() {
-            sendToProjector('VUOT_SONG_OPEN_ALL_ANSWERS', { vuotSong: gameData.vuotSong });
-            showToast('Đã mở đáp án Vòng thi Vượt Sóng!');
-        }
-
-        function onClickVSShowQuestion() {
-            const q = currentVSRow === 'center' ? (document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm") : (document.getElementById(`vs_q_${currentVSRow}`)?.value || `Chưa nhập câu hỏi hàng ${currentVSRow}`);
-            sendToProjector('VUOT_SONG_SHOW_QUESTION', { row: currentVSRow, questionText: q });
-            showToast('Đã hiển thị câu hỏi Vượt Sóng trên Projector');
-        }
-
-        function onClickVSStartTimer() {
-            clearInterval(vsTimerInterval);
-            vsTimeLeft = 20;
-            const timerEl = document.getElementById('vs_preview_timer');
-            if (timerEl) timerEl.innerText = vsTimeLeft;
-            
-            vsTimerInterval = setInterval(() => {
-                vsTimeLeft--;
-                if (timerEl) timerEl.innerText = vsTimeLeft;
-                if (vsTimeLeft <= 0) {
-                    clearInterval(vsTimerInterval);
-                }
-            }, 1000);
-
-            sendToProjector('VUOT_SONG_START_TIMER', { duration: 20 });
-            showToast('Bắt đầu 20s Vượt Sóng trên Projector');
-        }
-
-        function onClickVSShowAnswers() {
-            const contestants = [];
-            for (let i = 1; i <= 4; i++) {
-                contestants.push({
-                    name: gameData.contestants?.[i-1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`,
-                    answer: document.getElementById(`ts${i}_ans_vs`)?.value || '',
-                    time: '00.00'
-                });
-            }
-            sendToProjector('VUOT_SONG_SHOW_CONTESTANT_ANSWERS', { contestants: contestants });
-            showToast('Hiển thị đáp án thí sinh Vượt Sóng trên Projector');
-        }
-
-        function onClickVSDatLai() {
-            clearInterval(vsTimerInterval);
-            vsTimeLeft = 20;
-            const timerEl = document.getElementById('vs_preview_timer');
-            if (timerEl) timerEl.innerText = vsTimeLeft;
-
-            currentVSRow = null;
-            const buttons = document.querySelectorAll('#tab3-content .vs-row-btn');
-            buttons.forEach((btn, idx) => {
-                btn.style.background = idx === 4 ? '#38bdf8' : '#80bfff';
-                btn.style.color = idx === 4 ? '#fff' : '#002060';
-            });
-            const titleEl = document.getElementById('vs_preview_title');
-            const qTextEl = document.getElementById('vs_preview_q_text');
-            const aTextEl = document.getElementById('vs_preview_a_text');
-            if (titleEl) titleEl.innerText = "CHƯA CHỌN HÀNG NGANG";
-            if (qTextEl) qTextEl.innerText = "Nội dung câu hỏi...";
-            if (aTextEl) aTextEl.innerText = "Đáp án...";
-            
-            sendToProjector('VUOT_SONG_RESET');
-            showToast('Đã đặt lại vòng Vượt Sóng');
-        }
-
-        // Show Toast Notification
-        function showToast(msg) {
-            const toast = document.getElementById('toast-msg');
-            toast.innerText = msg;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
-
-        // Initialize empty Xuat Phat turns
-        function initXuatPhatTurnData() {
-            for (let turn = 1; turn <= 7; turn++) {
-                if (!gameData.xuatPhat[turn]) {
-                    gameData.xuatPhat[turn] = [];
-                    for (let i = 0; i < 10; i++) {
-                        gameData.xuatPhat[turn].push({ q: '', a: '' });
-                    }
-                }
-            }
-        }
-
-        // Render Xuat Phat 10 rows for editing a set (1..8)
-        let editingXuatPhatDe = 1;
-        function renderXuatPhatTurnUI(deNum) {
-            editingXuatPhatDe = deNum || 1;
-            const container = document.getElementById('xuatPhatRows');
-            if (!container) return;
-
-            // Highlight tab header
-            const tabs = document.querySelectorAll('#xuatPhatTabHeader .kd-tab');
-            tabs.forEach((tab, idx) => {
-                if (idx + 1 === deNum) tab.classList.add('active');
-                else tab.classList.remove('active');
-            });
-
-            container.innerHTML = '';
-            const questions = gameData.xuatPhat[deNum] || [];
-
-            for (let i = 0; i < 10; i++) {
-                const item = questions[i] || { q: '', a: '' };
-                const row = document.createElement('div');
-                row.className = 'kd-row';
-                row.innerHTML = `
-                    <span style="font-weight: bold; color: #555;">Câu ${i + 1}</span>
-                    <input type="text" value="${escapeHtml(item.q)}" placeholder="Nội dung câu hỏi ${i + 1}" oninput="updateXuatPhatItem(${deNum}, ${i}, 'q', this.value)">
-                    <input type="text" value="${escapeHtml(item.a)}" placeholder="Đáp án câu ${i + 1}" oninput="updateXuatPhatItem(${deNum}, ${i}, 'a', this.value)">
-                `;
-                container.appendChild(row);
-            }
-        }
-
-        function switchXuatPhatTurn(deNum) {
-            renderXuatPhatTurnUI(deNum);
-        }
-
-        function scrollXuatPhatTabs(direction) {
-            let next = editingXuatPhatDe + direction;
-            if (next < 1) next = 8;
-            if (next > 8) next = 1;
-            switchXuatPhatTurn(next);
-        }
-
-        function updateXuatPhatItem(turn, index, field, value) {
-            if (!gameData.xuatPhat[turn]) gameData.xuatPhat[turn] = [];
-            if (!gameData.xuatPhat[turn][index]) gameData.xuatPhat[turn][index] = { q: '', a: '' };
-            gameData.xuatPhat[turn][index][field] = value;
-            saveAllData();
-        }
-
-        // Vuot Song Crossword & character counter
-        function updateVuotSongState() {
-            if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
-                gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
-            }
-            for (let i = 1; i <= 4; i++) {
-                const qVal = document.getElementById(`vs_q_${i}`)?.value || '';
-                const aVal = document.getElementById(`vs_a_${i}`)?.value || '';
-                gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
-
-                const boxContainer = document.getElementById(`vs_box_${i}`);
-                const countSpan = document.getElementById(`vs_count_${i}`);
-                
-                if (boxContainer) {
-                    boxContainer.innerHTML = '';
-                    const cleanAns = aVal.replace(/\s+/g, '').toUpperCase();
-                    for (let c of cleanAns) {
-                        const cell = document.createElement('span');
-                        cell.className = 'box-cell';
-                        cell.innerText = c;
-                        boxContainer.appendChild(cell);
-                    }
-                    if (cleanAns.length === 0) {
-                        boxContainer.innerHTML = '<span style="color:#aaa; font-style:italic;">Chưa có đáp án</span>';
-                    }
-                }
-                if (countSpan) {
-                    const cleanLen = aVal.replace(/\s+/g, '').length;
-                    countSpan.innerText = `${cleanLen} kí tự`;
-                }
-            }
-
-            // Center & Keyword
-            const qCenter = document.getElementById('vs_q_center')?.value || '';
-            const aCenter = document.getElementById('vs_a_center')?.value || '';
-            gameData.vuotSong.center = { q: qCenter, a: aCenter };
-
-            const kwVal = document.getElementById('vs_keyword')?.value || '';
-            gameData.vuotSong.keyword = kwVal;
-            const kwSpan = document.getElementById('vs_keyword_count');
-            if (kwSpan) {
-                kwSpan.innerText = `${kwVal.replace(/\s+/g, '').length} kí tự`;
-            }
-
-            saveAllData();
-            sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
-        }
-
-        // Vinh Quang 3 packs (10, 20, 30 point tiers x 12 questions each)
-        function initVinhQuangData() {
-            if (!gameData.vinhQuang || typeof gameData.vinhQuang !== 'object') {
-                gameData.vinhQuang = { 10: [], 20: [], 30: [] };
-            }
-            for (let pt of [10, 20, 30]) {
-                if (!gameData.vinhQuang[pt] || !Array.isArray(gameData.vinhQuang[pt])) {
-                    gameData.vinhQuang[pt] = [];
-                }
-                while (gameData.vinhQuang[pt].length < 12) {
-                    gameData.vinhQuang[pt].push({ m: '', q: '', a: '' });
-                }
-            }
-        }
-
-        function switchVinhQuangPack(pack) {
-            currentVinhQuangPack = pack;
-            renderVinhQuangPackUI(pack);
-        }
-
-        function renderVinhQuangPackUI(pack) {
-            initVinhQuangData();
-            
-            // Render Contestants
-            const vqContestants = document.getElementById('vq_contestants');
-            if (vqContestants) {
-                vqContestants.innerHTML = '';
-                for (let i = 1; i <= 4; i++) {
-                    const contestant = gameData.contestants?.[i-1] || { name: `Thí sinh ${i}`, score: 0 };
-                    const div = document.createElement('div');
-                    div.style.display = 'flex';
-                    div.style.alignItems = 'center';
-                    div.style.gap = '8px';
-                    div.innerHTML = `
-                        <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            <span id="vq_ts${i}_score_disp" style="font-size: 30px; font-weight: bold; color: #dc2626;">${contestant.score || 0}</span>
-                        </div>
-                        <div style="flex: 1; display: flex; flex-direction: column;">
-                            <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
-                                <input type="text" value="${contestant.name}" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;" readonly>
-                            </div>
-                            <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none;"></div>
-                        </div>
-                    `;
-                    vqContestants.appendChild(div);
-                }
-            }
-
-            const container = document.getElementById('vinhQuangRows');
-            if (!container) return;
-
-            container.innerHTML = '';
-            const questions = gameData.vinhQuang[pack] || [];
-
-            let color = '#0056b3';
-            if (pack === 20) color = '#d97706';
-            if (pack === 30) color = '#dc2626';
-
-            for (let i = 0; i < 12; i++) {
-                const item = questions[i] || { m: '', q: '', a: '' };
-                const row = document.createElement('div');
-                row.className = 'vq-q-row';
-                row.innerHTML = `
-                    <span style="font-weight: bold; color: ${color}; width: 130px;">Gói ${pack}Đ - Câu ${i + 1}</span>
-                    <div>
-                        <input type="text" value="${escapeHtml(item.m || '')}" placeholder="Môn học" oninput="updateVinhQuangItem(${pack}, ${i}, 'm', this.value)">
-                    </div>
-                    <div>
-                        <input type="text" value="${escapeHtml(item.q || '')}" placeholder="Nội dung câu ${pack}đ - ${i + 1}" oninput="updateVinhQuangItem(${pack}, ${i}, 'q', this.value)">
-                    </div>
-                    <div>
-                        <input type="text" value="${escapeHtml(item.a || '')}" placeholder="Đáp án câu ${pack}đ - ${i + 1}" oninput="updateVinhQuangItem(${pack}, ${i}, 'a', this.value)">
-                    </div>
-                `;
-                container.appendChild(row);
-            }
-        }
-
-        function updateVinhQuangItem(pack, index, field, value) {
-            initVinhQuangData();
-            if (!gameData.vinhQuang[pack][index]) {
-                gameData.vinhQuang[pack][index] = { m: '', q: '', a: '' };
-            }
-            gameData.vinhQuang[pack][index][field] = value;
-            saveAllData();
-        }
-
-        // Excel Upload Handler matching the provided sheets format
-        function handleExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            document.getElementById('excelFileName').value = file.name;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-
-                    parseExcelWorkbook(workbook);
-
-                    // Update UI Step Check
-                    const step4 = document.getElementById('step4-check');
-                    if (step4) {
-                        step4.className = 'status-check green-check';
-                        step4.innerText = '✅';
-                    }
-
-                    showToast(`Đã nhập dữ liệu thành công từ file ${file.name}!`);
-                    saveAllData(true);
-                } catch (err) {
-                    console.error("Excel parse error:", err);
-                    alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra đúng định dạng mẫu đề!");
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Parse individual sheets based on user template
-        function parseExcelWorkbook(workbook) {
-            const sheetNames = workbook.SheetNames;
-
-            sheetNames.forEach(sheetName => {
-                const cleanSheetName = sheetName.trim().toUpperCase();
-                const worksheet = workbook.Sheets[sheetName];
-                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-
-                if (cleanSheetName.includes("XUẤT PHÁT") || cleanSheetName.includes("KHỞI ĐỘNG") || cleanSheetName.includes("XUAT PHAT")) {
-                    parseXuatPhatSheet(rawRows);
-                } else if (cleanSheetName.includes("RA KHƠI") || cleanSheetName.includes("RA KHOI")) {
-                    parseRaKhoiSheet(rawRows);
-                } else if (cleanSheetName.includes("VƯỢT SÓNG") || cleanSheetName.includes("VUOT SONG") || cleanSheetName.includes("VƯỢT CHƯỚNG NGẠI VẬT")) {
-                    parseVuotSongSheet(rawRows);
-                } else if (cleanSheetName.includes("VINH QUANG") || cleanSheetName.includes("VỀ ĐÍCH")) {
-                    parseVinhQuangSheet(rawRows);
-                } else if (cleanSheetName.includes("CÂU HỎI PHỤ") || cleanSheetName.includes("CAU HOI PHU")) {
-                    parseCauHoiPhuSheet(rawRows);
-                }
-            });
-
-            // Re-render UI views
-            renderXuatPhatTurnUI(currentXuatPhatTurn);
-            fillRaKhoiInputs();
-            fillVuotSongInputs();
-            renderVinhQuangPackUI(currentVinhQuangPack);
-            fillCauHoiPhuInputs();
-            updateVuotSongState();
-        }
-
-        // Sheet 1: XUẤT PHÁT
-        function parseXuatPhatSheet(rows) {
-            let currentTurn = 1;
-            let currentItemIndex = 0;
-
-            for (let r = 2; r < rows.length; r++) {
-                const row = rows[r];
-                if (!row || row.length < 2) continue;
-
-                const sttDe = row[0] !== undefined && row[0] !== "" ? parseInt(row[0]) : null;
-                const questionText = (row[1] || "").toString().trim();
-                const answerText = (row[2] || "").toString().trim();
-
-                if (!questionText && !answerText) continue;
-
-                if (sttDe && !isNaN(sttDe)) {
-                    currentTurn = sttDe;
-                    currentItemIndex = 0;
-                }
-
-                if (!gameData.xuatPhat[currentTurn]) {
-                    gameData.xuatPhat[currentTurn] = [];
-                    for (let i = 0; i < 10; i++) gameData.xuatPhat[currentTurn].push({ q: '', a: '' });
-                }
-
-                if (currentItemIndex < 10) {
-                    gameData.xuatPhat[currentTurn][currentItemIndex] = {
-                        q: questionText,
-                        a: answerText
-                    };
-                    currentItemIndex++;
-                }
-            }
-        }
-
-        // Sheet 2: RA KHƠI (4 câu hỏi dạng đoạn băng / media)
-        function parseRaKhoiSheet(rows) {
-            if (!Array.isArray(gameData.raKhoi)) {
-                gameData.raKhoi = [ {q:"",a:""}, {q:"",a:""}, {q:"",a:""}, {q:"",a:""} ];
-            }
-            let count = 0;
-            for (let r = 2; r < rows.length && count < 4; r++) {
-                const row = rows[r];
-                if (!row || row.length < 2) continue;
-
-                const colA = (row[0] || "").toString().trim();
-                const qText = (row[1] || "").toString().trim();
-                const aText = (row[2] || "").toString().trim();
-
-                if (qText || aText) {
-                    gameData.raKhoi[count] = { q: qText, a: aText, m: "...", am: "..." };
-                    count++;
-                }
-            }
-        }
-
-        // Sheet 3: VƯỢT SÓNG (Giải ô chữ)
-        function parseVuotSongSheet(rows) {
-            if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
-                gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
-            }
-            let rowIndex = 1;
-            for (let r = 2; r < rows.length; r++) {
-                const row = rows[r];
-                if (!row || row.length < 2) continue;
-
-                const colA = (row[0] || "").toString().trim();
-                const qText = (row[1] || "").toString().trim();
-                const aText = (row[2] || "").toString().trim();
-
-                if (colA.toUpperCase().includes("TRUNG TÂM") || colA.toUpperCase().includes("TỪ KHÓA") || r === 6) {
-                    if (r === 6 && !colA.toUpperCase().includes("ĐÁP ÁN VÒNG THI")) {
-                        gameData.vuotSong.center = { q: qText, a: aText };
-                    }
-                } else if (rowIndex <= 4) {
-                    gameData.vuotSong[`h${rowIndex}`] = { q: qText, a: aText };
-                    rowIndex++;
-                }
-
-                if (colA.toUpperCase().includes("TỪ KHÓA") || colA.toUpperCase().includes("ĐÁP ÁN VÒNG THI")) {
-                    gameData.vuotSong.keyword = aText || qText;
-                }
-            }
-        }
-
-        // Sheet 4: VINH QUANG (3 gói điểm 10, 20, 30, mỗi gói 12 câu)
-        function parseVinhQuangSheet(rows) {
-            initVinhQuangData();
-            let questionIndex = 0;
-            for (let r = 2; r < rows.length && questionIndex < 12; r++) {
-                const row = rows[r];
-                if (!row || row.length < 2) continue;
-
-                const colA = (row[0] || "").toString().trim().toUpperCase();
-                if (colA.includes("STT") || colA.includes("CÂU") || colA.includes("GÓI") || colA.includes("NỘI DUNG")) continue;
-
-                const m10 = (row[1] || "").toString().trim();
-                const q10 = (row[2] || "").toString().trim();
-                const a10 = (row[3] || "").toString().trim();
-                const m20 = (row[4] || "").toString().trim();
-                const q20 = (row[5] || "").toString().trim();
-                const a20 = (row[6] || "").toString().trim();
-                const m30 = (row[7] || "").toString().trim();
-                const q30 = (row[8] || "").toString().trim();
-                const a30 = (row[9] || "").toString().trim();
-
-                if (q10 || a10) gameData.vinhQuang[10][questionIndex] = { m: m10, q: q10, a: a10 };
-                if (q20 || a20) gameData.vinhQuang[20][questionIndex] = { m: m20, q: q20, a: a20 };
-                if (q30 || a30) gameData.vinhQuang[30][questionIndex] = { m: m30, q: q30, a: a30 };
-
-                questionIndex++;
-            }
-        }
-
-        // Sheet 5: CÂU HỎI PHỤ
-        function parseCauHoiPhuSheet(rows) {
-            let count = 0;
-            for (let r = 2; r < rows.length && count < 3; r++) {
-                const row = rows[r];
-                if (!row || row.length < 2) continue;
-
-                const qText = (row[1] || "").toString().trim();
-                const aText = (row[2] || "").toString().trim();
-
-                if (qText || aText) {
-                    gameData.cauHoiPhu[count] = { q: qText, a: aText };
-                    count++;
-                }
-            }
-        }
-
-        // Fill inputs from gameData object
-        function fillRaKhoiInputs() {
-            if (!Array.isArray(gameData.raKhoi)) {
-                gameData.raKhoi = [ {q:"",a:"",m:""}, {q:"",a:"",m:""}, {q:"",a:"",m:""}, {q:"",a:"",m:""} ];
-            }
-            for (let i = 1; i <= 4; i++) {
-                const item = gameData.raKhoi[i - 1] || { q: '', a: '', m: '' };
-                const qEl = document.getElementById(`rk_q_${i}`);
-                const aEl = document.getElementById(`rk_a_${i}`);
-                const mEl = document.getElementById(`rk_m_${i}`);
-                const amEl = document.getElementById(`rk_am_${i}`);
-                if (qEl) qEl.value = item.q || '';
-                if (aEl) aEl.value = item.a || '';
-                if (mEl) mEl.value = item.m || '';
-                if (amEl) amEl.value = item.am || '';
-            }
-        }
-
-        function fillVuotSongInputs() {
-            if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
-                gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
-            }
-            for (let i = 1; i <= 4; i++) {
-                const item = gameData.vuotSong[`h${i}`] || { q: '', a: '' };
-                const qEl = document.getElementById(`vs_q_${i}`);
-                const aEl = document.getElementById(`vs_a_${i}`);
-                if (qEl) qEl.value = item.q || '';
-                if (aEl) aEl.value = item.a || '';
-            }
-            const cItem = gameData.vuotSong.center || { q: '', a: '' };
-            const qc = document.getElementById('vs_q_center');
-            const ac = document.getElementById('vs_a_center');
-            if (qc) qc.value = cItem.q || '';
-            if (ac) ac.value = cItem.a || '';
-
-            const kw = document.getElementById('vs_keyword');
-            if (kw) kw.value = gameData.vuotSong.keyword || '';
-        }
-
-        function fillCauHoiPhuInputs() {
-            for (let i = 1; i <= 3; i++) {
-                const item = gameData.cauHoiPhu[i - 1] || { q: '', a: '' };
-                const qEl = document.getElementById(`chp_q_${i}`);
-                const aEl = document.getElementById(`chp_a_${i}`);
-                if (qEl) qEl.value = item.q || '';
-                if (aEl) aEl.value = item.a || '';
-            }
-        }
-
-        function safeGetStorage(key) {
-            try {
-                return localStorage.getItem(key);
-            } catch (e) {
-                console.warn("Storage access restricted:", e);
-                return null;
-            }
-        }
-
-        function safeSetStorage(key, val) {
-            try {
-                localStorage.setItem(key, val);
-            } catch (e) {
-                console.warn("Storage access restricted:", e);
-            }
-        }
-
-        function safeRemoveStorage(key) {
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                console.warn("Storage access restricted:", e);
-            }
-        }
-
-        // Save and Load state to localStorage
-        function saveAllData(notify = false) {
-            try {
-                // Read Ra Khoi inputs (4 clip questions)
-                if (!Array.isArray(gameData.raKhoi)) gameData.raKhoi = [];
-                for (let i = 1; i <= 4; i++) {
-                    const qEl = document.getElementById(`rk_q_${i}`);
-                    const aEl = document.getElementById(`rk_a_${i}`);
-                    const mEl = document.getElementById(`rk_m_${i}`);
-                    const amEl = document.getElementById(`rk_am_${i}`);
-                    if (qEl || aEl || mEl || amEl) {
-                        const qVal = qEl?.value || '';
-                        const aVal = aEl?.value || '';
-                        const mVal = mEl?.value || '';
-                        const amVal = amEl?.value || '';
-                        gameData.raKhoi[i - 1] = {
-                            q: qVal || gameData.raKhoi[i - 1]?.q || '',
-                            a: aVal || gameData.raKhoi[i - 1]?.a || '',
-                            m: mVal || gameData.raKhoi[i - 1]?.m || '',
-                            am: amVal || gameData.raKhoi[i - 1]?.am || ''
-                        };
-                    }
-                }
-
-                // Read Vuot Song inputs (crossword)
-                if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
-                    gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
-                }
-                for (let i = 1; i <= 4; i++) {
-                    const qVal = document.getElementById(`vs_q_${i}`)?.value || '';
-                    const aVal = document.getElementById(`vs_a_${i}`)?.value || '';
-                    if (qVal || aVal) gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
-                }
-                if (document.getElementById('vs_q_center')) {
-                    gameData.vuotSong.center = {
-                        q: document.getElementById('vs_q_center')?.value || '',
-                        a: document.getElementById('vs_a_center')?.value || ''
-                    };
-                }
-                if (document.getElementById('vs_keyword')) {
-                    gameData.vuotSong.keyword = document.getElementById('vs_keyword')?.value || '';
-                }
-
-                // Ensure Vinh Quang is initialized
-                initVinhQuangData();
-
-                // Read Cau Hoi Phu inputs
-                if (!Array.isArray(gameData.cauHoiPhu)) gameData.cauHoiPhu = [];
-                for (let i = 1; i <= 3; i++) {
-                    const qVal = document.getElementById(`chp_q_${i}`)?.value || '';
-                    const aVal = document.getElementById(`chp_a_${i}`)?.value || '';
-                    if (qVal || aVal) gameData.cauHoiPhu[i - 1] = { q: qVal, a: aVal };
-                }
-
-                safeSetStorage('duong_den_vinh_quang_data', JSON.stringify(gameData));
-                if (notify) {
-                    showToast('Đã lưu tất cả dữ liệu câu hỏi vào hệ thống!');
-                }
-            } catch(e) {
-                console.warn("saveAllData error:", e);
-            }
-        }
-
-        function syncContestantsUI() {
-            if (gameData.contestants && Array.isArray(gameData.contestants)) {
-                gameData.contestants.forEach((c, i) => {
-                    const idx = i + 1;
-                    const tab0Input = document.getElementById(`ts_name_${idx}`);
-                    if (tab0Input) tab0Input.value = c.name || `Thí sinh ${idx}`;
-                    const tab1Input = document.getElementById(`ts${idx}_name`);
-                    if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
-                    const tab2Input = document.getElementById(`ts${idx}_name_rk`);
-                    if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
-                    
-                    const disp = document.getElementById(`ts${idx}_score_disp`);
-                    if (disp) disp.innerText = c.score || 0;
-                    const dispRK = document.getElementById(`ts${idx}_score_disp_rk`);
-                    if (dispRK) dispRK.innerText = c.score || 0;
-                });
-            }
-        }
-
-        function loadSavedData() {
-            try {
-                const saved = safeGetStorage('duong_den_vinh_quang_data');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    gameData = Object.assign(gameData, parsed);
-                    renderXuatPhatTurnUI(currentXuatPhatTurn);
-                    fillRaKhoiInputs();
-                    fillVuotSongInputs();
-                    renderVinhQuangPackUI(currentVinhQuangPack);
-                    fillCauHoiPhuInputs();
-                    updateVuotSongState();
-                    syncContestantsUI();
-                    if (typeof updateTab1Preview === 'function') updateTab1Preview();
-
-                    const step4 = document.getElementById('step4-check');
-                    if (step4) {
-                        step4.className = 'status-check green-check';
-                        step4.innerText = '✅';
-                    }
-                }
-            } catch(e) {
-                console.error('Error loading saved data:', e);
-            }
-        }
-
-        function resetAllData() {
-            if (confirm("Bạn có chắc chắn muốn xóa và thiết lập lại toàn bộ dữ liệu không?")) {
-                safeRemoveStorage('duong_den_vinh_quang_data');
-                location.reload();
-            }
-        }
-
-        function updateContestantNames() {
-            for (let i = 1; i <= 4; i++) {
-                const val = document.getElementById(`ts_name_${i}`)?.value || `Thí sinh ${i}`;
-                if (!gameData.contestants) gameData.contestants = [];
-                if (!gameData.contestants[i - 1]) gameData.contestants[i - 1] = { name: val, score: 0 };
-                else gameData.contestants[i - 1].name = val;
-
-                const tab1Input = document.getElementById(`ts${i}_name`);
-                if (tab1Input) tab1Input.value = val;
-            }
-            if (gameData.contestants.length > 4) {
-                gameData.contestants = gameData.contestants.slice(0, 4);
-            }
-            saveAllData();
-            if (typeof updateTab1Preview === 'function') updateTab1Preview();
-            showToast('Đã cập nhật tên các thí sinh!');
-        }
-
-        function syncDataToProjector() {
-            saveAllData();
-            updateContestantNames();
-            showToast('Đã đồng bộ toàn bộ dữ liệu sang Màn Hình Chiếu!');
-        }
-
-        // Export current gameData to .xlsx
-        function exportExcelFile() {
-            saveAllData();
-            const wb = XLSX.utils.book_new();
-
-            // Sheet 1: XUẤT PHÁT
-            const xpRows = [["XUẤT PHÁT"], ["STT ĐỀ", "NỘI DUNG", "ĐÁP ÁN"]];
-            for (let t = 1; t <= 8; t++) {
-                const turnData = gameData.xuatPhat[t] || [];
-                for (let i = 0; i < 10; i++) {
-                    const q = turnData[i]?.q || '';
-                    const a = turnData[i]?.a || '';
-                    xpRows.push([i === 0 ? t : "", q, a]);
-                }
-            }
-            const wsXP = XLSX.utils.aoa_to_sheet(xpRows);
-            XLSX.utils.book_append_sheet(wb, wsXP, "XUẤT PHÁT");
-
-            // Sheet 2: RA KHƠI (4 tape questions)
-            const rkRows = [
-                ["RA KHƠI"],
-                ["CÂU", "NỘI DUNG", "ĐÁP ÁN", "GIẢI THÍCH"],
-                [1, gameData.raKhoi[0]?.q || "", gameData.raKhoi[0]?.a || "", ""],
-                [2, gameData.raKhoi[1]?.q || "", gameData.raKhoi[1]?.a || "", ""],
-                [3, gameData.raKhoi[2]?.q || "", gameData.raKhoi[2]?.a || "", ""],
-                [4, gameData.raKhoi[3]?.q || "", gameData.raKhoi[3]?.a || "", ""]
-            ];
-            const wsRK = XLSX.utils.aoa_to_sheet(rkRows);
-            XLSX.utils.book_append_sheet(wb, wsRK, "RA KHƠI");
-
-            // Sheet 3: VƯỢT SÓNG (Crossword puzzle)
-            const vsRows = [
-                ["VƯỢT SÓNG"],
-                ["CÂU", "NỘI DUNG", "ĐÁP ÁN", "GIẢI THÍCH"],
-                [1, gameData.vuotSong.h1?.q || "", gameData.vuotSong.h1?.a || "", ""],
-                [2, gameData.vuotSong.h2?.q || "", gameData.vuotSong.h2?.a || "", ""],
-                [3, gameData.vuotSong.h3?.q || "", gameData.vuotSong.h3?.a || "", ""],
-                [4, gameData.vuotSong.h4?.q || "", gameData.vuotSong.h4?.a || "", ""],
-                ["ĐÁP ÁN VÒNG THI", gameData.vuotSong.center?.q || "", gameData.vuotSong.keyword || "", ""]
-            ];
-            const wsVS = XLSX.utils.aoa_to_sheet(vsRows);
-            XLSX.utils.book_append_sheet(wb, wsVS, "VƯỢT SÓNG");
-
-            // Sheet 4: VINH QUANG
-            initVinhQuangData();
-            const vqRows = [
-                ["VINH QUANG"],
-                ["", "GÓI 10 ĐIỂM", "", "", "GÓI 20 ĐIỂM", "", "", "GÓI 30 ĐIỂM", "", ""],
-                ["CÂU", "MÔN HỌC", "NỘI DUNG", "ĐÁP ÁN", "MÔN HỌC", "NỘI DUNG", "ĐÁP ÁN", "MÔN HỌC", "NỘI DUNG", "ĐÁP ÁN"]
-            ];
-            for (let i = 0; i < 12; i++) {
-                const item10 = gameData.vinhQuang[10][i] || { m: "", q: "", a: "" };
-                const item20 = gameData.vinhQuang[20][i] || { m: "", q: "", a: "" };
-                const item30 = gameData.vinhQuang[30][i] || { m: "", q: "", a: "" };
-                vqRows.push([
-                    i + 1,
-                    item10.m, item10.q, item10.a,
-                    item20.m, item20.q, item20.a,
-                    item30.m, item30.q, item30.a
-                ]);
-            }
-            const wsVQ = XLSX.utils.aoa_to_sheet(vqRows);
-            XLSX.utils.book_append_sheet(wb, wsVQ, "VINH QUANG");
-
-            // Sheet 5: CÂU HỎI PHỤ
-            const chpRows = [
-                ["CÂU HỎI PHỤ"],
-                ["CÂU", "NỘI DUNG", "ĐÁP ÁN"]
-            ];
-            gameData.cauHoiPhu.forEach((item, idx) => {
-                chpRows.push([idx + 1, item.q, item.a]);
-            });
-            const wsCHP = XLSX.utils.aoa_to_sheet(chpRows);
-            XLSX.utils.book_append_sheet(wb, wsCHP, "CÂU HỎI PHỤ");
-
-            XLSX.writeFile(wb, "Bo_De_Duong_Den_Vinh_Quang.xlsx");
-            showToast("Đã xuất file Excel thành công!");
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.toString()
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        /* CONTROLLER - PROJECTOR CONNECTION & TAB 1 LOGIC */
-        let controllerChannel = null;
-        let projectorWindow = null;
-        let lastProjectorPing = 0;
-
-        try {
-            if (typeof BroadcastChannel !== 'undefined') {
-                controllerChannel = new BroadcastChannel('ddvq_game_channel');
-                controllerChannel.onmessage = function(event) {
-                    if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
-                        lastProjectorPing = Date.now();
-                        updateProjectorStatus(true);
-                    }
-                };
-            }
-        } catch(e) {
-            console.warn("BroadcastChannel restricted:", e);
-        }
-
-        window.addEventListener('storage', function(event) {
-            if (event.key === 'ddvq_projector_status' && event.newValue) {
-                lastProjectorPing = Date.now();
-                updateProjectorStatus(true);
-            }
-        });
-
-        window.addEventListener('message', function(event) {
-            if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
-                lastProjectorPing = Date.now();
-                updateProjectorStatus(true);
-            }
-        });
-
-        setInterval(() => {
-            if (Date.now() - lastProjectorPing > 5000) {
-                updateProjectorStatus(false);
-            }
-        }, 2000);
-
-        function updateProjectorStatus(isConnected) {
-            const badge = document.getElementById('projector_status_badge');
-            if (badge) {
-                if (isConnected) {
-                    badge.innerHTML = '🟢 Máy chiếu đã kết nối';
-                    badge.style.color = '#22c55e';
-                    badge.style.background = 'rgba(34,197,94,0.1)';
-                    badge.style.borderColor = 'rgba(34,197,94,0.2)';
-                } else {
-                    badge.innerHTML = '🔴 Chưa kết nối máy chiếu';
-                    badge.style.color = '#ef4444';
-                    badge.style.background = 'rgba(239,68,68,0.1)';
-                    badge.style.borderColor = 'rgba(239,68,68,0.2)';
-                }
-            }
-        }
-
-        function sendToProjector(type, payload = {}) {
-            const message = { type, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
-            if (controllerChannel) {
-                try {
-                    controllerChannel.postMessage(message);
-                } catch(e) {
-                    console.warn("Error posting to projector channel:", e);
-                }
-            }
-            try {
-                localStorage.setItem('ddvq_latest_action', JSON.stringify(message));
-            } catch(e) {}
-            try {
-                if (projectorWindow && !projectorWindow.closed) {
-                    projectorWindow.postMessage(message, '*');
-                } else if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage(message, '*');
-                }
-            } catch(e) {}
-        }
-
-        if (!gameData.contestants || gameData.contestants.length > 4) {
-            gameData.contestants = [
-                { name: "Thí sinh 1", score: 0 },
-                { name: "Thí sinh 2", score: 0 },
-                { name: "Thí sinh 3", score: 0 },
-                { name: "Thí sinh 4", score: 0 }
-            ];
-        }
-
-        if (typeof currentXuatPhatTurn === 'undefined') {
-            currentXuatPhatTurn = 1;
-        }
-        let currentXuatPhatDe = 1;
-        let currentXuatPhatQIndex = 0;
-        let xuatPhatTimerInterval = null;
-        let xuatPhatTimeLeft = 60;
-
-        function updateContestantName(idx, val) {
-            if (gameData.contestants && gameData.contestants[idx - 1]) {
-                gameData.contestants[idx - 1].name = val;
-                const inputs = [
-                    document.getElementById(`ts_name_${idx}`),
-                    document.getElementById(`ts${idx}_name`),
-                    document.getElementById(`ts${idx}_name_rk`)
-                ];
-                inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
-                saveAllData();
-                if (currentXuatPhatTurn === idx) {
-                    updateTab1Preview();
-                }
-            }
-        }
-
-        function promptScore(idx) {
-            if (!gameData.contestants || !gameData.contestants[idx - 1]) return;
-            const current = gameData.contestants[idx - 1]?.score || 0;
-            const newScore = prompt(`Nhập điểm cho Thí sinh ${idx}:`, current);
-            if (newScore !== null && !isNaN(parseInt(newScore))) {
-                gameData.contestants[idx - 1].score = parseInt(newScore);
-                const disps = [
-                    document.getElementById(`ts${idx}_score_disp`),
-                    document.getElementById(`ts${idx}_score_disp_rk`)
-                ];
-                disps.forEach(disp => { if (disp) disp.innerText = gameData.contestants[idx - 1].score; });
-                saveAllData();
-                updateTab1Preview();
-                sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
-                    name: gameData.contestants[idx - 1].name,
-                    score: gameData.contestants[idx - 1].score
-                });
-            }
-        }
-
-        function changeXuatPhatDe(val) {
-            currentXuatPhatDe = parseInt(val) || 1;
-            currentXuatPhatQIndex = 0;
-            updateTab1Preview();
-            showToast(`Đã chọn Bộ đề ${currentXuatPhatDe}`);
-        }
-
-        function selectLuotThi(turnIndex) {
-            currentXuatPhatTurn = Math.min(4, Math.max(1, turnIndex));
-            currentXuatPhatQIndex = 0;
-
-            for (let i = 1; i <= 4; i++) {
-                const btn = document.getElementById(`btn_luot_${i}`);
-                if (btn) {
-                    if (i === currentXuatPhatTurn) btn.classList.add('active');
-                    else btn.classList.remove('active');
-                }
-            }
-
-            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-
-            updateTab1Preview();
-            sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', { name, score });
-        }
-
-        function updateTab1Preview() {
-            const turnName = gameData.contestants[currentXuatPhatTurn - 1]?.name || `THÍ SINH ${currentXuatPhatTurn}`;
-            const currentScore = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-
-            const titleEl = document.getElementById('preview_turn_title');
-            if (titleEl) titleEl.innerText = `LƯỢT THI ${currentXuatPhatTurn}: ${turnName.toUpperCase()}`;
-
-            const qNumEl = document.getElementById('preview_q_num');
-            if (qNumEl) qNumEl.innerText = currentXuatPhatQIndex + 1;
-
-            const deSelectEl = document.getElementById('preview_de_select');
-            if (deSelectEl) deSelectEl.value = currentXuatPhatDe;
-
-            const timerEl = document.getElementById('preview_timer');
-            if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
-
-            const scoreEl = document.getElementById('preview_current_score');
-            if (scoreEl) scoreEl.innerText = currentScore;
-
-            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-            const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-
-            const qTextEl = document.getElementById('preview_q_text');
-            if (qTextEl) qTextEl.innerText = currentQ.q ? `Câu ${currentXuatPhatQIndex + 1}: ${currentQ.q}` : `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`;
-
-            const aTextEl = document.getElementById('preview_a_text');
-            if (aTextEl) aTextEl.innerText = `Đáp án: ${currentQ.a || '...'}`;
-        }
-
-        function onClickIntroXuatPhat() {
-            sendToProjector('XUAT_PHAT_INTRO');
-            showToast('Phát Intro Xuất Phát');
-        }
-
-        function onClickLuatXuatPhat() {
-            sendToProjector('XUAT_PHAT_LUAT');
-            showToast('Hiển thị Luật thi Xuất Phát');
-        }
-
-        function onClickHienGraphicChonDe() {
-            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-            sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { name });
-            showToast('Đã hiện graphic Chọn Đề trên Projector');
-        }
-
-        function onClickHienGraphicCauHoi() {
-            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-            sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI', { 
-                name: name,
-                score: score
-            });
-            showToast('Đã hiện graphic khung Câu Hỏi trên Projector (chưa hiện câu hỏi)');
-        }
-
-        function onClickRandomDe() {
-            const chosenSet = Math.floor(Math.random() * 8) + 1;
-            currentXuatPhatDe = chosenSet;
-            currentXuatPhatQIndex = 0;
-            updateTab1Preview();
-            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-            sendToProjector('XUAT_PHAT_RANDOM_DE', { deNumber: chosenSet, name: name });
-            showToast(`Đã random chọn Bộ đề ${chosenSet} cho ${name}`);
-        }
-
-        function onClickKhoidong() {
-            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-            sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { name });
-            showToast('Khởi động lượt thi');
-        }
-
-        function onClickBatDau60s() {
-            clearInterval(xuatPhatTimerInterval);
-            xuatPhatTimeLeft = 60;
-            const timerEl = document.getElementById('preview_timer');
-            if (timerEl) timerEl.innerText = "60";
-
-            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-            const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-            const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-
-            sendToProjector('XUAT_PHAT_START_TIMER', {
-                questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
-                questionIndex: currentXuatPhatQIndex + 1,
-                contestantName: name,
-                score: score
-            });
-
-            const targetTime = Date.now() + 60000;
-            xuatPhatTimerInterval = setInterval(() => {
-                xuatPhatTimeLeft = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
-                if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
-                if (xuatPhatTimeLeft <= 0) {
-                    clearInterval(xuatPhatTimerInterval);
-                    const statusEl = document.getElementById('preview_status_text');
-                    if (statusEl) statusEl.innerText = "Hết giờ!";
-                }
-            }, 200);
-
-            const statusEl = document.getElementById('preview_status_text');
-            if (statusEl) statusEl.innerText = "Đang đếm giờ...";
-            showToast('Bắt đầu tính thời gian 60 giây!');
-        }
-
-        function onClickDung() {
-            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-            const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-            if (gameData.contestants[currentXuatPhatTurn - 1]) {
-                gameData.contestants[currentXuatPhatTurn - 1].score += 10;
-                const newScore = gameData.contestants[currentXuatPhatTurn - 1].score;
-                const disp = document.getElementById(`ts${currentXuatPhatTurn}_score_disp`);
-                if (disp) disp.innerText = newScore;
-                saveAllData();
-                updateTab1Preview();
-                sendToProjector('XUAT_PHAT_RIGHT', { score: newScore, answerText: currentQ.a || 'Đáp án' });
-            } else {
-                sendToProjector('XUAT_PHAT_RIGHT', { answerText: currentQ.a || 'Đáp án' });
-            }
-            showToast('Trả lời ĐÚNG (+10đ)');
-        }
-
-        function onClickSai() {
-            const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-            const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-            sendToProjector('XUAT_PHAT_WRONG', { score, answerText: currentQ.a || 'Đáp án' });
-            showToast('Trả lời SAI');
-        }
-
-        function onClickChuyenCau() {
-            if (currentXuatPhatQIndex < 9) {
-                currentXuatPhatQIndex++;
-                updateTab1Preview();
-                const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-                const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
-                const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-                sendToProjector('XUAT_PHAT_NEXT_QUESTION', {
-                    questionIndex: currentXuatPhatQIndex + 1,
-                    questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
-                    score
-                });
-                showToast(`Đã chuyển sang Câu ${currentXuatPhatQIndex + 1}`);
-            } else {
-                showToast('Đã hết 10 câu hỏi của lượt thi này');
-            }
-        }
-
-        function onClickDatLaiVongThi() {
-            clearInterval(xuatPhatTimerInterval);
-            xuatPhatTimeLeft = 60;
-            currentXuatPhatQIndex = 0;
-            const timerEl = document.getElementById('preview_timer');
-            if (timerEl) timerEl.innerText = "60";
-            const statusEl = document.getElementById('preview_status_text');
-            if (statusEl) statusEl.innerText = "Đã đặt lại";
-            updateTab1Preview();
-
-            const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-            sendToProjector('XUAT_PHAT_RESET', { score });
-            showToast('Đã đặt lại vòng thi Xuất Phát');
-        }
-
-        function onClickDungNhac() {
-            sendToProjector('XUAT_PHAT_STOP_SOUND');
-            showToast('Đã dừng nhạc');
-        }
-
-        function onClickHoanThanh() {
-            sendToProjector('XUAT_PHAT_FINISH');
-            sendToProjector('XUAT_PHAT_STOP_SOUND');
-            const statusEl = document.getElementById('preview_status_text');
-            if (statusEl) statusEl.innerText = "Hoàn thành";
-            showToast('Đã hoàn thành lượt thi - Đã ẩn màn hình Projector');
-        }
-
-        function onClickPhatAmThanh() {
-            showToast('Đã phát âm thanh hiệu ứng');
-        }
-
-        function onClickTongKet() {
-            let summary = "TỔNG KẾT ĐIỂM SỐ CÁC THÍ SINH:\n";
-            if (gameData.contestants) {
-                gameData.contestants.forEach((ts, idx) => {
-                    summary += `${ts.name || 'Thí sinh ' + (idx+1)}: ${ts.score || 0} điểm\n`;
-                });
-            }
-            alert(summary);
-        }
-
-        /* --- RA KHƠI (TĂNG TỐC) CONTROLLER LOGIC --- */
-        let currentRKQuestion = 1;
-        let rkTimerInterval = null;
-        let rkTimeLeft = 30;
-
-        function selectRKQuestion(num) {
-            currentRKQuestion = num;
-            for (let i = 1; i <= 4; i++) {
-                const btn = document.getElementById(`btn_rk_q${i}`);
-                if (btn) {
-                    if (i === num) {
-                        btn.style.background = '#2563eb';
-                        btn.style.color = '#ffffff';
-                    } else {
-                        btn.style.background = '#80bfff';
-                        btn.style.color = '#002060';
-                    }
-                }
-            }
-            rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
-            updateTab2Preview();
-        }
-
-        function cycleRKQuestion() {
-            let next = currentRKQuestion + 1;
-            if (next > 4) next = 1;
-            selectRKQuestion(next);
-        }
-
-        function updateTab2Preview() {
-            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
-            const titleEl = document.getElementById('rk_preview_title');
-            if (titleEl) titleEl.innerText = `VÒNG THI RA KHƠI: CÂU HỎI THỨ ${currentRKQuestion}`;
-            const selectBarTitle = document.getElementById('rk_select_bar_title');
-            if (selectBarTitle) selectBarTitle.innerText = `Câu hỏi thứ ${currentRKQuestion}`;
-            const qTextEl = document.getElementById('rk_preview_q_text');
-            if (qTextEl) qTextEl.innerText = qItem.q || `Nội dung câu hỏi Ra Khơi số ${currentRKQuestion}...`;
-            const aTextEl = document.getElementById('rk_preview_a_text');
-            if (aTextEl) aTextEl.innerText = `Đáp án: ${qItem.a || '...'}`;
-            const timerEl = document.getElementById('rk_preview_timer');
-            if (timerEl) timerEl.innerText = rkTimeLeft;
-        }
-
-        function onClickBatDauDoanBang() {
-            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '', m: '' }) : { q: '', a: '', m: '' };
-            sendToProjector('RA_KHOI_PLAY_CLIP', {
-                questionIndex: currentRKQuestion,
-                questionText: qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`,
-                mediaUrl: qItem.m || ''
-            });
-            const statusEl = document.getElementById('rk_preview_status');
-            if (statusEl) statusEl.innerText = "Phát đoạn băng";
-            showToast(`Bắt đầu phát đoạn băng cho Câu ${currentRKQuestion}`);
-        }
-
-        function onClickVideoTangToc() {
-            onClickBatDauDoanBang();
-        }
-
-        function onClickGiaiMaMedia() {
-            sendToProjector('RA_KHOI_SHOW_GIAI_MA', { questionIndex: currentRKQuestion });
-            showToast(`Hiện Giải mã Video/Ảnh cho Câu ${currentRKQuestion}`);
-        }
-
-        function onClickDiemTS() {
-            sendToProjector('RA_KHOI_SHOW_SCORES');
-            showToast('Hiển thị Điểm Thí Sinh trên Projector');
-        }
-
-        function onClickRKTangToc() {
-            sendToProjector('RA_KHOI_INTRO');
-            showToast('Hiển thị Tăng Tốc / Ra Khơi trên Projector');
-        }
-
-        function onClickRKTinhThoiGian() {
-            clearInterval(rkTimerInterval);
-            rkTimeLeft = 30; // 30s suy nghĩ trả lời
-            const timerEl = document.getElementById('rk_preview_timer');
-            if (timerEl) timerEl.innerText = rkTimeLeft;
-            
-            rkTimerInterval = setInterval(() => {
-                rkTimeLeft--;
-                if (timerEl) timerEl.innerText = rkTimeLeft;
-                if (rkTimeLeft <= 0) {
-                    clearInterval(rkTimerInterval);
-                    const statusEl = document.getElementById('rk_preview_status');
-                    if (statusEl) statusEl.innerText = "Hết giờ!";
-                }
-            }, 1000);
-
-            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
-            sendToProjector('RA_KHOI_START_TIMER', {
-                questionIndex: currentRKQuestion,
-                duration: 30,
-                questionText: qItem.q
-            });
-            const statusEl = document.getElementById('rk_preview_status');
-            if (statusEl) statusEl.innerText = "Đang đếm 30s";
-            showToast(`Bắt đầu tính thời gian 30s cho Câu ${currentRKQuestion}`);
-        }
-
-        function onClickRKDapAnTS() {
-            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
-            const contestantsData = [];
-            for (let i = 1; i <= 4; i++) {
-                const ts = (gameData.contestants && gameData.contestants[i - 1]) || {};
-                const nameVal = document.getElementById(`ts${i}_name_rk`)?.value || ts.name || `Thí sinh ${i}`;
-                const timeVal = document.getElementById(`ts${i}_extra_rk`)?.value || ts.rk_time || '00.00';
-                const ansVal = document.getElementById(`ts${i}_ans_rk`)?.value || ts.rk_answer || '';
-                contestantsData.push({
-                    name: nameVal,
-                    rk_time: timeVal,
-                    rk_answer: ansVal
-                });
-            }
-
-            sendToProjector('RA_KHOI_SHOW_CONTESTANT_ANSWERS', {
-                questionIndex: currentRKQuestion,
-                correctAnswer: qItem.a,
-                contestants: contestantsData
-            });
-            const statusEl = document.getElementById('rk_preview_status');
-            if (statusEl) statusEl.innerText = "Hiện đáp án TS";
-            showToast('Hiển thị Scene Đáp án Thí Sinh Ra Khơi trên Projector');
-        }
-
-        function onClickRKHienDapAn() {
-            const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
-            sendToProjector('RA_KHOI_SHOW_ANSWER', {
-                questionIndex: currentRKQuestion,
-                answerText: qItem.a
-            });
-            showToast('Hiện Đáp án Đúng trên Projector');
-        }
-
-        function onClickRKDatLai() {
-            clearInterval(rkTimerInterval);
-            rkTimeLeft = (currentRKQuestion === 1 || currentRKQuestion === 2) ? 30 : 20;
-            const timerEl = document.getElementById('rk_preview_timer');
-            if (timerEl) timerEl.innerText = rkTimeLeft;
-            const statusEl = document.getElementById('rk_preview_status');
-            if (statusEl) statusEl.innerText = "Đã đặt lại";
-            updateTab2Preview();
-            sendToProjector('RA_KHOI_RESET');
-            showToast('Đã đặt lại vòng thi Ra Khơi');
-        }
-
-        function triggerFilePicker(targetInputId, acceptType) {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = acceptType || '*/*';
-            fileInput.onchange = function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                showToast(`Đang tải lên file: ${file.name}...`);
-
-                const reader = new FileReader();
-                reader.onload = function(uploadEvent) {
-                    const base64Result = uploadEvent.target.result;
-                    const inputEl = document.getElementById(targetInputId);
-                    if (inputEl) {
-                        inputEl.value = base64Result;
-                        inputEl.dispatchEvent(new Event('change'));
-                    }
-                    saveAllData();
-                    showToast(`Đã tải lên thành công: ${file.name}`);
-                };
-                reader.onerror = function() {
-                    const blobUrl = URL.createObjectURL(file);
-                    const inputEl = document.getElementById(targetInputId);
-                    if (inputEl) {
-                        inputEl.value = blobUrl;
-                        inputEl.dispatchEvent(new Event('change'));
-                    }
-                    saveAllData();
-                    showToast(`Đã chọn file thành công: ${file.name}`);
-                };
-                reader.readAsDataURL(file);
-            };
-            fileInput.click();
-        }
-    </script>
+    <!-- JavaScript Logic split into 6 modular files -->
+    <script src="setup.js"></script>
+    <script src="controllerR1.js"></script>
+    <script src="controllerR2.js"></script>
+    <script src="controllerR3.js"></script>
+    <script src="controllerR4.js"></script>
+    <script src="controllerRExtra.js"></script>
 </body>
 </html>
