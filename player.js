@@ -19,6 +19,7 @@ let s2TimerStartTime = 0;
 let s3TimerInterval = null;
 let s3TimeLeft = 0;
 let s3TimerStartTime = 0;
+let s3RoundStartTime = parseInt(localStorage.getItem('s3_round_start_time')) || 0;
 let s4TimerInterval = null;
 let s4TimeLeft = 0;
 let s4TimerStartTime = 0;
@@ -92,7 +93,11 @@ function updateSubmissionStatusFromState(state) {
             if (round === 'VS') {
                 const s3Badge = document.getElementById('s3_status_badge');
                 if (s3Badge) {
-                    s3Badge.innerText = '🟢 ĐÃ GỬI THÀNH CÔNG';
+                    if (state.isVongThi || state.answer === '[Bấm chuông]') {
+                        s3Badge.innerText = state.answer === '[Bấm chuông]' ? '🔔 ĐÃ BẤM CHUÔNG' : '🟢 ĐÃ GỬI ĐÁP ÁN VÒNG';
+                    } else {
+                        s3Badge.innerText = '🟢 ĐÃ GỬI HÀNG NGANG';
+                    }
                     s3Badge.style.background = '#16a34a';
                 }
                 const s3Txt = document.getElementById('s3_submitted_text');
@@ -167,7 +172,11 @@ function updateSubmissionStatusFromState(state) {
     if (s3Ans && s3Ans.answer) {
         const s3Badge = document.getElementById('s3_status_badge');
         if (s3Badge) {
-            s3Badge.innerText = '🟢 ĐÃ GỬI THÀNH CÔNG';
+            if (s3Ans.isVongThi || s3Ans.answer === '[Bấm chuông]') {
+                s3Badge.innerText = s3Ans.answer === '[Bấm chuông]' ? '🔔 ĐÃ BẤM CHUÔNG' : '🟢 ĐÃ GỬI ĐÁP ÁN VÒNG';
+            } else {
+                s3Badge.innerText = '🟢 ĐÃ GỬI HÀNG NGANG';
+            }
             s3Badge.style.background = '#16a34a';
         }
         const s3Txt = document.getElementById('s3_submitted_text');
@@ -207,6 +216,20 @@ function displaySceneView(sceneNum) {
     document.getElementById('view_scene_2').className = sceneNum === 2 ? 'scene-view active' : 'scene-view';
     document.getElementById('view_scene_3').className = sceneNum === 3 ? 'scene-view active' : 'scene-view';
     if (document.getElementById('view_scene_4')) document.getElementById('view_scene_4').className = sceneNum === 4 ? 'scene-view active' : 'scene-view';
+
+    if (sceneNum === 3) {
+        const s3Input = document.getElementById('s3_answer_input');
+        if (s3Input) {
+            s3Input.disabled = false;
+            if (!s3TimerStartTime || s3TimeLeft <= 0) {
+                s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+            }
+        }
+        if (!s3RoundStartTime) {
+            s3RoundStartTime = Date.now();
+            localStorage.setItem('s3_round_start_time', s3RoundStartTime);
+        }
+    }
 }
 
 function autoSwitchScene(sceneNum) {
@@ -292,89 +315,142 @@ function submitScene2Answer() {
 
 function submitScene3Answer(isVongThi = false) {
     const s3Input = document.getElementById('s3_answer_input');
-    if (s3Input && s3Input.disabled) {
-        showToast("Ngoài thời gian quy định - Ô trả lời đang khóa!");
-        return;
-    }
-    const ans = s3Input ? s3Input.value.trim() : "";
     
-    // For horizontal row answer, don't submit if answer is empty
-    if (!isVongThi && !ans) return;
-
-    // Allow empty string to act as buzz in / giành quyền trả lời Chướng ngại vật
-    const finalAnswer = ans || "[Bấm chuông]";
-
-    let timeStr = "00.00s";
-    if (s3TimerStartTime) {
-        let elapsed = (Date.now() - s3TimerStartTime) / 1000;
-        let formattedSec = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
-        timeStr = `${formattedSec}s`;
-    }
-
-    // Immediate Client-Side Optimistic Feedback
-    const badge = document.getElementById('s3_status_badge');
-    if (badge) {
-        if (isVongThi) {
-            badge.innerText = ans ? '🟢 ĐÃ GỬI ĐÁP ÁN VÒNG' : '🔔 ĐÃ BẤM CHUÔNG';
-        } else {
-            badge.innerText = '🟢 ĐÃ GỬI HÀNG NGANG';
+    if (!isVongThi) {
+        // Horizontal row answer: check if horizontal row timer is running
+        if (!s3TimerStartTime || s3TimeLeft <= 0) {
+            showToast("Hàng ngang đang khóa! Để gửi Chướng ngại vật, vui lòng nhấn nút TRẢ LỜI ĐÁP ÁN VÒNG THI");
+            return;
         }
-        badge.style.background = '#16a34a';
-    }
-    const txt = document.getElementById('s3_submitted_text');
-    if (txt) txt.innerText = `"${finalAnswer}"`;
-    const tm = document.getElementById('s3_submitted_time');
-    if (tm) tm.innerText = `Thời gian: ${timeStr} lúc ${new Date().toLocaleTimeString()}`;
+        const ans = s3Input ? s3Input.value.trim() : "";
+        if (!ans) return;
 
-    const submitPayload = {
-        id: Math.random().toString(36).substring(2, 9),
-        type: 'PLAYER_SUBMIT_ANSWER',
-        contestantId: contestantId,
-        round: 'VS',
-        isVongThi: isVongThi,
-        answer: finalAnswer,
-        row: s3SelectedRow,
-        time: timeStr,
-        timestamp: Date.now()
-    };
-
-    // Instant local broadcast to controller and projector
-    if (playerChannel) {
-        try {
-            playerChannel.postMessage(submitPayload);
-        } catch(e) {
-            console.warn("Error posting submit to playerChannel:", e);
+        let timeStr = "00.00s";
+        if (s3TimerStartTime) {
+            let elapsed = (Date.now() - s3TimerStartTime) / 1000;
+            let formattedSec = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
+            timeStr = `${formattedSec}s`;
         }
-    }
-    try {
-        if (window.opener && !window.opener.closed) {
-            window.opener.postMessage(submitPayload, '*');
-        }
-    } catch(e) {}
-    try {
-        localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload));
-    } catch(e) {}
 
-    const typeLabel = isVongThi ? "Vòng thi" : "Hàng ngang";
-    if (window.location.protocol === 'file:') {
-        showToast(`Đã gửi đáp án ${typeLabel} cục bộ (Offline) TS${contestantId}: "${finalAnswer}" (${timeStr})`);
-        return;
-    }
-
-    fetch('/api/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submitPayload)
-    }).then(() => {
-        showToast(`Đã gửi đáp án ${typeLabel} TS${contestantId}: "${finalAnswer}" (${timeStr})`);
-    }).catch(e => {
-        console.error(e);
-        showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+        // Immediate Client-Side Optimistic Feedback
+        const badge = document.getElementById('s3_status_badge');
         if (badge) {
-            badge.innerText = '❌ GỬI THẤT BẠI';
-            badge.style.background = '#dc2626';
+            badge.innerText = '🟢 ĐÃ GỬI HÀNG NGANG';
+            badge.style.background = '#16a34a';
         }
-    });
+        const txt = document.getElementById('s3_submitted_text');
+        if (txt) txt.innerText = `"${ans}"`;
+        const tm = document.getElementById('s3_submitted_time');
+        if (tm) tm.innerText = `Thời gian: ${timeStr} lúc ${new Date().toLocaleTimeString()}`;
+
+        const submitPayload = {
+            id: Math.random().toString(36).substring(2, 9),
+            type: 'PLAYER_SUBMIT_ANSWER',
+            contestantId: contestantId,
+            round: 'VS',
+            isVongThi: false,
+            answer: ans,
+            row: s3SelectedRow,
+            time: timeStr,
+            timestamp: Date.now()
+        };
+
+        // Instant local broadcast
+        if (playerChannel) {
+            try { playerChannel.postMessage(submitPayload); } catch(e) {}
+        }
+        try {
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage(submitPayload, '*');
+            }
+        } catch(e) {}
+        try { localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload)); } catch(e) {}
+
+        if (window.location.protocol === 'file:') {
+            showToast(`Đã gửi đáp án Hàng ngang cục bộ (Offline) TS${contestantId}: "${ans}" (${timeStr})`);
+            return;
+        }
+
+        fetch('/api/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submitPayload)
+        }).then(() => {
+            showToast(`Đã gửi đáp án Hàng ngang TS${contestantId}: "${ans}" (${timeStr})`);
+        }).catch(e => {
+            console.error(e);
+            showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+            if (badge) {
+                badge.innerText = '❌ GỬI THẤT BẠI';
+                badge.style.background = '#dc2626';
+            }
+        });
+    } else {
+        // Vòng thi (Chướng ngại vật) answer: always allowed, calculate elapsed time since round started
+        const ans = s3Input ? s3Input.value.trim() : "";
+        const finalAnswer = ans || "[Bấm chuông]";
+
+        let timeStr = "00.00s";
+        if (s3RoundStartTime) {
+            let elapsed = (Date.now() - s3RoundStartTime) / 1000;
+            let formattedSec = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
+            timeStr = `${formattedSec}s`;
+        }
+
+        // Immediate Client-Side Optimistic Feedback
+        const badge = document.getElementById('s3_status_badge');
+        if (badge) {
+            badge.innerText = ans ? '🟢 ĐÃ GỬI ĐÁP ÁN VÒNG' : '🔔 ĐÃ BẤM CHUÔNG';
+            badge.style.background = '#16a34a';
+        }
+        const txt = document.getElementById('s3_submitted_text');
+        if (txt) txt.innerText = `"${finalAnswer}"`;
+        const tm = document.getElementById('s3_submitted_time');
+        if (tm) tm.innerText = `Thời gian: ${timeStr} lúc ${new Date().toLocaleTimeString()}`;
+
+        const submitPayload = {
+            id: Math.random().toString(36).substring(2, 9),
+            type: 'PLAYER_SUBMIT_ANSWER',
+            contestantId: contestantId,
+            round: 'VS',
+            isVongThi: true,
+            answer: finalAnswer,
+            row: s3SelectedRow,
+            time: timeStr,
+            timestamp: Date.now()
+        };
+
+        // Instant local broadcast
+        if (playerChannel) {
+            try { playerChannel.postMessage(submitPayload); } catch(e) {}
+        }
+        try {
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage(submitPayload, '*');
+            }
+        } catch(e) {}
+        try { localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload)); } catch(e) {}
+
+        if (window.location.protocol === 'file:') {
+            showToast(`Đã gửi đáp án Vòng thi cục bộ (Offline) TS${contestantId}: "${finalAnswer}" (${timeStr})`);
+            return;
+        }
+
+        fetch('/api/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submitPayload)
+        }).then(() => {
+            showToast(`Đã gửi đáp án Vòng thi TS${contestantId}: "${finalAnswer}" (${timeStr})`);
+        }).catch(e => {
+            console.error(e);
+            showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+            if (badge) {
+                badge.innerText = '❌ GỬI THẤT BẠI';
+                badge.style.background = '#dc2626';
+            }
+        });
+    }
 }
 
 function startS2Timer(sec) {
@@ -516,7 +592,7 @@ function startS3Timer(sec) {
     const s3Input = document.getElementById('s3_answer_input');
     if (s3Input) {
         s3Input.disabled = false;
-        s3Input.placeholder = `Nhập câu trả lời... (Còn lại ${s3TimeLeft}s)`;
+        s3Input.placeholder = `Nhập câu trả lời Hàng ngang... (Còn lại ${s3TimeLeft}s)`;
         s3Input.focus();
     }
 
@@ -525,12 +601,11 @@ function startS3Timer(sec) {
         if (s3TimeLeft <= 0) {
             clearInterval(s3TimerInterval);
             if (s3Input) {
-                s3Input.disabled = true;
-                s3Input.placeholder = "Đang khóa (Hết thời gian trả lời)";
+                s3Input.placeholder = "Hàng ngang đã khóa. Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
             }
         } else {
             if (s3Input) {
-                s3Input.placeholder = `Nhập câu trả lời... (Còn lại ${s3TimeLeft}s)`;
+                s3Input.placeholder = `Nhập câu trả lời Hàng ngang... (Còn lại ${s3TimeLeft}s)`;
             }
         }
     }, 1000);
@@ -574,10 +649,34 @@ function handlePlayerMessage(data) {
 
     // Full State Sync or Update State
     if (data.type === 'FULL_STATE_SYNC' || data.type === 'UPDATE_STATE' || data.type === 'UPDATE_SCORES') {
-        if (data.activeRound === 'XUAT_PHAT') autoSwitchScene(1);
-        else if (data.activeRound === 'RA_KHOI') { autoSwitchScene(2); currentS2Round = 'RK'; }
-        else if (data.activeRound === 'VUOT_SONG') autoSwitchScene(3);
-        else if (data.activeRound === 'VINH_QUANG') { autoSwitchScene(4); currentS2Round = 'VQ'; }
+        if (data.activeRound === 'XUAT_PHAT') {
+            autoSwitchScene(1);
+            s3RoundStartTime = 0;
+            localStorage.removeItem('s3_round_start_time');
+        } else if (data.activeRound === 'RA_KHOI') {
+            autoSwitchScene(2);
+            currentS2Round = 'RK';
+            s3RoundStartTime = 0;
+            localStorage.removeItem('s3_round_start_time');
+        } else if (data.activeRound === 'VUOT_SONG') {
+            autoSwitchScene(3);
+            if (!s3RoundStartTime) {
+                s3RoundStartTime = Date.now();
+                localStorage.setItem('s3_round_start_time', s3RoundStartTime);
+            }
+            const s3Input = document.getElementById('s3_answer_input');
+            if (s3Input) {
+                s3Input.disabled = false;
+                if (!s3TimerStartTime || s3TimeLeft <= 0) {
+                    s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+                }
+            }
+        } else if (data.activeRound === 'VINH_QUANG') {
+            autoSwitchScene(4);
+            currentS2Round = 'VQ';
+            s3RoundStartTime = 0;
+            localStorage.removeItem('s3_round_start_time');
+        }
 
         if (data.questionText) {
             if (data.activeRound === 'XUAT_PHAT' || !data.activeRound) {
@@ -675,6 +774,10 @@ function handlePlayerMessage(data) {
     // --- VÒNG 3: VƯỢT SÓNG ---
     else if (data.type && data.type.startsWith('VUOT_SONG_')) {
         autoSwitchScene(3);
+        if (!s3RoundStartTime) {
+            s3RoundStartTime = Date.now();
+            localStorage.setItem('s3_round_start_time', s3RoundStartTime);
+        }
 
         if (data.row !== undefined) {
             highlightS3Row(data.row);
@@ -690,8 +793,8 @@ function handlePlayerMessage(data) {
             const s3Input = document.getElementById('s3_answer_input');
             if (s3Input) {
                 s3Input.value = "";
-                s3Input.disabled = true;
-                s3Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)";
+                s3Input.disabled = false;
+                s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
             }
         } else if (data.type === 'VUOT_SONG_START_TIMER') {
             s3TimerStartTime = Date.now();
@@ -700,12 +803,14 @@ function handlePlayerMessage(data) {
             highlightS3Row(0);
             clearInterval(s3TimerInterval);
             s3TimerStartTime = 0;
+            s3RoundStartTime = Date.now();
+            localStorage.setItem('s3_round_start_time', s3RoundStartTime);
             document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
             const s3Input = document.getElementById('s3_answer_input');
             if (s3Input) {
                 s3Input.value = "";
-                s3Input.disabled = true;
-                s3Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)";
+                s3Input.disabled = false;
+                s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
             }
         }
     }

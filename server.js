@@ -157,6 +157,7 @@ app.post('/api/action', (req, res) => {
         round: round,
         answer: actionData.answer || '',
         time: actionData.time || '',
+        isVongThi: !!actionData.isVongThi,
         timestamp: Date.now()
       };
     }
