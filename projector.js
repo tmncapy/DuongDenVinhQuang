@@ -912,6 +912,8 @@ function handleProjectorMessage(data) {
         handleVSReset();
     } else if (data.type === 'VUOT_SONG_OPEN_ROW_ANSWER') {
         handleVSOpenRowAnswer(data);
+    } else if (data.type === 'VUOT_SONG_OPEN_KEYWORD_LETTERS') {
+        handleVSOpenKeywordLetters(data);
     } else if (data.type === 'VUOT_SONG_OPEN_ALL_ANSWERS') {
         handleVSOpenAllAnswers(data);
     } else if (data.type === 'VINH_QUANG_SHOW_PACKS' || data.type === 'VINH_QUANG_SHOW_PACK_SELECTION') {
@@ -1028,6 +1030,33 @@ function handleVSOpenRowAnswer(data) {
             item.innerText = "";
         }
     });
+    if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
+}
+
+function handleVSOpenKeywordLetters(data) {
+    switchView(3);
+    const keysContainer = document.getElementById('file3-keys-container');
+    if (!keysContainer) return;
+
+    const kwAns = (data.keyword || '').replace(/\s+/g, '').toUpperCase();
+    const revealed = data.revealedIndices || [];
+    const kwItems = keysContainer.querySelectorAll('.key-item');
+
+    kwItems.forEach((item, index) => {
+        if (index < kwAns.length) {
+            if (revealed.includes(index)) {
+                item.innerText = kwAns[index];
+                item.style.backgroundImage = "url('Images/LetterKeyOpen.png')";
+            } else {
+                item.innerText = "";
+                item.style.backgroundImage = "url('Images/LetterKey.png')";
+            }
+        } else {
+            item.innerText = "";
+        }
+    });
+
+    safePlay(soundChooseQues);
     if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
 }
 

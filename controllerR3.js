@@ -2,6 +2,7 @@
 let currentVSRow = 1;
 let vsTimerInterval = null;
 let vsTimeLeft = 20;
+let vsRevealedKeyIndices = [];
 
 function selectVSRow(row) {
     currentVSRow = row;
@@ -56,7 +57,64 @@ function onClickVSOpenRowAnswer() {
     showToast(`Đã mở đáp án hàng ngang ${currentVSRow}`);
 }
 
+function onClickVSOpenKeywordLetters() {
+    const kw = (gameData.vuotSong?.keyword || gameData.vuotSong?.center?.a || document.getElementById('vs_keyword')?.value || '').trim();
+    const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
+    const totalLen = cleanKw.length;
+    
+    if (totalLen === 0) {
+        showToast('Chưa nhập Từ khóa / Đáp án vòng thi Vượt Sóng!');
+        return;
+    }
+
+    // Filter out indices out of bounds if keyword length changed
+    vsRevealedKeyIndices = vsRevealedKeyIndices.filter(i => i < totalLen);
+
+    // Find unopened indices
+    const unopened = [];
+    for (let i = 0; i < totalLen; i++) {
+        if (!vsRevealedKeyIndices.includes(i)) {
+            unopened.push(i);
+        }
+    }
+
+    if (unopened.length === 0) {
+        showToast('Tất cả chữ cái của đáp án vòng thi đã được mở!');
+        return;
+    }
+
+    // Rule: max per click = Math.floor(totalLen / 4), at least 1
+    const maxPerClick = Math.max(1, Math.floor(totalLen / 4));
+    const availableToOpen = Math.min(maxPerClick, unopened.length);
+    // Random count between 1 and availableToOpen
+    const numToOpen = Math.floor(Math.random() * availableToOpen) + 1;
+
+    // Randomly pick numToOpen indices from unopened array
+    const newlyOpened = [];
+    const tempUnopened = [...unopened];
+    for (let k = 0; k < numToOpen; k++) {
+        const randomIndex = Math.floor(Math.random() * tempUnopened.length);
+        const pickedIdx = tempUnopened.splice(randomIndex, 1)[0];
+        newlyOpened.push(pickedIdx);
+        vsRevealedKeyIndices.push(pickedIdx);
+    }
+
+    sendToProjector('VUOT_SONG_OPEN_KEYWORD_LETTERS', {
+        keyword: cleanKw,
+        revealedIndices: vsRevealedKeyIndices,
+        newlyOpened: newlyOpened
+    });
+
+    showToast(`Đã mở thêm ${numToOpen} chữ cái đáp án (${vsRevealedKeyIndices.length}/${totalLen} ô)`);
+}
+
 function onClickVSOpenAllAnswers() {
+    const kw = (gameData.vuotSong?.keyword || gameData.vuotSong?.center?.a || '').trim();
+    const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
+    vsRevealedKeyIndices = [];
+    for (let i = 0; i < cleanKw.length; i++) {
+        vsRevealedKeyIndices.push(i);
+    }
     sendToProjector('VUOT_SONG_OPEN_ALL_ANSWERS', { vuotSong: gameData.vuotSong });
     showToast('Đã mở đáp án Vòng thi Vượt Sóng!');
 }
@@ -99,6 +157,7 @@ function onClickVSShowAnswers() {
 }
 
 function onClickVSDatLai() {
+    vsRevealedKeyIndices = [];
     clearInterval(vsTimerInterval);
     vsTimeLeft = 20;
     const timerEl = document.getElementById('vs_preview_timer');
