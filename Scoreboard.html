@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreBoard Full Window</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scoreboard-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('Images/ScoreBoard.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Số điểm: Tăng kích thước to hơn và căn vị trí */
+        .score {
+            position: absolute;
+            top: 38%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30vw; /* Đã phóng to số hơn */
+            font-weight: bold;
+            color: #ffffff;
+            line-height: 1;
+        }
+
+        /* Tên thí sinh: Dời xuống thấp hơn */
+        .name {
+            position: absolute;
+            top: 90%; /* Tăng khoảng cách từ trên xuống để tên dời xuống thấp hơn */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5vw;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 0.2vw;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scoreboard-container">
+        <div class="score">0</div>
+        <div class="name">ĐĂNG KHOA</div>
+    </div>
+
+</body>
+</html>

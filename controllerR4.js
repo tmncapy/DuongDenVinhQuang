@@ -106,6 +106,12 @@ function onClickVQChonGoiDiem(pack) {
     currentVQPack = pack;
     initVinhQuangData();
     
+    // Clear contestant extra answers on controller
+    for (let i = 1; i <= 5; i++) {
+        const extraEl = document.getElementById(`ts${i}_extra_vq`);
+        if (extraEl) extraEl.value = '';
+    }
+    
     const packQuestions = gameData.vinhQuang[pack] || [];
     let availableIndices = [];
     for (let i = 0; i < packQuestions.length; i++) {
@@ -252,6 +258,12 @@ function onClickVQDatLai() {
     if (timerEl) timerEl.innerText = "25";
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = "Sẵn sàng";
+
+    // Clear contestant extra answers on controller
+    for (let i = 1; i <= 5; i++) {
+        const extraEl = document.getElementById(`ts${i}_extra_vq`);
+        if (extraEl) extraEl.value = '';
+    }
 
     // Reset selected pack variables on controller
     currentVQPack = null;

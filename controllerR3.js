@@ -16,6 +16,13 @@ function selectVSRow(row) {
             btn.style.color = idx === 4 ? '#fff' : '#002060';
         }
     });
+
+    // Clear contestant inputs on controller for the new horizontal row
+    for (let i = 1; i <= 5; i++) {
+        const ansEl = document.getElementById(`ts${i}_ans_vs`);
+        if (ansEl) ansEl.value = '';
+    }
+
     const titleEl = document.getElementById('vs_preview_title');
     const qTextEl = document.getElementById('vs_preview_q_text');
     const aTextEl = document.getElementById('vs_preview_a_text');
@@ -170,6 +177,12 @@ function onClickVSDatLai() {
     vsTimeLeft = 20;
     const timerEl = document.getElementById('vs_preview_timer');
     if (timerEl) timerEl.innerText = vsTimeLeft;
+
+    // Clear contestant inputs on controller
+    for (let i = 1; i <= 5; i++) {
+        const ansEl = document.getElementById(`ts${i}_ans_vs`);
+        if (ansEl) ansEl.value = '';
+    }
 
     currentVSRow = null;
     const buttons = document.querySelectorAll('#tab3-content .vs-row-btn');

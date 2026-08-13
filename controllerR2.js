@@ -17,6 +17,14 @@ function selectRKQuestion(num) {
             }
         }
     }
+    // Clear contestant inputs on controller for the new question
+    for (let i = 1; i <= 5; i++) {
+        const ansEl = document.getElementById(`ts${i}_ans_rk`);
+        if (ansEl) ansEl.value = '';
+        const extraEl = document.getElementById(`ts${i}_extra_rk`);
+        if (extraEl) extraEl.value = '';
+    }
+
     rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
     updateTab2Preview();
     const qItem = gameData.raKhoi ? (gameData.raKhoi[num - 1] || { q: '', a: '' }) : { q: '', a: '' };
@@ -141,6 +149,13 @@ function onClickRKHienDapAn() {
 
 function onClickRKDatLai() {
     clearInterval(rkTimerInterval);
+    // Clear contestant inputs on controller
+    for (let i = 1; i <= 5; i++) {
+        const ansEl = document.getElementById(`ts${i}_ans_rk`);
+        if (ansEl) ansEl.value = '';
+        const extraEl = document.getElementById(`ts${i}_extra_rk`);
+        if (extraEl) extraEl.value = '';
+    }
     rkTimeLeft = (currentRKQuestion === 1 || currentRKQuestion === 2) ? 30 : 20;
     const timerEl = document.getElementById('rk_preview_timer');
     if (timerEl) timerEl.innerText = rkTimeLeft;

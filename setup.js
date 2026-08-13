@@ -759,6 +759,17 @@ function updateContestantNames() {
 function syncDataToProjector() {
     saveAllData();
     updateContestantNames();
+    sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants, gameData: gameData });
+    try {
+        fetch('/api/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contestants: gameData.contestants,
+                gameData: gameData
+            })
+        }).catch(() => {});
+    } catch(e) {}
     showToast('Đã đồng bộ toàn bộ dữ liệu sang Màn Hình Chiếu!');
 }
 
@@ -840,6 +851,58 @@ let controllerChannel = null;
 let projectorWindow = null;
 let lastProjectorPing = 0;
 
+function handleIncomingPlayerAnswer(data) {
+    if (!data) return;
+    if (data.type === 'PLAYER_SUBMIT_ANSWER') {
+        const tsIdx = data.contestantId || 1;
+        const ans = data.answer || '';
+        const time = data.time || '';
+        if (data.round === 'RK' || !data.round) {
+            const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
+            if (inputAns) inputAns.value = ans;
+            const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
+            if (inputTime) inputTime.value = time;
+        }
+        if (data.round === 'VS' || !data.round) {
+            const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
+            if (inputAns) inputAns.value = ans;
+        }
+        if (data.round === 'VQ' || !data.round) {
+            const inputAns = document.getElementById(`ts${tsIdx}_extra_vq`);
+            if (inputAns) inputAns.value = ans;
+        }
+        if (typeof showToast === 'function') {
+            showToast(`TS${tsIdx} gửi đáp án: "${ans}" (${time})`);
+        }
+        // Forward to projector immediately (especially useful under file:/// protocol)
+        try {
+            sendToProjector('PLAYER_SUBMIT_ANSWER', data);
+        } catch(e) {}
+    } else if (data.playerAnswers && typeof data.playerAnswers === 'object') {
+        Object.values(data.playerAnswers).forEach(ansObj => {
+            if (ansObj && ansObj.contestantId) {
+                const tsIdx = ansObj.contestantId;
+                const ans = ansObj.answer || '';
+                const time = ansObj.time || '';
+                if (ansObj.round === 'RK' || !ansObj.round) {
+                    const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
+                    if (inputAns) inputAns.value = ans;
+                    const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
+                    if (inputTime) inputTime.value = time;
+                }
+                if (ansObj.round === 'VS' || !ansObj.round) {
+                    const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
+                    if (inputAns) inputAns.value = ans;
+                }
+                if (ansObj.round === 'VQ' || !ansObj.round) {
+                    const inputAns = document.getElementById(`ts${tsIdx}_extra_vq`);
+                    if (inputAns) inputAns.value = ans;
+                }
+            }
+        });
+    }
+}
+
 try {
     if (typeof BroadcastChannel !== 'undefined') {
         controllerChannel = new BroadcastChannel('ddvq_game_channel');
@@ -847,6 +910,8 @@ try {
             if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
                 lastProjectorPing = Date.now();
                 updateProjectorStatus(true);
+            } else if (event.data && event.data.type === 'PLAYER_SUBMIT_ANSWER') {
+                handleIncomingPlayerAnswer(event.data);
             }
         };
     }
@@ -864,25 +929,8 @@ if (typeof EventSource !== 'undefined') {
                 if (data && (data.type === 'PROJECTOR_READY' || data.type === 'PROJECTOR_PONG')) {
                     lastProjectorPing = Date.now();
                     updateProjectorStatus(true);
-                } else if (data && data.type === 'PLAYER_SUBMIT_ANSWER') {
-                    const tsIdx = data.contestantId || 1;
-                    const ans = data.answer || '';
-                    const time = data.time || '';
-                    if (data.round === 'RK') {
-                        const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
-                        if (inputAns) inputAns.value = ans;
-                        const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
-                        if (inputTime) inputTime.value = time;
-                    } else if (data.round === 'VS') {
-                        const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
-                        if (inputAns) inputAns.value = ans;
-                    } else if (data.round === 'VQ') {
-                        const inputAns = document.getElementById(`ts${tsIdx}_extra_vq`);
-                        if (inputAns) inputAns.value = ans;
-                    }
-                    if (typeof showToast === 'function') {
-                        showToast(`Thí sinh ${tsIdx} gửi đáp án: "${ans}"`);
-                    }
+                } else if (data && (data.type === 'PLAYER_SUBMIT_ANSWER' || data.playerAnswers)) {
+                    handleIncomingPlayerAnswer(data);
                 }
             } catch(e) {}
         };
@@ -895,19 +943,35 @@ window.addEventListener('storage', function(event) {
     if (event.key === 'ddvq_projector_status' && event.newValue) {
         lastProjectorPing = Date.now();
         updateProjectorStatus(true);
+    } else if (event.key === 'ddvq_latest_action' && event.newValue) {
+        try {
+            const data = JSON.parse(event.newValue);
+            if (data && (data.type === 'PLAYER_SUBMIT_ANSWER' || data.playerAnswers)) {
+                handleIncomingPlayerAnswer(data);
+            }
+        } catch(e) {}
     }
 });
 
 window.addEventListener('message', function(event) {
-    if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
+    if (!event.data) return;
+    if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
         lastProjectorPing = Date.now();
         updateProjectorStatus(true);
+    } else if (event.data.type === 'PLAYER_SUBMIT_ANSWER') {
+        handleIncomingPlayerAnswer(event.data);
     }
 });
 
 setInterval(() => {
     if (Date.now() - lastProjectorPing > 5000) {
         updateProjectorStatus(false);
+    }
+    if (window.location.protocol !== 'file:') {
+        fetch('/api/state')
+            .then(res => res.json())
+            .then(data => handleIncomingPlayerAnswer(data))
+            .catch(() => {});
     }
 }, 2000);
 
@@ -1028,6 +1092,101 @@ function triggerFilePicker(targetInputId, acceptType) {
         reader.readAsDataURL(file);
     };
     fileInput.click();
+}
+
+window.adjustScore = function(idx, delta) {
+    if (!gameData.contestants || !gameData.contestants[idx - 1]) return;
+    const current = gameData.contestants[idx - 1].score || 0;
+    const newScore = current + delta;
+    gameData.contestants[idx - 1].score = newScore;
+    
+    const disps = [
+        document.getElementById(`ts${idx}_score_disp`),
+        document.getElementById(`ts${idx}_score_disp_rk`),
+        document.getElementById(`ts${idx}_score_disp_vs`),
+        document.getElementById(`ts${idx}_score_disp_vq`)
+    ];
+    disps.forEach(disp => { if (disp) disp.innerText = newScore; });
+    
+    saveAllData();
+    if (typeof updateTab1Preview === 'function') updateTab1Preview();
+    sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
+    
+    if (typeof showToast === 'function') {
+        const contestantName = gameData.contestants[idx - 1].name || `Thí sinh ${idx}`;
+        const sign = delta >= 0 ? "+" : "";
+        showToast(`Đã điều chỉnh điểm ${contestantName}: ${sign}${delta} (Hiện tại: ${newScore})`);
+    }
+}
+
+window.vqStars = [false, false, false, false];
+
+window.toggleVQStar = function(idx) {
+    const starIndex = idx - 1;
+    window.vqStars[starIndex] = !window.vqStars[starIndex];
+    const btn = document.getElementById(`vq_star_btn_${idx}`);
+    if (btn) {
+        if (window.vqStars[starIndex]) {
+            btn.style.background = "#f59e0b";
+            btn.style.borderColor = "#d97706";
+            btn.style.color = "#ffffff";
+            btn.innerText = "⭐ STAR ON";
+            sendToProjector('VINH_QUANG_STAR_OF_HOPE', { contestantIndex: idx });
+            showToast(`Thí sinh ${idx} đã chọn NGÔI SAO HY VỌNG!`);
+        } else {
+            btn.style.background = "#e2e8f0";
+            btn.style.borderColor = "#cbd5e1";
+            btn.style.color = "#475569";
+            btn.innerText = "⭐ STAR OFF";
+            showToast(`Đã hủy Ngôi sao hy vọng của Thí sinh ${idx}`);
+        }
+    }
+}
+
+window.vqCorrectAnswer = function(idx) {
+    let packVal = 20;
+    if (typeof currentVQPack !== 'undefined' && currentVQPack) {
+        packVal = currentVQPack;
+    } else {
+        const customVal = prompt("Nhập điểm của câu hỏi Vinh Quang hiện tại (10/20/30):", "20");
+        if (customVal !== null && !isNaN(parseInt(customVal))) {
+            packVal = parseInt(customVal);
+        } else {
+            return;
+        }
+    }
+    
+    const isStarActive = window.vqStars[idx - 1];
+    const pointsToAdd = isStarActive ? packVal * 2 : packVal;
+    
+    window.adjustScore(idx, pointsToAdd);
+    
+    if (isStarActive) {
+        window.toggleVQStar(idx);
+    }
+}
+
+window.vqIncorrectAnswer = function(idx) {
+    let packVal = 20;
+    if (typeof currentVQPack !== 'undefined' && currentVQPack) {
+        packVal = currentVQPack;
+    } else {
+        const customVal = prompt("Nhập điểm của câu hỏi Vinh Quang hiện tại (10/20/30):", "20");
+        if (customVal !== null && !isNaN(parseInt(customVal))) {
+            packVal = parseInt(customVal);
+        } else {
+            return;
+        }
+    }
+    
+    const isStarActive = window.vqStars[idx - 1];
+    const pointsToSubtract = isStarActive ? packVal : Math.round(packVal / 2);
+    
+    window.adjustScore(idx, -pointsToSubtract);
+    
+    if (isStarActive) {
+        window.toggleVQStar(idx);
+    }
 }
 
 function onClickTongKet() {

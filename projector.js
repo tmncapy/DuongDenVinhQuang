@@ -73,6 +73,7 @@ let soundWrong1 = new Audio('sounds/wrong.mp3');
 let soundRKAnswer = new Audio('sounds/Answer.mp3');
 let soundChooseQues = new Audio('sounds/ChooseQues.mp3');
 let soundRightV3 = new Audio('sounds/RightV3.mp3');
+let soundActivate = new Audio('sounds/Activate.mp3');
 
 let isAudioUnlocked = false;
 
@@ -83,6 +84,7 @@ function unlockAudio() {
     const allAudios = [
         soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, 
         soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3,
+        soundActivate,
         document.getElementById('vongThiAudio4'),
         document.getElementById('vongThiAudio7')
     ];
@@ -640,6 +642,7 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
+    if (window.location.protocol === 'file:') return;
     try {
         fetch('/api/action', {
             method: 'POST',
@@ -922,6 +925,10 @@ function handleProjectorMessage(data) {
         const aScene = document.getElementById('rk-scene-answers');
         if (qScene) qScene.style.display = 'flex';
         if (aScene) aScene.style.display = 'none';
+    } else if (data.type === 'PLAYER_SUBMIT_ANSWER') {
+        if (data.round === 'VS' && data.isVongThi) {
+            safePlay(soundActivate);
+        }
     } else if (data.type === 'VUOT_SONG_SELECT_ROW') {
         flashVuotSongRow(data.row);
     } else if (data.type === 'VUOT_SONG_SHOW_QUESTION') {
@@ -966,7 +973,7 @@ function handleProjectorMessage(data) {
         startCountdown7(data.duration || 25);
     } else if (data.type === 'VINH_QUANG_STAR_OF_HOPE') {
         safePlay(soundChooseQues);
-        showPopup('⭐ THÍ SINH ĐÃ KÍCH HOẠT NGÔI SAO HY VỌNG! ⭐\nĐiểm số câu hỏi này sẽ được nhân đôi nếu trả lời đúng!');
+        // showPopup has been removed as requested
     } else if (data.type === 'VINH_QUANG_SHOW_ANSWERS') {
         switchView(8);
         const ansAudio = document.getElementById('audioVQAnswer') || document.getElementById('soundRKAnswer');

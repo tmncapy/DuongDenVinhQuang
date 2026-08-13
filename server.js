@@ -58,6 +58,31 @@ app.use(express.static(__dirname));
 // SSE Real-time Synchronization across all devices (Mobile, PC, Projector)
 let sseClients = [];
 let latestAction = null;
+let currentServerState = {
+  activeRound: 'XUAT_PHAT', // 'XUAT_PHAT', 'RA_KHOI', 'VUOT_SONG', 'VINH_QUANG'
+  questionText: '',
+  questionIndex: 1,
+  score: 0,
+  row: 0,
+  subject: '',
+  pack: 10,
+  contestants: [
+    { name: "Thí sinh 1", score: 0 },
+    { name: "Thí sinh 2", score: 0 },
+    { name: "Thí sinh 3", score: 0 },
+    { name: "Thí sinh 4", score: 0 }
+  ],
+  gameData: null,
+  playerAnswers: {},
+  timestamp: Date.now()
+};
+
+app.get('/api/state', (req, res) => {
+  res.json({
+    ...currentServerState,
+    latestAction
+  });
+});
 
 app.get('/api/events', (req, res) => {
   res.writeHead(200, {
@@ -71,8 +96,16 @@ app.get('/api/events', (req, res) => {
   const newClient = { id: clientId, res };
   sseClients.push(newClient);
 
-  // Send initial retry interval and latest action if available
   res.write('retry: 1000\n\n');
+
+  // Always send full initial state sync on connection
+  const fullSyncPayload = {
+    type: 'FULL_STATE_SYNC',
+    ...currentServerState,
+    latestAction
+  };
+  res.write(`data: ${JSON.stringify(fullSyncPayload)}\n\n`);
+
   if (latestAction) {
     res.write(`data: ${JSON.stringify(latestAction)}\n\n`);
   }
@@ -84,15 +117,85 @@ app.get('/api/events', (req, res) => {
 
 app.post('/api/action', (req, res) => {
   const actionData = req.body;
-  if (actionData && typeof actionData === 'object') {
-    latestAction = actionData;
+  if (actionData && typeof actionData === 'object' && actionData.type) {
+    // Update state fields
+    if (actionData.questionText) currentServerState.questionText = actionData.questionText;
+    if (actionData.questionIndex !== undefined) currentServerState.questionIndex = actionData.questionIndex;
+    if (actionData.score !== undefined) currentServerState.score = actionData.score;
+    if (actionData.row !== undefined) currentServerState.row = actionData.row;
+    if (actionData.subject) currentServerState.subject = actionData.subject;
+    if (actionData.pack) currentServerState.pack = actionData.pack;
+    if (actionData.contestants && Array.isArray(actionData.contestants)) {
+      currentServerState.contestants = actionData.contestants;
+    }
+    if (actionData.gameData) currentServerState.gameData = actionData.gameData;
+
+    // Automatically clear cached player answers on specific round milestones / question changes / resets
+    if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
+    if (actionData.type === 'RA_KHOI_SHOW_QUESTION' || actionData.type === 'RA_KHOI_RESET') {
+      Object.keys(currentServerState.playerAnswers).forEach(key => {
+        if (key.endsWith('_RK')) delete currentServerState.playerAnswers[key];
+      });
+    } else if (actionData.type === 'VUOT_SONG_SELECT_ROW' || actionData.type === 'VUOT_SONG_RESET') {
+      Object.keys(currentServerState.playerAnswers).forEach(key => {
+        if (key.endsWith('_VS')) delete currentServerState.playerAnswers[key];
+      });
+    } else if (actionData.type === 'VINH_QUANG_SELECT_PACK' || actionData.type === 'VINH_QUANG_RESET') {
+      Object.keys(currentServerState.playerAnswers).forEach(key => {
+        if (key.endsWith('_VQ')) delete currentServerState.playerAnswers[key];
+      });
+    } else if (actionData.type === 'RESET_ALL_DATA') {
+      currentServerState.playerAnswers = {};
+    }
+
+    if (actionData.type === 'PLAYER_SUBMIT_ANSWER') {
+      const tsIdx = actionData.contestantId || 1;
+      const round = actionData.round || 'RK';
+      if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
+      currentServerState.playerAnswers[`ts${tsIdx}_${round}`] = {
+        contestantId: tsIdx,
+        round: round,
+        answer: actionData.answer || '',
+        time: actionData.time || '',
+        timestamp: Date.now()
+      };
+    }
+
+    if (actionData.type.startsWith('XUAT_PHAT_')) currentServerState.activeRound = 'XUAT_PHAT';
+    else if (actionData.type.startsWith('RA_KHOI_')) currentServerState.activeRound = 'RA_KHOI';
+    else if (actionData.type.startsWith('VUOT_SONG_')) currentServerState.activeRound = 'VUOT_SONG';
+    else if (actionData.type.startsWith('VINH_QUANG_')) currentServerState.activeRound = 'VINH_QUANG';
+
+    // Do not overwrite latestAction with heartbeats
+    if (actionData.type !== 'PROJECTOR_READY' && actionData.type !== 'PROJECTOR_PONG' && actionData.type !== 'PING') {
+      latestAction = actionData;
+    }
+
+    currentServerState.timestamp = Date.now();
+
     const payload = `data: ${JSON.stringify(actionData)}\n\n`;
     sseClients.forEach(client => {
       try {
         client.res.write(payload);
-      } catch (e) {
-        // Client might be closed
-      }
+      } catch (e) {}
+    });
+  }
+  res.json({ success: true, timestamp: Date.now() });
+});
+
+app.post('/api/state', (req, res) => {
+  const newState = req.body;
+  if (newState && typeof newState === 'object') {
+    currentServerState = {
+      ...currentServerState,
+      ...newState,
+      timestamp: Date.now()
+    };
+    const payload = `data: ${JSON.stringify({ type: 'UPDATE_STATE', ...currentServerState })}\n\n`;
+    sseClients.forEach(client => {
+      try {
+        client.res.write(payload);
+      } catch (e) {}
     });
   }
   res.json({ success: true, timestamp: Date.now() });
