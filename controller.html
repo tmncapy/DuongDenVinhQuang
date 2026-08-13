@@ -326,7 +326,7 @@
         /* Ra Khơi Styling */
         .vcnv-row {
             display: grid;
-            grid-template-columns: 100px 1fr 150px;
+            grid-template-columns: 80px 1fr 1fr;
             gap: 10px;
             margin-bottom: 8px;
             align-items: center;
@@ -338,7 +338,7 @@
         }
         .vcnv-center-row {
             display: grid;
-            grid-template-columns: 100px 1fr 150px;
+            grid-template-columns: 80px 1fr 1fr;
             gap: 10px;
             margin-bottom: 12px;
             align-items: center;
@@ -763,30 +763,36 @@
             <div class="sub-section-title">... Phần thi VƯỢT SÓNG ...</div>
             <div style="font-weight: bold; margin-bottom: 6px;">* Câu hỏi & Hàng ngang Ô chữ</div>
 
+            <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 10px; font-weight: bold; color: #0056b3; margin-bottom: 6px; font-size: 13px; background: #e0f2fe; padding: 6px 10px; border-radius: 4px; border: 1px solid #7dd3fc;">
+                <span>Vị trí</span>
+                <span>Nội dung Câu hỏi</span>
+                <span>Đáp án Ô chữ (Hàng ngang)</span>
+            </div>
+
             <div class="vcnv-row">
-                <span>Hàng 1</span>
+                <span style="font-weight: bold;">Hàng 1</span>
                 <input type="text" id="vs_q_1" placeholder="Nội dung câu hỏi hàng 1" oninput="updateVuotSongState()">
-                <input type="text" id="vs_a_1" placeholder="Đáp án hàng 1" oninput="updateVuotSongState()">
+                <input type="text" id="vs_a_1" placeholder="Đáp án ô chữ hàng 1 (VD: ACESTUDIO)" oninput="updateVuotSongState()">
             </div>
             <div class="vcnv-row">
-                <span>Hàng 2</span>
+                <span style="font-weight: bold;">Hàng 2</span>
                 <input type="text" id="vs_q_2" placeholder="Nội dung câu hỏi hàng 2" oninput="updateVuotSongState()">
-                <input type="text" id="vs_a_2" placeholder="Đáp án hàng 2" oninput="updateVuotSongState()">
+                <input type="text" id="vs_a_2" placeholder="Đáp án ô chữ hàng 2" oninput="updateVuotSongState()">
             </div>
             <div class="vcnv-row">
-                <span>Hàng 3</span>
+                <span style="font-weight: bold;">Hàng 3</span>
                 <input type="text" id="vs_q_3" placeholder="Nội dung câu hỏi hàng 3" oninput="updateVuotSongState()">
-                <input type="text" id="vs_a_3" placeholder="Đáp án hàng 3" oninput="updateVuotSongState()">
+                <input type="text" id="vs_a_3" placeholder="Đáp án ô chữ hàng 3" oninput="updateVuotSongState()">
             </div>
             <div class="vcnv-row">
-                <span>Hàng 4</span>
+                <span style="font-weight: bold;">Hàng 4</span>
                 <input type="text" id="vs_q_4" placeholder="Nội dung câu hỏi hàng 4" oninput="updateVuotSongState()">
-                <input type="text" id="vs_a_4" placeholder="Đáp án hàng 4" oninput="updateVuotSongState()">
+                <input type="text" id="vs_a_4" placeholder="Đáp án ô chữ hàng 4" oninput="updateVuotSongState()">
             </div>
             <div class="vcnv-center-row">
-                <span>Trung tâm</span>
-                <input type="text" id="vs_q_center" placeholder="Nội dung câu hỏi hàng trung tâm (nếu có)" oninput="updateVuotSongState()">
-                <input type="text" id="vs_a_center" placeholder="Đáp án trung tâm" oninput="updateVuotSongState()">
+                <span style="font-weight: bold; color: #dc2626;">Trung tâm</span>
+                <input type="text" id="vs_q_center" placeholder="Câu hỏi hàng trung tâm (nếu có)" oninput="updateVuotSongState()">
+                <input type="text" id="vs_a_center" placeholder="Đáp án trung tâm / Từ khóa" oninput="updateVuotSongState()">
             </div>
 
             <div style="font-weight: bold; margin: 10px 0 5px 0;">* Ô chữ đáp án vòng thi:</div>

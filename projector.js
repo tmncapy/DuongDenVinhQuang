@@ -309,7 +309,7 @@ function syncVuotSongGrid(vsData) {
 
     for (let h = 1; h <= 4; h++) {
         const baseY = startY_Row + (h - 1) * deltaY_Row;
-        const ans = dataToUse ? (dataToUse[`h${h}`]?.a || '') : '';
+        const ans = dataToUse ? (dataToUse[`h${h}`]?.a || dataToUse[`h${h}`]?.q || '') : '';
         const cleanAns = ans.replace(/\s+/g, '').toUpperCase();
         const totalChars = cleanAns.length;
 

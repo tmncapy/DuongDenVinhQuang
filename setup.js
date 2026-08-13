@@ -198,11 +198,14 @@ function updateVuotSongState() {
         const aEl = document.getElementById(`vs_a_${i}`);
         if (qEl || aEl) {
             const qVal = qEl ? qEl.value : (gameData.vuotSong[`h${i}`]?.q || '');
-            const aVal = aEl ? aEl.value : (gameData.vuotSong[`h${i}`]?.a || '');
+            let aVal = aEl ? aEl.value : (gameData.vuotSong[`h${i}`]?.a || '');
+            if (!aVal.trim() && qVal.trim()) {
+                aVal = qVal;
+            }
             gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
         }
 
-        const aVal = gameData.vuotSong[`h${i}`]?.a || '';
+        const aVal = gameData.vuotSong[`h${i}`]?.a || gameData.vuotSong[`h${i}`]?.q || '';
         const boxContainer = document.getElementById(`vs_box_${i}`);
         const countSpan = document.getElementById(`vs_count_${i}`);
         
@@ -229,19 +232,22 @@ function updateVuotSongState() {
     const qcEl = document.getElementById('vs_q_center');
     const acEl = document.getElementById('vs_a_center');
     if (qcEl || acEl) {
-        gameData.vuotSong.center = {
-            q: qcEl ? qcEl.value : (gameData.vuotSong.center?.q || ''),
-            a: acEl ? acEl.value : (gameData.vuotSong.center?.a || '')
-        };
+        const qcVal = qcEl ? qcEl.value : (gameData.vuotSong.center?.q || '');
+        let acVal = acEl ? acEl.value : (gameData.vuotSong.center?.a || '');
+        if (!acVal.trim() && qcVal.trim()) acVal = qcVal;
+        gameData.vuotSong.center = { q: qcVal, a: acVal };
     }
 
     const kwEl = document.getElementById('vs_keyword');
     if (kwEl) {
         gameData.vuotSong.keyword = kwEl.value;
     }
+    if (!gameData.vuotSong.keyword && gameData.vuotSong.center?.a) {
+        gameData.vuotSong.keyword = gameData.vuotSong.center.a;
+    }
     const kwSpan = document.getElementById('vs_keyword_count');
     if (kwSpan) {
-        const kwVal = gameData.vuotSong.keyword || '';
+        const kwVal = gameData.vuotSong.keyword || gameData.vuotSong.center?.a || gameData.vuotSong.center?.q || '';
         kwSpan.innerText = `${kwVal.replace(/\s+/g, '').length} kí tự`;
     }
 
