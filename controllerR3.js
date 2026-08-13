@@ -33,6 +33,11 @@ function selectVSRow(row) {
         if (qTextEl) qTextEl.innerText = q;
         if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
     }
+    if (typeof updateVuotSongState === 'function') {
+        updateVuotSongState();
+    } else {
+        sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
+    }
     sendToProjector('VUOT_SONG_SELECT_ROW', { row: row });
     showToast(`Đã chọn Hàng ngang ${row}`);
 }

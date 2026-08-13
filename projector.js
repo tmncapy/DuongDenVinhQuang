@@ -274,7 +274,31 @@ function chuyenCau1() {
 }
 
 /* VIEW 3 LOGIC */
+let windowCurrentVsData = null;
+
+function ensureVSGridSynced() {
+    const rowsContainer = document.getElementById('file3-rows-container');
+    if (!rowsContainer || rowsContainer.children.length === 0) {
+        syncVuotSongGrid(windowCurrentVsData);
+    }
+}
+
 function syncVuotSongGrid(vsData) {
+    if (vsData) {
+        windowCurrentVsData = vsData;
+    } else if (!windowCurrentVsData) {
+        try {
+            const saved = localStorage.getItem('duong_den_vinh_quang_data');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && parsed.vuotSong) {
+                    windowCurrentVsData = parsed.vuotSong;
+                }
+            }
+        } catch(e) {}
+    }
+    const dataToUse = vsData || windowCurrentVsData;
+
     const rowsContainer = document.getElementById('file3-rows-container');
     const keysContainer = document.getElementById('file3-keys-container');
     if (!rowsContainer || !keysContainer) return;
@@ -285,7 +309,7 @@ function syncVuotSongGrid(vsData) {
 
     for (let h = 1; h <= 4; h++) {
         const baseY = startY_Row + (h - 1) * deltaY_Row;
-        const ans = vsData ? (vsData[`h${h}`]?.a || '') : '';
+        const ans = dataToUse ? (dataToUse[`h${h}`]?.a || '') : '';
         const cleanAns = ans.replace(/\s+/g, '').toUpperCase();
         const totalChars = cleanAns.length;
 
@@ -309,7 +333,7 @@ function syncVuotSongGrid(vsData) {
     const startY_Key = 565.5, deltaX_Key = 98.5;
     const widthKey = 86.7, heightKey = 75.7;
     let keyHtml = '';
-    const kw = vsData ? (vsData.keyword || '') : '';
+    const kw = dataToUse ? (dataToUse.keyword || dataToUse.center?.a || '') : '';
     const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
     const kwL = cleanKw.length;
 
@@ -1001,12 +1025,13 @@ function handleProjectorMessage(data) {
 
 function handleVSOpenRowAnswer(data) {
     switchView(3);
+    ensureVSGridSynced();
     const rowsContainer = document.getElementById('file3-rows-container');
     if (!rowsContainer || !data.row) return;
 
     if (data.row === 'center' || data.row === 'keyword') {
         const kwItems = document.querySelectorAll('#file3-keys-container .key-item');
-        const kwAns = (data.answer || '').replace(/\s+/g, '').toUpperCase();
+        const kwAns = (data.answer || (windowCurrentVsData?.keyword) || (windowCurrentVsData?.center?.a) || '').replace(/\s+/g, '').toUpperCase();
         kwItems.forEach((item, index) => {
             if (index < kwAns.length) {
                 item.innerText = kwAns[index];
@@ -1020,7 +1045,10 @@ function handleVSOpenRowAnswer(data) {
     }
 
     const items = rowsContainer.querySelectorAll(`.row-${data.row}-item`);
-    const ans = (data.answer || '').replace(/\s+/g, '').toUpperCase();
+    let ans = (data.answer || '').replace(/\s+/g, '').toUpperCase();
+    if (!ans && windowCurrentVsData && windowCurrentVsData[`h${data.row}`]) {
+        ans = (windowCurrentVsData[`h${data.row}`].a || '').replace(/\s+/g, '').toUpperCase();
+    }
     
     items.forEach((item, index) => {
         item.style.backgroundImage = "url('Images/LetterDefault.png')";
@@ -1035,10 +1063,11 @@ function handleVSOpenRowAnswer(data) {
 
 function handleVSOpenKeywordLetters(data) {
     switchView(3);
+    ensureVSGridSynced();
     const keysContainer = document.getElementById('file3-keys-container');
     if (!keysContainer) return;
 
-    const kwAns = (data.keyword || '').replace(/\s+/g, '').toUpperCase();
+    const kwAns = (data.keyword || windowCurrentVsData?.keyword || windowCurrentVsData?.center?.a || '').replace(/\s+/g, '').toUpperCase();
     const revealed = data.revealedIndices || [];
     const kwItems = keysContainer.querySelectorAll('.key-item');
 
@@ -1063,13 +1092,16 @@ function handleVSOpenKeywordLetters(data) {
 function handleVSOpenAllAnswers(data) {
     switchView(3);
     safePlay(soundRightV3);
+    if (data.vuotSong) windowCurrentVsData = data.vuotSong;
+    ensureVSGridSynced();
     const rowsContainer = document.getElementById('file3-rows-container');
     const keysContainer = document.getElementById('file3-keys-container');
     
-    if (rowsContainer && data.vuotSong) {
+    const vsData = data.vuotSong || windowCurrentVsData;
+    if (rowsContainer && vsData) {
         for (let h = 1; h <= 4; h++) {
             const items = rowsContainer.querySelectorAll(`.row-${h}-item`);
-            const ans = (data.vuotSong[`h${h}`]?.a || '').replace(/\s+/g, '').toUpperCase();
+            const ans = (vsData[`h${h}`]?.a || '').replace(/\s+/g, '').toUpperCase();
             items.forEach((item, index) => {
                 item.style.backgroundImage = "url('Images/LetterDefault.png')";
                 if (index < ans.length) {
@@ -1081,9 +1113,9 @@ function handleVSOpenAllAnswers(data) {
         }
     }
 
-    if (keysContainer && data.vuotSong && data.vuotSong.keyword) {
+    if (keysContainer && vsData && (vsData.keyword || vsData.center?.a)) {
         const kwItems = keysContainer.querySelectorAll('.key-item');
-        const kwAns = data.vuotSong.keyword.replace(/\s+/g, '').toUpperCase();
+        const kwAns = (vsData.keyword || vsData.center?.a || '').replace(/\s+/g, '').toUpperCase();
         kwItems.forEach((item, index) => {
             if (index < kwAns.length) {
                 item.innerText = kwAns[index];
@@ -1098,6 +1130,7 @@ function handleVSOpenAllAnswers(data) {
 
 function handleVSReset() {
     switchView(3);
+    ensureVSGridSynced();
     const rowsContainer = document.getElementById('file3-rows-container');
     const keysContainer = document.getElementById('file3-keys-container');
     if (rowsContainer) {
@@ -1141,6 +1174,7 @@ function handleVSReset() {
 
 function flashVuotSongRow(row) {
     switchView(3);
+    ensureVSGridSynced();
     safePlay(soundChooseQues);
     for (let h = 1; h <= 4; h++) {
         const ind = document.getElementById(`vs_ind_${h}`);

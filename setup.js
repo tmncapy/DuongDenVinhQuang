@@ -77,8 +77,9 @@ function switchTab(index) {
     if (index === 2 && typeof selectRKQuestion === 'function') {
         selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
     }
-    if (index === 3 && typeof selectVSRow === 'function') {
-        selectVSRow(1);
+    if (index === 3) {
+        if (typeof updateVuotSongState === 'function') updateVuotSongState();
+        if (typeof selectVSRow === 'function') selectVSRow(1);
     }
 }
 
@@ -193,10 +194,15 @@ function updateVuotSongState() {
         gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
     }
     for (let i = 1; i <= 4; i++) {
-        const qVal = document.getElementById(`vs_q_${i}`)?.value || '';
-        const aVal = document.getElementById(`vs_a_${i}`)?.value || '';
-        gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
+        const qEl = document.getElementById(`vs_q_${i}`);
+        const aEl = document.getElementById(`vs_a_${i}`);
+        if (qEl || aEl) {
+            const qVal = qEl ? qEl.value : (gameData.vuotSong[`h${i}`]?.q || '');
+            const aVal = aEl ? aEl.value : (gameData.vuotSong[`h${i}`]?.a || '');
+            gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
+        }
 
+        const aVal = gameData.vuotSong[`h${i}`]?.a || '';
         const boxContainer = document.getElementById(`vs_box_${i}`);
         const countSpan = document.getElementById(`vs_count_${i}`);
         
@@ -220,14 +226,22 @@ function updateVuotSongState() {
     }
 
     // Center & Keyword
-    const qCenter = document.getElementById('vs_q_center')?.value || '';
-    const aCenter = document.getElementById('vs_a_center')?.value || '';
-    gameData.vuotSong.center = { q: qCenter, a: aCenter };
+    const qcEl = document.getElementById('vs_q_center');
+    const acEl = document.getElementById('vs_a_center');
+    if (qcEl || acEl) {
+        gameData.vuotSong.center = {
+            q: qcEl ? qcEl.value : (gameData.vuotSong.center?.q || ''),
+            a: acEl ? acEl.value : (gameData.vuotSong.center?.a || '')
+        };
+    }
 
-    const kwVal = document.getElementById('vs_keyword')?.value || '';
-    gameData.vuotSong.keyword = kwVal;
+    const kwEl = document.getElementById('vs_keyword');
+    if (kwEl) {
+        gameData.vuotSong.keyword = kwEl.value;
+    }
     const kwSpan = document.getElementById('vs_keyword_count');
     if (kwSpan) {
+        const kwVal = gameData.vuotSong.keyword || '';
         kwSpan.innerText = `${kwVal.replace(/\s+/g, '').length} kí tự`;
     }
 
@@ -615,18 +629,26 @@ function saveAllData(notify = false) {
             gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
         }
         for (let i = 1; i <= 4; i++) {
-            const qVal = document.getElementById(`vs_q_${i}`)?.value || '';
-            const aVal = document.getElementById(`vs_a_${i}`)?.value || '';
-            if (qVal || aVal) gameData.vuotSong[`h${i}`] = { q: qVal, a: aVal };
+            const qEl = document.getElementById(`vs_q_${i}`);
+            const aEl = document.getElementById(`vs_a_${i}`);
+            if (qEl || aEl) {
+                gameData.vuotSong[`h${i}`] = {
+                    q: qEl ? qEl.value : (gameData.vuotSong[`h${i}`]?.q || ''),
+                    a: aEl ? aEl.value : (gameData.vuotSong[`h${i}`]?.a || '')
+                };
+            }
         }
-        if (document.getElementById('vs_q_center')) {
+        const qcEl = document.getElementById('vs_q_center');
+        const acEl = document.getElementById('vs_a_center');
+        if (qcEl || acEl) {
             gameData.vuotSong.center = {
-                q: document.getElementById('vs_q_center')?.value || '',
-                a: document.getElementById('vs_a_center')?.value || ''
+                q: qcEl ? qcEl.value : (gameData.vuotSong.center?.q || ''),
+                a: acEl ? acEl.value : (gameData.vuotSong.center?.a || '')
             };
         }
-        if (document.getElementById('vs_keyword')) {
-            gameData.vuotSong.keyword = document.getElementById('vs_keyword')?.value || '';
+        const kwEl = document.getElementById('vs_keyword');
+        if (kwEl) {
+            gameData.vuotSong.keyword = kwEl.value;
         }
 
         initVinhQuangData();
