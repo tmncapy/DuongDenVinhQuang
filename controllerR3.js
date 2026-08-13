@@ -20,25 +20,28 @@ function selectVSRow(row) {
     const qTextEl = document.getElementById('vs_preview_q_text');
     const aTextEl = document.getElementById('vs_preview_a_text');
     
+    let currentQText = "";
     if (row === 'center') {
         if (titleEl) titleEl.innerText = "VÒNG THI VƯỢT SÓNG: Ô CHỮ TRUNG TÂM";
-        const q = document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm";
-        const a = document.getElementById('vs_a_center')?.value || "Chưa nhập đáp án";
+        const q = document.getElementById('vs_q_center')?.value || gameData.vuotSong?.center?.q || "Chưa nhập câu hỏi trung tâm";
+        const a = document.getElementById('vs_a_center')?.value || gameData.vuotSong?.center?.a || "Chưa nhập đáp án";
         if (qTextEl) qTextEl.innerText = q;
         if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
+        currentQText = q;
     } else {
         if (titleEl) titleEl.innerText = `VÒNG THI VƯỢT SÓNG: HÀNG NGANG ${row}`;
-        const q = document.getElementById(`vs_q_${row}`)?.value || `Chưa nhập câu hỏi hàng ${row}`;
-        const a = document.getElementById(`vs_a_${row}`)?.value || `Chưa nhập đáp án`;
+        const q = document.getElementById(`vs_q_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.q || `Chưa nhập câu hỏi hàng ${row}`;
+        const a = document.getElementById(`vs_a_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.a || `Chưa nhập đáp án`;
         if (qTextEl) qTextEl.innerText = q;
         if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
+        currentQText = q;
     }
     if (typeof updateVuotSongState === 'function') {
         updateVuotSongState();
     } else {
         sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
     }
-    sendToProjector('VUOT_SONG_SELECT_ROW', { row: row });
+    sendToProjector('VUOT_SONG_SELECT_ROW', { row: row, questionText: currentQText, contestants: gameData.contestants });
     showToast(`Đã chọn Hàng ngang ${row}`);
 }
 

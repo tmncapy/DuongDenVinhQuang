@@ -126,6 +126,11 @@ app.get('/projector.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'projector.html'));
 });
 
+// Serve player page strictly (unified single web player)
+app.get(['/player', '/player.html', '/player_scene1.html', '/player_scene2.html', '/player_scene3.html', '/player1.html', '/player2.html', '/player3.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player.html'));
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

@@ -8,6 +8,14 @@ function changeXuatPhatDe(val) {
     currentXuatPhatDe = parseInt(val) || 1;
     currentXuatPhatQIndex = 0;
     updateTab1Preview();
+    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
+    const currentQ = questions[0] || { q: '', a: '' };
+    sendToProjector('XUAT_PHAT_SHOW_QUESTION', {
+        deIndex: currentXuatPhatDe,
+        questionIndex: 1,
+        questionText: currentQ.q || `Nội dung câu hỏi số 1`,
+        contestants: gameData.contestants
+    });
     showToast(`Đã chọn Bộ đề ${currentXuatPhatDe}`);
 }
 
@@ -25,9 +33,17 @@ function selectLuotThi(turnIndex) {
 
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
+    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
+    const currentQ = questions[0] || { q: '', a: '' };
 
     updateTab1Preview();
-    sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', { name, score });
+    sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
+        name,
+        score,
+        questionIndex: 1,
+        questionText: currentQ.q || `Nội dung câu hỏi số 1`,
+        contestants: gameData.contestants
+    });
 }
 
 function updateTab1Preview() {

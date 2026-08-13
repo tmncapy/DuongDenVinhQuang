@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Màn Hình Thí Sinh - Đường Đến Vinh Quang</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .master-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: #0f172a;
+            border-bottom: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 1000;
+            user-select: none;
+        }
+
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .left-controls label {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .left-controls select {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .scene-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1e293b;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .scene-tab {
+            padding: 5px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #94a3b8;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .scene-tab:hover {
+            color: #f8fafc;
+        }
+
+        .scene-tab.active {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .scene-tab.auto-active {
+            background: #059669;
+            color: #ffffff;
+        }
+
+        .status-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .viewport-container {
+            position: absolute;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .scene-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .scene-view.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* SCENE 1 STYLES */
+        .s1-container {
+            width: 900px;
+            height: 500px;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .s1-box-zero {
+            position: absolute;
+            left: 0;
+            top: 220px;
+            width: 80px;
+            height: 50px;
+            border: 2px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            color: #facc15;
+            transition: all 0.3s;
+        }
+
+        .s1-pagination {
+            position: absolute;
+            right: 0;
+            top: 220px;
+            display: flex;
+        }
+
+        .s1-page-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ffffff;
+            background-color: transparent;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: -1px;
+            transition: all 0.3s;
+        }
+
+        .s1-page-btn.active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #60a5fa;
+            font-size: 18px;
+            box-shadow: 0 0 12px rgba(37, 99, 235, 0.8);
+        }
+
+        .s1-page-btn.correct {
+            background-color: #16a34a;
+            color: #ffffff;
+        }
+
+        .s1-page-btn.wrong {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        .s1-question-box {
+            position: absolute;
+            left: 90px;
+            right: 0;
+            top: 290px;
+            height: 160px;
+            border: 2px solid #ffffff;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            text-align: center;
+        }
+
+        .s1-question-text {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        /* SCENE 2 STYLES */
+        .s2-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .s2-answer-box {
+            position: absolute;
+            left: 20%;
+            top: 48%;
+            width: 180px;
+            height: 50px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .s2-answer-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            padding: 0 10px;
+        }
+
+        .s2-time-box {
+            position: absolute;
+            left: calc(20% + 200px);
+            top: 48%;
+            width: 190px;
+            height: 50px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #facc15;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .s2-submit-btn {
+            position: absolute;
+            left: calc(20% + 405px);
+            top: 48%;
+            height: 50px;
+            padding: 0 20px;
+            border: 1px solid #ffffff;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .s2-submit-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .s2-question-box {
+            position: absolute;
+            left: 20%;
+            right: 20%;
+            top: 56%;
+            height: 160px;
+            border: 1px solid #ffffff;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .s2-question-text {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .s2-bottom-left {
+            position: absolute;
+            left: 20%;
+            bottom: 10%;
+            width: 100px;
+            height: 60px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #4ade80;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .s2-bottom-right {
+            position: absolute;
+            right: 20%;
+            bottom: 10%;
+            width: 120px;
+            height: 60px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            color: #38bdf8;
+        }
+
+        /* SCENE 3 STYLES */
+        .s3-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .s3-grid-section {
+            position: absolute;
+            left: 15%;
+            top: 7%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .s3-row-group {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .s3-number-box {
+            width: 45px;
+            height: 45px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .s3-number-box.active-row {
+            background: #eab308;
+            color: #000000;
+            border-color: #fef08a;
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+        }
+
+        .s3-matrix-row {
+            display: flex;
+        }
+
+        .s3-matrix-cell {
+            width: 38px;
+            height: 38px;
+            border: 1px solid #ffffff;
+            margin-left: -1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.02);
+            text-transform: uppercase;
+        }
+
+        .s3-matrix-cell.has-length {
+            background: #1e40af;
+            border-color: #60a5fa;
+        }
+
+        .s3-matrix-cell.opened {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #4ade80;
+        }
+
+        .s3-matrix-row .s3-matrix-cell:first-child {
+            margin-left: 0;
+        }
+
+        .s3-empty-space {
+            width: 45px;
+        }
+
+        .s3-question-box {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            top: 57%;
+            height: 160px;
+            border: 1px solid #ffffff;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .s3-question-text {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .s3-bottom-controls {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            bottom: 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .s3-bottom-left {
+            width: 100px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #4ade80;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .s3-answer-input-box {
+            flex: 1;
+            margin: 0 25px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .s3-answer-input-box input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .s3-submit-btn {
+            width: 270px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            background-color: #2563eb;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .s3-submit-btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* Toast notifications */
+        #toast_box {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #3b82f6;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP CONTROL BAR -->
+    <div class="master-top-bar">
+        <div class="left-controls">
+            <label>THÍ SINH:</label>
+            <select id="contestant_select" onchange="onSelectContestant(this.value)">
+                <option value="1">Thí sinh 1</option>
+                <option value="2">Thí sinh 2</option>
+                <option value="3">Thí sinh 3</option>
+                <option value="4">Thí sinh 4</option>
+            </select>
+        </div>
+
+        <div class="scene-tabs">
+            <button id="tab_auto" class="scene-tab auto-active" onclick="switchScene('auto')">⚡ Tự Động Sync</button>
+            <button id="tab_s1" class="scene-tab" onclick="switchScene(1)">Vòng 1: Xuất Phát</button>
+            <button id="tab_s2" class="scene-tab" onclick="switchScene(2)">Vòng 2 & 4: Ra Khơi / Vinh Quang</button>
+            <button id="tab_s3" class="scene-tab" onclick="switchScene(3)">Vòng 3: Vượt Sóng</button>
+        </div>
+
+        <div class="status-area">
+            <div id="status_badge" class="status-badge">🟢 Hệ Thống Sẵn Sàng</div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEWPORT CONTAINER -->
+    <div class="viewport-container">
+
+        <!-- SCENE 1 (PLAYER SCENCE 1) -->
+        <div id="view_scene_1" class="scene-view active">
+            <div class="s1-container">
+                <div class="s1-box-zero" id="s1_score_box">0</div>
+                <div class="s1-pagination">
+                    <button class="s1-page-btn" id="s1_btn_1">1</button>
+                    <button class="s1-page-btn" id="s1_btn_2">2</button>
+                    <button class="s1-page-btn" id="s1_btn_3">3</button>
+                    <button class="s1-page-btn" id="s1_btn_4">4</button>
+                    <button class="s1-page-btn" id="s1_btn_5">5</button>
+                    <button class="s1-page-btn" id="s1_btn_6">6</button>
+                    <button class="s1-page-btn" id="s1_btn_7">7</button>
+                    <button class="s1-page-btn" id="s1_btn_8">8</button>
+                    <button class="s1-page-btn" id="s1_btn_9">9</button>
+                    <button class="s1-page-btn" id="s1_btn_10">10</button>
+                </div>
+                <div class="s1-question-box">
+                    <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 2 (PLAYER SCENCE 2) -->
+        <div id="view_scene_2" class="scene-view">
+            <div class="s2-container">
+                <div class="s2-answer-box">
+                    <input type="text" id="s2_answer_input" class="s2-answer-input" placeholder="Câu trả lời..." onkeyup="if(event.key==='Enter') submitScene2Answer()">
+                </div>
+                <div class="s2-time-box" id="s2_time_box">Thời gian</div>
+                <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
+
+                <div class="s2-question-box">
+                    <div class="s2-question-text" id="s2_question_text">Đang chờ câu hỏi Ra Khơi / Vinh Quang...</div>
+                </div>
+
+                <div class="s2-bottom-left" id="s2_score_box">0</div>
+                <div class="s2-bottom-right" id="s2_badge_box">TS 1</div>
+            </div>
+        </div>
+
+        <!-- SCENE 3 (PLAYER SCENCE 3) -->
+        <div id="view_scene_3" class="scene-view">
+            <div class="s3-container">
+                <div class="s3-grid-section">
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_1">1</div>
+                        <div class="s3-matrix-row" id="s3_row_1">
+                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
+                        </div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_2">2</div>
+                        <div class="s3-matrix-row" id="s3_row_2">
+                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
+                        </div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_3">3</div>
+                        <div class="s3-matrix-row" id="s3_row_3">
+                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
+                        </div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_4">4</div>
+                        <div class="s3-matrix-row" id="s3_row_4">
+                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
+                        </div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-empty-space"></div>
+                        <div class="s3-matrix-row" id="s3_row_center">
+                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="s3-question-box">
+                    <div class="s3-question-text" id="s3_question_text">Đang chờ câu hỏi Vượt Sóng...</div>
+                </div>
+
+                <div class="s3-bottom-controls">
+                    <div class="s3-bottom-left" id="s3_score_box">0</div>
+                    <div class="s3-answer-input-box">
+                        <input type="text" id="s3_answer_input" placeholder="Nhập câu trả lời..." onkeyup="if(event.key==='Enter') submitScene3Answer()">
+                    </div>
+                    <button class="s3-submit-btn" onclick="submitScene3Answer()">TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast_box"></div>
+
+    <script>
+        let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
+        document.getElementById('contestant_select').value = contestantId;
+        
+        let autoSync = true;
+        let activeSceneNum = 1;
+        let currentS2Round = 'RK';
+        let s2TimerInterval = null;
+        let s2TimeLeft = 0;
+        let s1QIndex = 0;
+        let s3SelectedRow = 0;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast_box');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        function onSelectContestant(val) {
+            contestantId = parseInt(val) || 1;
+            localStorage.setItem('contestant_id', contestantId);
+            document.getElementById('s2_badge_box').innerText = `TS ${contestantId}`;
+            showToast(`Đã chọn Thí sinh ${contestantId}`);
+        }
+
+        function switchScene(sceneVal) {
+            if (sceneVal === 'auto') {
+                autoSync = true;
+                document.getElementById('tab_auto').className = 'scene-tab auto-active';
+                document.getElementById('tab_s1').className = 'scene-tab';
+                document.getElementById('tab_s2').className = 'scene-tab';
+                document.getElementById('tab_s3').className = 'scene-tab';
+                showToast("Đã bật Tự động đồng bộ Cảnh theo Vòng thi");
+                return;
+            }
+
+            autoSync = false;
+            document.getElementById('tab_auto').className = 'scene-tab';
+            document.getElementById('tab_s1').className = sceneVal === 1 ? 'scene-tab active' : 'scene-tab';
+            document.getElementById('tab_s2').className = sceneVal === 2 ? 'scene-tab active' : 'scene-tab';
+            document.getElementById('tab_s3').className = sceneVal === 3 ? 'scene-tab active' : 'scene-tab';
+
+            displaySceneView(sceneVal);
+        }
+
+        function displaySceneView(sceneNum) {
+            activeSceneNum = sceneNum;
+            document.getElementById('view_scene_1').className = sceneNum === 1 ? 'scene-view active' : 'scene-view';
+            document.getElementById('view_scene_2').className = sceneNum === 2 ? 'scene-view active' : 'scene-view';
+            document.getElementById('view_scene_3').className = sceneNum === 3 ? 'scene-view active' : 'scene-view';
+        }
+
+        function autoSwitchScene(sceneNum) {
+            if (!autoSync) return;
+            displaySceneView(sceneNum);
+        }
+
+        // Submissions
+        function submitScene2Answer() {
+            const ans = document.getElementById('s2_answer_input').value.trim();
+            if (!ans) return;
+
+            fetch('/api/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'PLAYER_SUBMIT_ANSWER',
+                    contestantId: contestantId,
+                    round: currentS2Round,
+                    answer: ans,
+                    time: document.getElementById('s2_time_box').innerText
+                })
+            }).then(() => {
+                showToast(`TS ${contestantId} đã gửi đáp án (${currentS2Round}): "${ans}"`);
+            }).catch(e => console.error(e));
+        }
+
+        function submitScene3Answer() {
+            const ans = document.getElementById('s3_answer_input').value.trim();
+            if (!ans) return;
+
+            fetch('/api/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'PLAYER_SUBMIT_ANSWER',
+                    contestantId: contestantId,
+                    round: 'VS',
+                    answer: ans,
+                    row: s3SelectedRow
+                })
+            }).then(() => {
+                showToast(`TS ${contestantId} đã gửi đáp án Vượt Sóng: "${ans}"`);
+            }).catch(e => console.error(e));
+        }
+
+        function startS2Timer(sec) {
+            clearInterval(s2TimerInterval);
+            s2TimeLeft = sec;
+            document.getElementById('s2_time_box').innerText = `${s2TimeLeft}s`;
+
+            s2TimerInterval = setInterval(() => {
+                s2TimeLeft--;
+                if (s2TimeLeft <= 0) {
+                    clearInterval(s2TimerInterval);
+                    document.getElementById('s2_time_box').innerText = "HẾT GIỜ";
+                } else {
+                    document.getElementById('s2_time_box').innerText = `${s2TimeLeft}s`;
+                }
+            }, 1000);
+        }
+
+        function setS1QuestionIndex(idx) {
+            s1QIndex = idx;
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.getElementById(`s1_btn_${i}`);
+                if (btn) {
+                    if (i === idx + 1) btn.className = 's1-page-btn active';
+                    else if (!btn.classList.contains('correct') && !btn.classList.contains('wrong')) btn.className = 's1-page-btn';
+                }
+            }
+        }
+
+        function highlightS3Row(rowNum) {
+            s3SelectedRow = rowNum;
+            for (let i = 1; i <= 4; i++) {
+                const numBox = document.getElementById(`s3_num_${i}`);
+                if (numBox) {
+                    if (i === rowNum) numBox.className = 's3-number-box active-row';
+                    else numBox.className = 's3-number-box';
+                }
+            }
+        }
+
+        // SSE Real-time Listener
+        if (typeof EventSource !== 'undefined') {
+            const sse = new EventSource('/api/events');
+            sse.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (!data || !data.type) return;
+
+                    // --- VÒNG 1: XUẤT PHÁT ---
+                    if (data.type.startsWith('XUAT_PHAT_')) {
+                        autoSwitchScene(1);
+
+                        if (data.questionText) {
+                            document.getElementById('s1_question_text').innerText = data.questionText;
+                        }
+
+                        if (data.score !== undefined) {
+                            document.getElementById('s1_score_box').innerText = data.score;
+                        }
+
+                        if (data.questionIndex !== undefined) {
+                            setS1QuestionIndex(data.questionIndex - 1);
+                        }
+
+                        if (data.type === 'XUAT_PHAT_RIGHT') {
+                            const btn = document.getElementById(`s1_btn_${s1QIndex + 1}`);
+                            if (btn) btn.className = 's1-page-btn correct';
+                        } else if (data.type === 'XUAT_PHAT_WRONG') {
+                            const btn = document.getElementById(`s1_btn_${s1QIndex + 1}`);
+                            if (btn) btn.className = 's1-page-btn wrong';
+                        } else if (data.type === 'XUAT_PHAT_RESET') {
+                            document.getElementById('s1_question_text').innerText = "Đang chờ câu hỏi Xuất Phát...";
+                            for (let i = 1; i <= 10; i++) {
+                                const btn = document.getElementById(`s1_btn_${i}`);
+                                if (btn) btn.className = 's1-page-btn';
+                            }
+                        }
+                    }
+
+                    // --- VÒNG 2: RA KHỜI ---
+                    else if (data.type.startsWith('RA_KHOI_')) {
+                        autoSwitchScene(2);
+                        currentS2Round = 'RK';
+
+                        if (data.questionText) {
+                            document.getElementById('s2_question_text').innerText = data.questionText;
+                        }
+
+                        if (data.type === 'RA_KHOI_START_TIMER') {
+                            startS2Timer(data.duration || 30);
+                        } else if (data.type === 'RA_KHOI_RESET') {
+                            clearInterval(s2TimerInterval);
+                            document.getElementById('s2_time_box').innerText = "Thời gian";
+                            document.getElementById('s2_question_text').innerText = "Đang chờ câu hỏi Ra Khơi...";
+                            document.getElementById('s2_answer_input').value = "";
+                        }
+                    }
+
+                    // --- VÒNG 3: VƯỢT SÓNG ---
+                    else if (data.type.startsWith('VUOT_SONG_')) {
+                        autoSwitchScene(3);
+
+                        if (data.row !== undefined) {
+                            highlightS3Row(data.row);
+                        }
+
+                        if (data.questionText) {
+                            document.getElementById('s3_question_text').innerText = data.questionText;
+                        }
+
+                        if (data.type === 'VUOT_SONG_RESET') {
+                            highlightS3Row(0);
+                            document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
+                            document.getElementById('s3_answer_input').value = "";
+                        }
+                    }
+
+                    // --- VÒNG 4: VINH QUANG ---
+                    else if (data.type.startsWith('VINH_QUANG_')) {
+                        autoSwitchScene(2);
+                        currentS2Round = 'VQ';
+
+                        if (data.questionText) {
+                            document.getElementById('s2_question_text').innerText = data.questionText;
+                        }
+
+                        if (data.type === 'VINH_QUANG_START_TIMER') {
+                            startS2Timer(data.duration || 25);
+                        } else if (data.type === 'VINH_QUANG_START_TIMER_5S') {
+                            startS2Timer(5);
+                        } else if (data.type === 'VINH_QUANG_RESET') {
+                            clearInterval(s2TimerInterval);
+                            document.getElementById('s2_time_box').innerText = "Thời gian";
+                            document.getElementById('s2_question_text').innerText = "Đang chờ câu hỏi Vinh Quang...";
+                            document.getElementById('s2_answer_input').value = "";
+                        }
+                    }
+
+                    // --- GLOBAL SCORE UPDATE ---
+                    if (data.contestants && Array.isArray(data.contestants)) {
+                        const myData = data.contestants[contestantId - 1];
+                        if (myData && myData.score !== undefined) {
+                            document.getElementById('s1_score_box').innerText = myData.score;
+                            document.getElementById('s2_score_box').innerText = myData.score;
+                            document.getElementById('s3_score_box').innerText = myData.score;
+                        }
+                    }
+
+                } catch(err) {}
+            };
+        }
+    </script>
+
+</body>
+</html>

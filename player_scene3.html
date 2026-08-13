@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giao diện Trò chơi Vòng Thi - Vượt Sóng (Scene 3)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            font-size: 13px;
+        }
+
+        .top-bar select {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Phần các hàng ô vuông từ 1 đến 4 và hàng phụ bên dưới */
+        .grid-section {
+            position: absolute;
+            left: 15%;
+            top: 7%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .row-group {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .number-box {
+            width: 45px;
+            height: 45px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .number-box.active-row {
+            background: #eab308;
+            color: #000000;
+            border-color: #fef08a;
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+        }
+
+        .matrix-row {
+            display: flex;
+        }
+
+        .matrix-cell {
+            width: 38px;
+            height: 38px;
+            border: 1px solid #ffffff;
+            margin-left: -1px; /* Gộp viền */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.02);
+            text-transform: uppercase;
+        }
+
+        .matrix-cell.has-length {
+            background: #1e40af;
+            border-color: #60a5fa;
+        }
+
+        .matrix-cell.opened {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #4ade80;
+        }
+
+        .matrix-row .matrix-cell:first-child {
+            margin-left: 0;
+        }
+
+        /* Dành riêng cho hàng 5 (không có số thứ tự bên trái, chỉ có các ô) */
+        .empty-space {
+            width: 45px;
+        }
+
+        /* Khung câu hỏi */
+        .question-box {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            top: 57%;
+            height: 160px;
+            border: 1px solid #ffffff;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        /* Thanh điều khiển dưới cùng */
+        .bottom-controls {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            bottom: 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bottom-left-box {
+            width: 100px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #4ade80;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .answer-input-box {
+            flex: 1;
+            margin: 0 25px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .answer-input-box input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .submit-btn {
+            width: 270px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            background-color: #2563eb;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div>
+            <span>Thí sinh: </span>
+            <select id="ts_select" onchange="changeContestant(this.value)">
+                <option value="1">Thí sinh 1</option>
+                <option value="2">Thí sinh 2</option>
+                <option value="3">Thí sinh 3</option>
+                <option value="4">Thí sinh 4</option>
+            </select>
+        </div>
+        <div id="ts_name_disp" style="font-weight: bold; color: #38bdf8;">Thí sinh 1</div>
+        <div id="status_badge" style="color: #eab308;">🌊 Vòng thi Vượt Sóng</div>
+    </div>
+
+    <div class="container">
+        <!-- Các hàng ô vuông phía trên -->
+        <div class="grid-section" id="grid_section">
+            <!-- Hàng 1 -->
+            <div class="row-group" id="row_group_1">
+                <div class="number-box" id="num_box_1">1</div>
+                <div class="matrix-row" id="matrix_row_1">
+                    <div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div>
+                </div>
+            </div>
+            <!-- Hàng 2 -->
+            <div class="row-group" id="row_group_2">
+                <div class="number-box" id="num_box_2">2</div>
+                <div class="matrix-row" id="matrix_row_2">
+                    <div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div>
+                </div>
+            </div>
+            <!-- Hàng 3 -->
+            <div class="row-group" id="row_group_3">
+                <div class="number-box" id="num_box_3">3</div>
+                <div class="matrix-row" id="matrix_row_3">
+                    <div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div>
+                </div>
+            </div>
+            <!-- Hàng 4 -->
+            <div class="row-group" id="row_group_4">
+                <div class="number-box" id="num_box_4">4</div>
+                <div class="matrix-row" id="matrix_row_4">
+                    <div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div>
+                </div>
+            </div>
+            <!-- Hàng 5 (Không có số) -->
+            <div class="row-group" id="row_group_center">
+                <div class="empty-space"></div>
+                <div class="matrix-row" id="matrix_row_center">
+                    <div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div><div class="matrix-cell"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Khung câu hỏi -->
+        <div class="question-box">
+            <div class="question-text" id="question_text">Đang chờ chọn hàng ngang Vượt Sóng...</div>
+        </div>
+
+        <!-- Thanh điều khiển phía dưới -->
+        <div class="bottom-controls">
+            <div class="bottom-left-box" id="score_box">0</div>
+            <div class="answer-input-box">
+                <input type="text" id="answer_input" placeholder="Nhập câu trả lời..." onkeyup="onInputKeyup(event)">
+            </div>
+            <button class="submit-btn" onclick="submitAnswer()">TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
+        </div>
+    </div>
+
+    <script>
+        let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
+        document.getElementById('ts_select').value = contestantId;
+        let selectedRow = 0;
+
+        function changeContestant(id) {
+            contestantId = parseInt(id) || 1;
+            localStorage.setItem('contestant_id', contestantId);
+            updateHeader();
+        }
+
+        function updateHeader() {
+            document.getElementById('ts_name_disp').innerText = `Thí sinh ${contestantId}`;
+        }
+        updateHeader();
+
+        function onInputKeyup(e) {
+            if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        }
+
+        function submitAnswer() {
+            const ans = document.getElementById('answer_input').value.trim();
+            if (!ans) return;
+
+            fetch('/api/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'PLAYER_SUBMIT_ANSWER',
+                    contestantId: contestantId,
+                    round: 'VS',
+                    answer: ans,
+                    row: selectedRow
+                })
+            }).then(() => {
+                alert(`Đã gửi đáp án Vượt Sóng: "${ans}"`);
+            }).catch(e => {
+                console.error(e);
+            });
+        }
+
+        function highlightActiveRow(rowNum) {
+            selectedRow = rowNum;
+            for (let i = 1; i <= 4; i++) {
+                const numBox = document.getElementById(`num_box_${i}`);
+                if (numBox) {
+                    if (i === rowNum) numBox.classList.add('active-row');
+                    else numBox.classList.remove('active-row');
+                }
+            }
+        }
+
+        if (typeof EventSource !== 'undefined') {
+            const sse = new EventSource('/api/events');
+            sse.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (!data || !data.type) return;
+
+                    if (data.type === 'VUOT_SONG_SELECT_ROW') {
+                        highlightActiveRow(data.row || 0);
+                    } else if (data.type === 'VUOT_SONG_SHOW_QUESTION') {
+                        if (data.row) highlightActiveRow(data.row);
+                        if (data.questionText) {
+                            document.getElementById('question_text').innerText = data.questionText;
+                        }
+                    } else if (data.type === 'VUOT_SONG_RESET') {
+                        highlightActiveRow(0);
+                        document.getElementById('question_text').innerText = "Đang chờ chọn hàng ngang Vượt Sóng...";
+                        document.getElementById('answer_input').value = "";
+                    }
+                } catch(err) {}
+            };
+        }
+    </script>
+
+</body>
+</html>

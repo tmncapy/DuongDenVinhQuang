@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giao diện Trắc nghiệm - Ra Khơi & Vinh Quang (Scene 2)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            font-size: 13px;
+        }
+
+        .top-bar select {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Ô "Câu trả lời" ở góc trên bên trái của khối nội dung */
+        .answer-box {
+            position: absolute;
+            left: 20%;
+            top: 48%;
+            width: 180px;
+            height: 50px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .answer-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            padding: 0 10px;
+        }
+
+        .answer-input::placeholder {
+            color: #888888;
+            font-weight: normal;
+        }
+
+        /* Ô "Thời gian trả lời" nằm cạnh ô "Câu trả lời" */
+        .time-box {
+            position: absolute;
+            left: calc(20% + 200px);
+            top: 48%;
+            width: 190px;
+            height: 50px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #facc15;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Nút gửi đáp án */
+        .submit-btn-s2 {
+            position: absolute;
+            left: calc(20% + 405px);
+            top: 48%;
+            height: 50px;
+            padding: 0 20px;
+            border: 1px solid #ffffff;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .submit-btn-s2:hover {
+            background: #1d4ed8;
+        }
+
+        /* Khung chứa nội dung câu hỏi phía dưới */
+        .question-box {
+            position: absolute;
+            left: 20%;
+            right: 20%;
+            top: 56%;
+            height: 160px;
+            border: 1px solid #ffffff;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        /* Ô số 0 ở góc dưới bên trái */
+        .bottom-left-box {
+            position: absolute;
+            left: 20%;
+            bottom: 10%;
+            width: 100px;
+            height: 60px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #4ade80;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Ô số 3 ở góc dưới bên phải */
+        .bottom-right-box {
+            position: absolute;
+            right: 20%;
+            bottom: 10%;
+            width: 120px;
+            height: 60px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            color: #38bdf8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div>
+            <span>Thí sinh: </span>
+            <select id="ts_select" onchange="changeContestant(this.value)">
+                <option value="1">Thí sinh 1</option>
+                <option value="2">Thí sinh 2</option>
+                <option value="3">Thí sinh 3</option>
+                <option value="4">Thí sinh 4</option>
+            </select>
+        </div>
+        <div id="ts_name_disp" style="font-weight: bold; color: #38bdf8;">Thí sinh 1</div>
+        <div id="status_badge" style="color: #4ade80;">🟢 Ra Khơi & Vinh Quang</div>
+    </div>
+
+    <div class="container">
+        <!-- Ô "Câu trả lời" (có input gõ đáp án) -->
+        <div class="answer-box">
+            <input type="text" id="answer_input" class="answer-input" placeholder="Câu trả lời..." onkeyup="onInputKeyup(event)">
+        </div>
+
+        <!-- Ô "Thời gian trả lời" -->
+        <div class="time-box" id="time_box">Thời gian</div>
+
+        <!-- Nút gửi đáp án -->
+        <button class="submit-btn-s2" onclick="submitAnswer()">GỬI ĐÁP ÁN</button>
+
+        <!-- Khung câu hỏi -->
+        <div class="question-box">
+            <div class="question-text" id="question_text">Đang chờ câu hỏi Ra Khơi / Vinh Quang...</div>
+        </div>
+
+        <!-- Ô số 0 phía dưới bên trái (Điểm số) -->
+        <div class="bottom-left-box" id="score_box">0</div>
+
+        <!-- Ô số 3 phía dưới bên phải (Thí sinh) -->
+        <div class="bottom-right-box" id="ts_badge_box">TS 1</div>
+    </div>
+
+    <script>
+        let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
+        document.getElementById('ts_select').value = contestantId;
+        let currentRound = 'RK'; // 'RK' or 'VQ'
+        let timerInterval = null;
+        let remainingTime = 0;
+
+        function changeContestant(id) {
+            contestantId = parseInt(id) || 1;
+            localStorage.setItem('contestant_id', contestantId);
+            updateHeader();
+        }
+
+        function updateHeader() {
+            document.getElementById('ts_name_disp').innerText = `Thí sinh ${contestantId}`;
+            document.getElementById('ts_badge_box').innerText = `TS ${contestantId}`;
+        }
+        updateHeader();
+
+        function onInputKeyup(e) {
+            if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        }
+
+        function submitAnswer() {
+            const ans = document.getElementById('answer_input').value.trim();
+            if (!ans) return;
+
+            fetch('/api/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'PLAYER_SUBMIT_ANSWER',
+                    contestantId: contestantId,
+                    round: currentRound,
+                    answer: ans,
+                    time: document.getElementById('time_box').innerText
+                })
+            }).then(() => {
+                alert(`Đã gửi đáp án: "${ans}"`);
+            }).catch(e => {
+                console.error(e);
+            });
+        }
+
+        function startTimer(duration) {
+            clearInterval(timerInterval);
+            remainingTime = duration;
+            document.getElementById('time_box').innerText = `${remainingTime}s`;
+
+            timerInterval = setInterval(() => {
+                remainingTime--;
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('time_box').innerText = "HẾT GIỜ";
+                } else {
+                    document.getElementById('time_box').innerText = `${remainingTime}s`;
+                }
+            }, 1000);
+        }
+
+        if (typeof EventSource !== 'undefined') {
+            const sse = new EventSource('/api/events');
+            sse.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (!data || !data.type) return;
+
+                    // Ra Khơi events
+                    if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_QUESTION') {
+                        currentRound = 'RK';
+                        if (data.questionText) {
+                            document.getElementById('question_text').innerText = data.questionText;
+                        }
+                    } else if (data.type === 'RA_KHOI_START_TIMER') {
+                        currentRound = 'RK';
+                        startTimer(data.duration || 30);
+                    } else if (data.type === 'RA_KHOI_RESET') {
+                        clearInterval(timerInterval);
+                        document.getElementById('time_box').innerText = "Thời gian";
+                        document.getElementById('question_text').innerText = "Đang chờ câu hỏi Ra Khơi...";
+                        document.getElementById('answer_input').value = "";
+                    }
+
+                    // Vinh Quang events
+                    else if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
+                        currentRound = 'VQ';
+                        if (data.questionText) {
+                            document.getElementById('question_text').innerText = data.questionText;
+                        }
+                    } else if (data.type === 'VINH_QUANG_START_TIMER') {
+                        currentRound = 'VQ';
+                        startTimer(data.duration || 25);
+                    } else if (data.type === 'VINH_QUANG_RESET') {
+                        clearInterval(timerInterval);
+                        document.getElementById('time_box').innerText = "Thời gian";
+                        document.getElementById('question_text').innerText = "Đang chờ câu hỏi Vinh Quang...";
+                        document.getElementById('answer_input').value = "";
+                    }
+                } catch(err) {}
+            };
+        }
+    </script>
+
+</body>
+</html>

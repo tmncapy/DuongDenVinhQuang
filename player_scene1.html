@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giao diện Câu hỏi - Xuất Phát (Scene 1)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            font-size: 13px;
+        }
+
+        .top-bar select {
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .container {
+            width: 900px;
+            height: 500px;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        /* Khung số 0 bên trái */
+        .box-zero {
+            position: absolute;
+            left: 0;
+            top: 220px;
+            width: 80px;
+            height: 50px;
+            border: 2px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            color: #facc15;
+            transition: all 0.3s;
+        }
+
+        /* Dãy số từ 1 đến 10 bên phải */
+        .pagination {
+            position: absolute;
+            right: 0;
+            top: 220px;
+            display: flex;
+        }
+
+        .page-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ffffff;
+            background-color: transparent;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: -1px; /* Tránh viền bị đúp dày */
+            transition: all 0.3s;
+        }
+
+        .page-btn:first-child {
+            margin-left: 0;
+        }
+
+        .page-btn.active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #60a5fa;
+            font-size: 18px;
+            box-shadow: 0 0 12px rgba(37, 99, 235, 0.8);
+        }
+
+        .page-btn.correct {
+            background-color: #16a34a;
+            color: #ffffff;
+        }
+
+        .page-btn.wrong {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        /* Khung chứa nội dung câu hỏi phía dưới */
+        .question-box {
+            position: absolute;
+            left: 90px;
+            right: 0;
+            top: 290px;
+            height: 160px;
+            border: 2px solid #ffffff;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            text-align: center;
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div>
+            <span>Thí sinh: </span>
+            <select id="ts_select" onchange="changeContestant(this.value)">
+                <option value="1">Thí sinh 1</option>
+                <option value="2">Thí sinh 2</option>
+                <option value="3">Thí sinh 3</option>
+                <option value="4">Thí sinh 4</option>
+            </select>
+        </div>
+        <div id="ts_name_disp" style="font-weight: bold; color: #38bdf8;">Thí sinh 1</div>
+        <div id="status_badge" style="color: #4ade80;">🟢 Đã kết nối</div>
+    </div>
+
+    <div class="container">
+        <!-- Ô số 0 (Hiển thị điểm hoặc thời gian) -->
+        <div class="box-zero" id="score_box">0</div>
+
+        <!-- Dãy số từ 1 đến 10 -->
+        <div class="pagination" id="pagination_box">
+            <button class="page-btn" id="btn_q_1">1</button>
+            <button class="page-btn" id="btn_q_2">2</button>
+            <button class="page-btn" id="btn_q_3">3</button>
+            <button class="page-btn" id="btn_q_4">4</button>
+            <button class="page-btn" id="btn_q_5">5</button>
+            <button class="page-btn" id="btn_q_6">6</button>
+            <button class="page-btn" id="btn_q_7">7</button>
+            <button class="page-btn" id="btn_q_8">8</button>
+            <button class="page-btn" id="btn_q_9">9</button>
+            <button class="page-btn" id="btn_q_10">10</button>
+        </div>
+
+        <!-- Khung câu hỏi -->
+        <div class="question-box">
+            <div class="question-text" id="question_text">Đang chờ lượt thi Xuất Phát...</div>
+        </div>
+    </div>
+
+    <script>
+        let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
+        document.getElementById('ts_select').value = contestantId;
+
+        function changeContestant(id) {
+            contestantId = parseInt(id) || 1;
+            localStorage.setItem('contestant_id', contestantId);
+            updateHeader();
+        }
+
+        function updateHeader() {
+            document.getElementById('ts_name_disp').innerText = `Thí sinh ${contestantId}`;
+        }
+        updateHeader();
+
+        let currentQIndex = 0;
+
+        function setQuestionIndex(idx) {
+            currentQIndex = idx;
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.getElementById(`btn_q_${i}`);
+                if (btn) {
+                    if (i === idx + 1) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        if (typeof EventSource !== 'undefined') {
+            const sse = new EventSource('/api/events');
+            sse.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (!data || !data.type) return;
+
+                    if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
+                        if (data.score !== undefined) {
+                            document.getElementById('score_box').innerText = data.score;
+                        }
+                    } else if (data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI') {
+                        if (data.score !== undefined) {
+                            document.getElementById('score_box').innerText = data.score;
+                        }
+                    } else if (data.type === 'XUAT_PHAT_START_TIMER') {
+                        if (data.questionText) {
+                            document.getElementById('question_text').innerText = data.questionText;
+                        }
+                        setQuestionIndex(0);
+                    } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
+                        if (data.questionIndex !== undefined) {
+                            setQuestionIndex(data.questionIndex);
+                        } else {
+                            setQuestionIndex(currentQIndex + 1);
+                        }
+                        if (data.questionText) {
+                            document.getElementById('question_text').innerText = data.questionText;
+                        }
+                    } else if (data.type === 'XUAT_PHAT_RIGHT') {
+                        const activeBtn = document.getElementById(`btn_q_${currentQIndex + 1}`);
+                        if (activeBtn) activeBtn.classList.add('correct');
+                        if (data.score !== undefined) {
+                            document.getElementById('score_box').innerText = data.score;
+                        }
+                    } else if (data.type === 'XUAT_PHAT_WRONG') {
+                        const activeBtn = document.getElementById(`btn_q_${currentQIndex + 1}`);
+                        if (activeBtn) activeBtn.classList.add('wrong');
+                        if (data.score !== undefined) {
+                            document.getElementById('score_box').innerText = data.score;
+                        }
+                    } else if (data.type === 'XUAT_PHAT_RESET') {
+                        document.getElementById('question_text').innerText = "Đang chờ lượt thi Xuất Phát...";
+                        for (let i = 1; i <= 10; i++) {
+                            const btn = document.getElementById(`btn_q_${i}`);
+                            if (btn) btn.className = 'page-btn';
+                        }
+                    }
+                } catch(err) {}
+            };
+        }
+    </script>
+
+</body>
+</html>

@@ -19,6 +19,12 @@ function selectRKQuestion(num) {
     }
     rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
     updateTab2Preview();
+    const qItem = gameData.raKhoi ? (gameData.raKhoi[num - 1] || { q: '', a: '' }) : { q: '', a: '' };
+    sendToProjector('RA_KHOI_SHOW_QUESTION', {
+        questionIndex: num,
+        questionText: qItem.q || `Nội dung câu hỏi Ra Khơi số ${num}`,
+        contestants: gameData.contestants
+    });
 }
 
 function cycleRKQuestion() {

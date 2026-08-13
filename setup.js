@@ -695,6 +695,7 @@ function syncContestantsUI() {
             const dispVQ = document.getElementById(`ts${idx}_score_disp_vq`);
             if (dispVQ) dispVQ.innerText = c.score || 0;
         });
+        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     }
 }
 
@@ -863,6 +864,25 @@ if (typeof EventSource !== 'undefined') {
                 if (data && (data.type === 'PROJECTOR_READY' || data.type === 'PROJECTOR_PONG')) {
                     lastProjectorPing = Date.now();
                     updateProjectorStatus(true);
+                } else if (data && data.type === 'PLAYER_SUBMIT_ANSWER') {
+                    const tsIdx = data.contestantId || 1;
+                    const ans = data.answer || '';
+                    const time = data.time || '';
+                    if (data.round === 'RK') {
+                        const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
+                        if (inputAns) inputAns.value = ans;
+                        const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
+                        if (inputTime) inputTime.value = time;
+                    } else if (data.round === 'VS') {
+                        const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
+                        if (inputAns) inputAns.value = ans;
+                    } else if (data.round === 'VQ') {
+                        const inputAns = document.getElementById(`ts${tsIdx}_extra_vq`);
+                        if (inputAns) inputAns.value = ans;
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(`Thí sinh ${tsIdx} gửi đáp án: "${ans}"`);
+                    }
                 }
             } catch(e) {}
         };
