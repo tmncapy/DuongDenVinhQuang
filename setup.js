@@ -84,13 +84,8 @@ function switchTab(index) {
 
 // Show Toast Notification
 function showToast(msg) {
-    const toast = document.getElementById('toast-msg');
-    if (!toast) return;
-    toast.innerText = msg;
-    toast.style.display = 'block';
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 3000);
+    console.log("[Controller Toast]:", msg);
+    // Disabled UI toast on controller to prevent lag and button obstruction as requested.
 }
 
 function escapeHtml(text) {
