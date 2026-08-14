@@ -221,6 +221,22 @@
             text-align: center;
         }
 
+        .player-score-tag {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: linear-gradient(135deg, #15803d, #16a34a);
+            color: #facc15;
+            border: 1.5px solid #4ade80;
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
         .s1-question-text {
             font-size: 20px;
             font-weight: bold;
@@ -234,19 +250,45 @@
             position: relative;
         }
 
+        .s2-question-box, .s4-question-box {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            top: 10%;
+            height: 160px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .s2-question-text, .s4-question-text {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.5;
+            color: #ffffff;
+        }
+
         .s2-answer-box, .s4-answer-box {
             position: absolute;
-            left: 20%;
-            top: 48%;
-            width: 180px;
-            height: 50px;
-            border: 1px solid #ffffff;
+            left: 15%;
+            top: 40%;
+            width: 320px;
+            height: 54px;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: bold;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
         }
 
         .s2-answer-input, .s4-answer-input {
@@ -259,96 +301,85 @@
             font-weight: bold;
             text-align: center;
             outline: none;
-            padding: 0 10px;
+            padding: 0 12px;
         }
 
         .s2-time-box, .s4-time-box {
             position: absolute;
-            left: calc(20% + 200px);
-            top: 48%;
-            width: 190px;
-            height: 50px;
-            border: 1px solid #ffffff;
+            left: calc(15% + 335px);
+            top: 40%;
+            width: 140px;
+            height: 54px;
+            border: 2px solid #eab308;
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: #facc15;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
         }
 
         .s2-submit-btn, .s4-submit-btn {
             position: absolute;
-            left: calc(20% + 405px);
-            top: 48%;
-            height: 50px;
-            padding: 0 20px;
-            border: 1px solid #ffffff;
+            left: calc(15% + 490px);
+            top: 40%;
+            height: 54px;
+            padding: 0 24px;
+            border: 2px solid #60a5fa;
+            border-radius: 6px;
             background: #2563eb;
             color: #ffffff;
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
-            border-radius: 2px;
             transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
 
         .s2-submit-btn:hover, .s4-submit-btn:hover {
             background: #1d4ed8;
-        }
-
-        .s2-question-box, .s4-question-box {
-            position: absolute;
-            left: 20%;
-            right: 20%;
-            top: 56%;
-            height: 160px;
-            border: 1px solid #ffffff;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .s2-question-text, .s4-question-text {
-            font-size: 18px;
-            font-weight: bold;
-            line-height: 1.4;
+            border-color: #93c5fd;
         }
 
         .s2-bottom-left, .s4-bottom-left {
             position: absolute;
-            left: 20%;
+            left: 15%;
             bottom: 10%;
-            width: 100px;
+            min-width: 120px;
             height: 60px;
-            border: 1px solid #ffffff;
+            border: 2px solid #22c55e;
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             color: #4ade80;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+            padding: 0 12px;
         }
 
         .s2-bottom-right, .s4-bottom-right {
             position: absolute;
-            right: 20%;
+            right: 15%;
             bottom: 10%;
-            width: 120px;
+            min-width: 150px;
             height: 60px;
-            border: 1px solid #ffffff;
+            border: 2px solid #38bdf8;
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 18px;
             font-weight: bold;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.9);
             color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            padding: 0 15px;
         }
 
         /* SCENE 3 STYLES */
@@ -846,26 +877,27 @@
             </select>
         </div>
 
-        <div class="scene-tabs">
-            <button id="tab_auto" class="scene-tab auto-active" onclick="switchScene('auto')">⚡ Tự Động Sync</button>
-            <button id="tab_s1" class="scene-tab" onclick="switchScene(1)">Vòng 1: Xuất Phát</button>
-            <button id="tab_s2" class="scene-tab" onclick="switchScene(2)">Vòng 2: Ra Khơi</button>
-            <button id="tab_s3" class="scene-tab" onclick="switchScene(3)">Vòng 3: Vượt Sóng</button>
-            <button id="tab_s4" class="scene-tab" onclick="switchScene(4)">Vòng 4: Vinh Quang</button>
+        <!-- Center Remaining Timer Display -->
+        <div id="player_master_timer_box" style="display: flex; align-items: center; gap: 8px; background: #1e293b; border: 1.5px solid #eab308; padding: 4px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; color: #facc15; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);">
+            <span>⏳ THỜI GIAN CÒN LẠI:</span>
+            <span id="player_remaining_seconds" style="font-size: 18px; color: #ffffff; min-width: 34px; text-align: center;">--</span>
         </div>
 
         <div class="status-area">
-            <div id="status_badge" class="status-badge">🟢 Hệ Thống Sẵn Sàng</div>
         </div>
     </div>
 
     <!-- MAIN VIEWPORT CONTAINER -->
     <div class="viewport-container">
 
-        <!-- SCENE 1 (PLAYER SCENCE 1) -->
+        <!-- SCENE 1 (PLAYER SCENE 1) -->
         <div id="view_scene_1" class="scene-view active">
             <div class="s1-container">
-                <div class="s1-box-zero" id="s1_score_box">0</div>
+                <button id="s1_random_btn" onclick="triggerRandomDeFromPlayer()" style="position: absolute; left: 90px; top: 160px; height: 45px; padding: 0 20px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #60a5fa; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); z-index: 10; transition: all 0.2s;">
+                    <span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span>
+                    <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>
+                </button>
+                <div class="s1-box-zero" id="s1_clock_box" title="Thời gian Xuất Phát">60</div>
                 <div class="s1-pagination">
                     <button class="s1-page-btn" id="s1_btn_1">1</button>
                     <button class="s1-page-btn" id="s1_btn_2">2</button>
@@ -879,26 +911,29 @@
                     <button class="s1-page-btn" id="s1_btn_10">10</button>
                 </div>
                 <div class="s1-question-box">
+                    <div class="player-score-tag" id="s1_score_box">ĐIỂM: 0</div>
                     <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
                 </div>
             </div>
         </div>
 
-        <!-- SCENE 2 (PLAYER SCENCE 2) -->
+        <!-- SCENE 2 (PLAYER SCENE 2 - RA KHƠI) -->
         <div id="view_scene_2" class="scene-view">
             <div class="s2-container">
+                <!-- Question Box ON TOP -->
+                <div class="s2-question-box">
+                    <div class="player-score-tag" id="s2_score_box">ĐIỂM: 0</div>
+                    <div class="s2-question-text" id="s2_question_text">Đang chờ câu hỏi Ra Khơi...</div>
+                </div>
+
+                <!-- Answer input & Controls BELOW Question Box -->
                 <div class="s2-answer-box">
                     <input type="text" id="s2_answer_input" class="s2-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
                 </div>
                 <div class="s2-time-box" id="s2_time_box">Thời gian</div>
                 <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
 
-                <div class="s2-question-box">
-                    <div class="s2-question-text" id="s2_question_text">Đang chờ câu hỏi Ra Khơi / Vinh Quang...</div>
-                </div>
-
                 <div class="s2-bottom-row" style="display: contents;">
-                    <div class="s2-bottom-left" id="s2_score_box">0</div>
                     <div class="s2-bottom-right" id="s2_badge_box">TS 1</div>
                 </div>
 
@@ -912,48 +947,38 @@
             </div>
         </div>
 
-        <!-- SCENE 3 (PLAYER SCENCE 3) -->
+        <!-- SCENE 3 (PLAYER SCENE 3 - VƯỢT SÓNG) -->
         <div id="view_scene_3" class="scene-view">
             <div class="s3-container">
-                <div class="s3-grid-section">
+                <div class="s3-grid-section" id="s3_grid_section">
                     <div class="s3-row-group">
                         <div class="s3-number-box" id="s3_num_1">1</div>
-                        <div class="s3-matrix-row" id="s3_row_1">
-                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
-                        </div>
+                        <div class="s3-matrix-row" id="s3_row_1"></div>
                     </div>
                     <div class="s3-row-group">
                         <div class="s3-number-box" id="s3_num_2">2</div>
-                        <div class="s3-matrix-row" id="s3_row_2">
-                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
-                        </div>
+                        <div class="s3-matrix-row" id="s3_row_2"></div>
                     </div>
                     <div class="s3-row-group">
                         <div class="s3-number-box" id="s3_num_3">3</div>
-                        <div class="s3-matrix-row" id="s3_row_3">
-                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
-                        </div>
+                        <div class="s3-matrix-row" id="s3_row_3"></div>
                     </div>
                     <div class="s3-row-group">
                         <div class="s3-number-box" id="s3_num_4">4</div>
-                        <div class="s3-matrix-row" id="s3_row_4">
-                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
-                        </div>
+                        <div class="s3-matrix-row" id="s3_row_4"></div>
                     </div>
                     <div class="s3-row-group">
                         <div class="s3-empty-space"></div>
-                        <div class="s3-matrix-row" id="s3_row_center">
-                            <div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div><div class="s3-matrix-cell"></div>
-                        </div>
+                        <div class="s3-matrix-row" id="s3_row_center"></div>
                     </div>
                 </div>
 
                 <div class="s3-question-box">
+                    <div class="player-score-tag" id="s3_score_box">ĐIỂM: 0</div>
                     <div class="s3-question-text" id="s3_question_text">Đang chờ câu hỏi Vượt Sóng...</div>
                 </div>
 
                 <div class="s3-bottom-controls">
-                    <div class="s3-bottom-left" id="s3_score_box">0</div>
                     <div class="s3-answer-input-box">
                         <input type="text" id="s3_answer_input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
                     </div>
@@ -978,19 +1003,21 @@
                     <h2 style="color: #facc15; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">🏆 VÒNG 4: VINH QUANG 🏆</h2>
                 </div>
 
-                <div class="s4-answer-box">
-                    <input type="text" id="s4_answer_input" class="s4-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene4Answer()" disabled>
-                </div>
-                <div class="s4-time-box" id="s4_time_box">Thời gian</div>
-                <button class="s4-submit-btn" onclick="submitScene4Answer()">GỬI ĐÁP ÁN</button>
-
-                <div class="s4-question-box">
+                <!-- Question Box ON TOP -->
+                <div class="s4-question-box" style="top: 12%;">
+                    <div class="player-score-tag" id="s4_score_box">ĐIỂM: 0</div>
                     <div class="s4-question-text" id="s4_question_text">Đang chờ câu hỏi Vinh Quang...</div>
                 </div>
 
+                <!-- Answer input & Controls BELOW Question Box -->
+                <div class="s4-answer-box" style="top: 42%;">
+                    <input type="text" id="s4_answer_input" class="s4-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene4Answer()" disabled>
+                </div>
+                <div class="s4-time-box" id="s4_time_box" style="top: 42%;">Thời gian</div>
+                <button class="s4-submit-btn" onclick="submitScene4Answer()" style="top: 42%;">GỬI ĐÁP ÁN</button>
+
                 <div class="s4-bottom-row" style="display: contents;">
-                    <div class="s4-bottom-left" id="s4_score_box">0</div>
-                    <div class="s4-bottom-right" id="s4_badge_box">TS 1</div>
+                    <div class="s4-badge-box s4-bottom-right" id="s4_badge_box">TS 1</div>
                 </div>
 
                 <!-- Dynamic Submission Status Confirmation Box -->
@@ -1003,6 +1030,38 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ROOM CODE LOGIN MODAL OVERLAY -->
+    <div id="room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #1e293b; border: 2px solid #3b82f6; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); text-align: center; color: #f8fafc;">
+            <div style="font-size: 36px; margin-bottom: 8px;">🏆</div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">ĐĂNG NHẬP THÍ SINH</h2>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Nhập Mã Phòng từ Ban Tổ Chức (Controller) để tham gia thi đấu</p>
+
+            <div style="text-align: left; margin-bottom: 16px;">
+                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">1. CHỌN VỊ TRÍ THÍ SINH:</label>
+                <select id="login_player_select" style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 14px; font-weight: bold; outline: none;" onchange="onLoginPlayerSelectChange()">
+                    <option value="1">Thí sinh 1</option>
+                    <option value="2">Thí sinh 2</option>
+                    <option value="3">Thí sinh 3</option>
+                    <option value="4">Thí sinh 4</option>
+                </select>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 24px;">
+                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">2. NHẬP MÃ PHÒNG (ROOM CODE):</label>
+                <input type="password" id="login_room_code_input" placeholder="Nhập mã phòng..." style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; outline: none;" onkeyup="if(event.key==='Enter') onClickJoinRoom()">
+            </div>
+
+            <div id="login_error_msg" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 16px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                Mã phòng không chính xác!
+            </div>
+
+            <button onclick="onClickJoinRoom()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: all 0.2s;">
+                VÀO PHÒNG THI
+            </button>
+        </div>
     </div>
 
     <!-- TOAST NOTIFICATION -->

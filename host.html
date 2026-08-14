@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Màn Hình MC (Host) - Đường Đến Vinh Quang</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .host-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 52px;
+            background: #0f172a;
+            border-bottom: 2px solid #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 1000;
+            user-select: none;
+        }
+
+        .host-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 15px;
+            color: #38bdf8;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .scene-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1e293b;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .scene-tab {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #94a3b8;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .scene-tab:hover {
+            color: #f8fafc;
+        }
+
+        .scene-tab.active {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(37,99,235,0.4);
+        }
+
+        .scene-tab.auto-active {
+            background: #059669;
+            color: #ffffff;
+        }
+
+        .status-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(34,197,94,0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34,197,94,0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timer-display {
+            font-size: 16px;
+            font-weight: 800;
+            color: #facc15;
+            background: #1e293b;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            min-width: 65px;
+            text-align: center;
+        }
+
+        .main-stage {
+            position: absolute;
+            top: 52px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            overflow-y: auto;
+            padding: 20px;
+            background: radial-gradient(circle at center, #1e293b 0%, #0b0f19 100%);
+        }
+
+        .scene-view {
+            display: none;
+            max-width: 1280px;
+            margin: 0 auto;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .scene-view.active {
+            display: flex;
+        }
+
+        .host-card {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1.5px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+        }
+
+        .card-header {
+            font-size: 15px;
+            font-weight: 800;
+            color: #f59e0b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+        }
+
+        .question-box {
+            background: #0f172a;
+            border: 2px solid #2563eb;
+            border-radius: 10px;
+            padding: 16px 20px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .answer-box {
+            background: #064e3b;
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            padding: 14px 20px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #34d399;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .answer-box .label {
+            font-size: 13px;
+            font-weight: 800;
+            color: #a7f3d0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #047857;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        /* Contestants Scores & Answers Grid */
+        .contestants-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .contestant-card {
+            background: #0f172a;
+            border: 1.5px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .contestant-card.active-turn {
+            border-color: #f59e0b;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .ts-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ts-score {
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .ts-answer-display {
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #facc15;
+            min-height: 40px;
+            word-break: break-word;
+        }
+
+        .ts-time-display {
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: right;
+        }
+
+        /* Tables for questions list */
+        .q-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .q-table th {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #334155;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .q-table td {
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+            color: #e2e8f0;
+        }
+
+        .q-table tr.active-q {
+            background: rgba(37, 99, 235, 0.2);
+            font-weight: bold;
+        }
+
+        .q-ans-badge {
+            background: #064e3b;
+            color: #34d399;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .contestants-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .scene-tabs {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP BAR -->
+    <div class="host-top-bar">
+        <div class="host-title">
+            <span>🎙️ MÀN HÌNH MC HOST</span>
+        </div>
+
+        <div class="scene-tabs">
+            <button class="scene-tab auto-active" id="tab_auto" onclick="setHostAutoSync(true)">🔄 TỰ ĐỘNG</button>
+            <button class="scene-tab active" id="tab_s1" onclick="switchHostScene(1)">1. XUẤT PHÁT</button>
+            <button class="scene-tab" id="tab_s2" onclick="switchHostScene(2)">2. RA KHƠI</button>
+            <button class="scene-tab" id="tab_s3" onclick="switchHostScene(3)">3. VƯỢT SÓNG</button>
+            <button class="scene-tab" id="tab_s4" onclick="switchHostScene(4)">4. VINH QUANG</button>
+            <button class="scene-tab" id="tab_s5" onclick="switchHostScene(5)">5. CÂU PHỤ</button>
+        </div>
+
+        <div class="status-area">
+            <span class="status-badge" id="host_status_badge">🟢 ĐÃ KẾT NỐI (MÃ: DDVQ2026)</span>
+            <span class="timer-display" id="host_clock_display">--s</span>
+        </div>
+    </div>
+
+    <!-- ROOM CODE LOGIN MODAL FOR HOST -->
+    <div id="host_room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #1e293b; border: 2px solid #f59e0b; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); text-align: center; color: #f8fafc;">
+            <div style="font-size: 36px; margin-bottom: 8px;">🎙️</div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #f59e0b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">ĐĂNG NHẬP MÁY MC (HOST)</h2>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Nhập Mã Phòng từ Máy Điều Khiển để xem câu hỏi và đáp án</p>
+
+            <div style="text-align: left; margin-bottom: 24px;">
+                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">NHẬP MÃ PHÒNG (ROOM CODE):</label>
+                <input type="password" id="host_room_code_input" placeholder="Nhập mã phòng..." style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; outline: none;" onkeyup="if(event.key==='Enter') onClickJoinHostRoom()">
+            </div>
+
+            <div id="host_login_error" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 16px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                Mã phòng không chính xác!
+            </div>
+
+            <button onclick="onClickJoinHostRoom()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); transition: all 0.2s;">
+                XÁC NHẬN MÀN HÌNH MC
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN STAGE CONTENT -->
+    <div class="main-stage">
+
+        <!-- SCENE 1: XUẤT PHÁT -->
+        <div id="host_scene_1" class="scene-view active">
+            <div class="host-card">
+                <div class="card-header">
+                    <span>🔥 VÒNG 1: XUẤT PHÁT - CÂU HỎI HIỆN TẠI</span>
+                    <span id="h1_turn_badge" style="background: #2563eb; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 12px;">LƯỢT THI: THÍ SINH 1</span>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 12px; font-size: 14px; font-weight: bold; color: #94a3b8;">
+                    <span>Bộ đề hiện tại: <strong id="h1_de_num" style="color: #f59e0b;">1</strong></span>
+                    <span>•</span>
+                    <span>Câu hỏi số: <strong id="h1_q_num" style="color: #38bdf8;">1 / 10</strong></span>
+                </div>
+
+                <div class="question-box" id="h1_q_text">
+                    Đang chờ câu hỏi Xuất Phát...
+                </div>
+
+                <div class="answer-box">
+                    <span class="label">ĐÁP ÁN CHÍNH XÁC:</span>
+                    <span id="h1_a_text">--</span>
+                </div>
+            </div>
+
+            <!-- List of 10 questions in current set -->
+            <div class="host-card">
+                <div class="card-header">
+                    <span>📋 BẢNG 10 CÂU HỎI BỘ ĐỀ <span id="h1_de_title">1</span></span>
+                </div>
+                <table class="q-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">STT</th>
+                            <th>Nội dung câu hỏi</th>
+                            <th style="width: 250px;">Đáp án chính xác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="h1_q_table_body">
+                        <!-- Rows 1..10 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SCENE 2: RA KHƠI -->
+        <div id="host_scene_2" class="scene-view">
+            <div class="host-card">
+                <div class="card-header">
+                    <span>🌊 VÒNG 2: RA KHƠI - ĐOẠN BĂNG & CÂU HỎI</span>
+                    <span id="h2_q_num_badge" style="background: #2563eb; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 12px;">CÂU HỎI SỐ 1</span>
+                </div>
+
+                <div class="question-box" id="h2_q_text">
+                    Đang chờ câu hỏi Ra Khơi...
+                </div>
+
+                <div class="answer-box">
+                    <span class="label">ĐÁP ÁN CHÍNH XÁC:</span>
+                    <span id="h2_a_text">--</span>
+                </div>
+
+                <div id="h2_media_preview" style="margin-top: 10px; font-size: 13px; color: #94a3b8;"></div>
+            </div>
+
+            <div class="host-card">
+                <div class="card-header">
+                    <span>📱 ĐÁP ÁN THÍ SINH NỘP (RA KHƠI)</span>
+                </div>
+                <div class="contestants-grid" id="h2_contestants_grid">
+                    <!-- TS 1..4 Cards -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 3: VƯỢT SÓNG -->
+        <div id="host_scene_3" class="scene-view">
+            <div class="host-card">
+                <div class="card-header">
+                    <span>🧩 VÒNG 3: VƯỢT SÓNG - Ô CHỮ & TỪ KHÓA</span>
+                    <span id="h3_row_badge" style="background: #059669; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 12px;">HÀNG NGANG 1</span>
+                </div>
+
+                <div class="question-box" id="h3_q_text">
+                    Đang chờ chọn hàng ngang Vượt Sóng...
+                </div>
+
+                <div class="answer-box">
+                    <span class="label">ĐÁP ÁN HÀNG NGANG:</span>
+                    <span id="h3_a_text">--</span>
+                </div>
+
+                <div style="margin-top: 12px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+                    <div style="font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">🔑 TỪ KHÓA TẤT CẢ HÀNG NGANG (DÀNH CHO MC):</div>
+                    <div id="h3_all_rows_list" style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;"></div>
+                </div>
+            </div>
+
+            <div class="host-card">
+                <div class="card-header">
+                    <span>📱 ĐÁP ÁN THÍ SINH NỘP & BẤM CHUÔNG (VƯỢT SÓNG)</span>
+                </div>
+                <div class="contestants-grid" id="h3_contestants_grid">
+                    <!-- TS 1..4 Cards -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 4: VINH QUANG -->
+        <div id="host_scene_4" class="scene-view">
+            <div class="host-card">
+                <div class="card-header">
+                    <span>🏆 VÒNG 4: VINH QUANG</span>
+                    <span id="h4_pack_badge" style="background: #dc2626; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 12px;">GÓI CÂU HỎI: 20 ĐIỂM</span>
+                </div>
+
+                <div class="question-box" id="h4_q_text">
+                    Đang chờ câu hỏi Vinh Quang...
+                </div>
+
+                <div class="answer-box">
+                    <span class="label">ĐÁP ÁN CHÍNH XÁC:</span>
+                    <span id="h4_a_text">--</span>
+                </div>
+            </div>
+
+            <div class="host-card">
+                <div class="card-header">
+                    <span>📱 ĐÁP ÁN THÍ SINH NỘP (VINH QUANG)</span>
+                </div>
+                <div class="contestants-grid" id="h4_contestants_grid">
+                    <!-- TS 1..4 Cards -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 5: CÂU HỎI PHỤ -->
+        <div id="host_scene_5" class="scene-view">
+            <div class="host-card">
+                <div class="card-header">
+                    <span>❓ CÂU HỎI PHỤ (DÀNH CHO THÍ SINH BẰNG ĐIỂM)</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 16px;" id="h5_chp_list">
+                    <!-- CHP 1, 2, 3 -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="host.js"></script>
+</body>
+</html>

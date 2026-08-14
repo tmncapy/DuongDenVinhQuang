@@ -59,6 +59,15 @@ app.use(express.static(__dirname));
 let sseClients = [];
 let latestAction = null;
 let currentServerState = {
+  roomCode: 'DDVQ2026',
+  connectedClients: {
+    ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
+    ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
+    ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
+    ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
+    host: { connected: false, name: 'Máy MC', lastSeen: 0 },
+    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
+  },
   activeRound: 'XUAT_PHAT', // 'XUAT_PHAT', 'RA_KHOI', 'VUOT_SONG', 'VINH_QUANG'
   questionText: '',
   questionIndex: 1,
@@ -76,6 +85,15 @@ let currentServerState = {
   playerAnswers: {},
   timestamp: Date.now()
 };
+
+function broadcastAction(actionData) {
+  const payload = `data: ${JSON.stringify(actionData)}\n\n`;
+  sseClients.forEach(client => {
+    try {
+      client.res.write(payload);
+    } catch (e) {}
+  });
+}
 
 app.get('/api/state', (req, res) => {
   res.json({
@@ -118,6 +136,66 @@ app.get('/api/events', (req, res) => {
 app.post('/api/action', (req, res) => {
   const actionData = req.body;
   if (actionData && typeof actionData === 'object' && actionData.type) {
+    // Room Code Verification
+    if (actionData.type === 'VERIFY_ROOM_CODE') {
+      const isMatch = (actionData.roomCode || '').toUpperCase() === (currentServerState.roomCode || '').toUpperCase();
+      return res.json({
+        success: isMatch,
+        roomCode: currentServerState.roomCode,
+        message: isMatch ? 'Đã xác thực mã phòng!' : 'Mã phòng không chính xác!'
+      });
+    }
+
+    if (actionData.type === 'SET_ROOM_CODE') {
+      if (actionData.roomCode) {
+        currentServerState.roomCode = actionData.roomCode.toUpperCase();
+        broadcastAction({
+          type: 'ROOM_CODE_UPDATED',
+          roomCode: currentServerState.roomCode,
+          timestamp: Date.now()
+        });
+      }
+      return res.json({ success: true, roomCode: currentServerState.roomCode });
+    }
+
+    // Client connection / heartbeat registration
+    if (actionData.type === 'CLIENT_JOIN' || actionData.type === 'CLIENT_HEARTBEAT') {
+      const clientRoom = (actionData.roomCode || '').toUpperCase();
+      const serverRoom = (currentServerState.roomCode || '').toUpperCase();
+
+      if (clientRoom !== serverRoom) {
+        return res.json({
+          success: false,
+          error: 'Mã phòng không chính xác!',
+          roomCode: currentServerState.roomCode
+        });
+      }
+
+      const roleKey = actionData.role || (actionData.contestantId ? `ts${actionData.contestantId}` : null);
+      if (roleKey && currentServerState.connectedClients[roleKey]) {
+        currentServerState.connectedClients[roleKey] = {
+          connected: true,
+          name: actionData.name || currentServerState.connectedClients[roleKey].name,
+          lastSeen: Date.now()
+        };
+
+        // Notify controller of client status change
+        broadcastAction({
+          type: 'CLIENT_STATUS_UPDATE',
+          connectedClients: currentServerState.connectedClients,
+          role: roleKey,
+          status: currentServerState.connectedClients[roleKey],
+          timestamp: Date.now()
+        });
+      }
+
+      return res.json({
+        success: true,
+        roomCode: currentServerState.roomCode,
+        connectedClients: currentServerState.connectedClients
+      });
+    }
+
     // Update state fields
     if (actionData.questionText) currentServerState.questionText = actionData.questionText;
     if (actionData.questionIndex !== undefined) currentServerState.questionIndex = actionData.questionIndex;
@@ -127,6 +205,12 @@ app.post('/api/action', (req, res) => {
     if (actionData.pack) currentServerState.pack = actionData.pack;
     if (actionData.contestants && Array.isArray(actionData.contestants)) {
       currentServerState.contestants = actionData.contestants;
+      // Also update names in connectedClients for ts1..4
+      actionData.contestants.forEach((c, idx) => {
+        if (c && c.name && currentServerState.connectedClients[`ts${idx+1}`]) {
+          currentServerState.connectedClients[`ts${idx+1}`].name = c.name;
+        }
+      });
     }
     if (actionData.gameData) currentServerState.gameData = actionData.gameData;
 
@@ -168,18 +252,13 @@ app.post('/api/action', (req, res) => {
     else if (actionData.type.startsWith('VINH_QUANG_')) currentServerState.activeRound = 'VINH_QUANG';
 
     // Do not overwrite latestAction with heartbeats
-    if (actionData.type !== 'PROJECTOR_READY' && actionData.type !== 'PROJECTOR_PONG' && actionData.type !== 'PING') {
+    if (actionData.type !== 'PROJECTOR_READY' && actionData.type !== 'PROJECTOR_PONG' && actionData.type !== 'PING' && actionData.type !== 'CLIENT_HEARTBEAT') {
       latestAction = actionData;
     }
 
     currentServerState.timestamp = Date.now();
 
-    const payload = `data: ${JSON.stringify(actionData)}\n\n`;
-    sseClients.forEach(client => {
-      try {
-        client.res.write(payload);
-      } catch (e) {}
-    });
+    broadcastAction(actionData);
   }
   res.json({ success: true, timestamp: Date.now() });
 });
@@ -204,13 +283,35 @@ app.post('/api/state', (req, res) => {
 
 // Periodic heartbeat to keep connections alive on mobile networks/proxies
 setInterval(() => {
-  const pingPayload = `data: ${JSON.stringify({ type: 'PING', timestamp: Date.now() })}\n\n`;
+  const now = Date.now();
+  let changed = false;
+
+  // Check client connection timeouts (> 8000ms)
+  if (currentServerState.connectedClients) {
+    Object.keys(currentServerState.connectedClients).forEach(key => {
+      const client = currentServerState.connectedClients[key];
+      if (client.connected && now - client.lastSeen > 8000) {
+        client.connected = false;
+        changed = true;
+      }
+    });
+  }
+
+  if (changed) {
+    broadcastAction({
+      type: 'CLIENT_STATUS_UPDATE',
+      connectedClients: currentServerState.connectedClients,
+      timestamp: now
+    });
+  }
+
+  const pingPayload = `data: ${JSON.stringify({ type: 'PING', timestamp: now })}\n\n`;
   sseClients.forEach(client => {
     try {
       client.res.write(pingPayload);
     } catch (e) {}
   });
-}, 10000);
+}, 5000);
 
 // Serve index.html or controller.html at root route
 app.get('/', (req, res) => {
@@ -222,12 +323,13 @@ app.get('/', (req, res) => {
 });
 
 // Serve projector.html explicitly
-app.get('/projector', (req, res) => {
+app.get(['/projector', '/projector.html', '/graphic', '/graphic.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'projector.html'));
 });
 
-app.get('/projector.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'projector.html'));
+// Serve host page (MC Host Screen)
+app.get(['/host', '/host.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'host.html'));
 });
 
 // Serve player page strictly (unified single web player)

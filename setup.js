@@ -79,7 +79,6 @@ function switchTab(index) {
     }
     if (index === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
-        if (typeof selectVSRow === 'function') selectVSRow(1);
     }
 }
 
@@ -740,20 +739,66 @@ function resetAllData() {
 
 function updateContestantNames() {
     for (let i = 1; i <= 4; i++) {
-        const val = document.getElementById(`ts_name_${i}`)?.value || `Thí sinh ${i}`;
+        const val = (document.getElementById(`ts_name_${i}`)?.value || `Thí sinh ${i}`).trim();
         if (!gameData.contestants) gameData.contestants = [];
         if (!gameData.contestants[i - 1]) gameData.contestants[i - 1] = { name: val, score: 0 };
         else gameData.contestants[i - 1].name = val;
 
-        const tab1Input = document.getElementById(`ts${i}_name`);
-        if (tab1Input) tab1Input.value = val;
+        const inputs = [
+            document.getElementById(`ts_name_${i}`),
+            document.getElementById(`ts${i}_name`),
+            document.getElementById(`ts${i}_name_rk`),
+            document.getElementById(`ts${i}_name_vs`),
+            document.getElementById(`ts${i}_name_vq`)
+        ];
+        inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
     }
     if (gameData.contestants.length > 4) {
         gameData.contestants = gameData.contestants.slice(0, 4);
     }
     saveAllData();
     if (typeof updateTab1Preview === 'function') updateTab1Preview();
-    showToast('Đã cập nhật tên các thí sinh!');
+
+    // Broadcast to Projector and Player machines
+    const payload = {
+        type: 'UPDATE_CONTESTANTS',
+        contestants: gameData.contestants,
+        gameData: gameData,
+        timestamp: Date.now()
+    };
+
+    sendToProjector('UPDATE_CONTESTANTS', payload);
+    sendToProjector('UPDATE_SCORES', payload);
+
+    try {
+        if (typeof BroadcastChannel !== 'undefined' && controllerChannel) {
+            controllerChannel.postMessage(payload);
+        }
+    } catch(e) {}
+
+    try {
+        localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
+        localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
+    } catch(e) {}
+
+    try {
+        fetch('/api/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contestants: gameData.contestants,
+                gameData: gameData
+            })
+        }).catch(() => {});
+
+        fetch('/api/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(() => {});
+    } catch(e) {}
+
+    showToast('Đã cập nhật và đồng bộ tên thí sinh sang Projector và Máy thí sinh!');
 }
 
 function syncDataToProjector() {
@@ -856,23 +901,35 @@ function handleIncomingPlayerAnswer(data) {
     if (data.type === 'PLAYER_SUBMIT_ANSWER') {
         const tsIdx = data.contestantId || 1;
         const ans = data.answer || '';
-        const time = data.time || '';
+        const rawTime = data.time || '';
+        const cleanTime = rawTime.toString().replace(/s|giây/gi, '').trim();
+
         if (data.round === 'RK' || !data.round) {
             const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
             if (inputAns) inputAns.value = ans;
             const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
-            if (inputTime) inputTime.value = time;
+            if (inputTime) inputTime.value = cleanTime || '00.00';
         }
         if (data.round === 'VS' || !data.round) {
             const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
-            if (inputAns) inputAns.value = ans;
+            const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
+            if (inputTime) inputTime.value = cleanTime || '00.00';
+            if (inputAns) {
+                inputAns.value = ans;
+            }
         }
         if (data.round === 'VQ' || !data.round) {
-            const inputAns = document.getElementById(`ts${tsIdx}_extra_vq`);
+            const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);
+            if (inputExtra) inputExtra.value = cleanTime || '00.00';
+            const inputAns = document.getElementById(`ts${tsIdx}_ans_vq`);
             if (inputAns) inputAns.value = ans;
         }
         if (typeof showToast === 'function') {
-            showToast(`TS${tsIdx} gửi đáp án: "${ans}" (${time})`);
+            if (data.isVongThi && !ans) {
+                showToast(`TS${tsIdx} bấm chuông Vượt Sóng (${cleanTime || '00.00'})`);
+            } else {
+                showToast(`TS${tsIdx} gửi: "${ans}" (${cleanTime || '00.00'})`);
+            }
         }
         // Forward to projector immediately (especially useful under file:/// protocol)
         try {
@@ -883,24 +940,119 @@ function handleIncomingPlayerAnswer(data) {
             if (ansObj && ansObj.contestantId) {
                 const tsIdx = ansObj.contestantId;
                 const ans = ansObj.answer || '';
-                const time = ansObj.time || '';
+                const rawTime = ansObj.time || '';
+                const cleanTime = rawTime.toString().replace(/s|giây/gi, '').trim();
+
                 if (ansObj.round === 'RK' || !ansObj.round) {
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
                     if (inputAns) inputAns.value = ans;
                     const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
-                    if (inputTime) inputTime.value = time;
+                    if (inputTime) inputTime.value = cleanTime || '00.00';
                 }
                 if (ansObj.round === 'VS' || !ansObj.round) {
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
-                    if (inputAns) inputAns.value = ans;
+                    const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
+                    if (inputTime) inputTime.value = cleanTime || '00.00';
+                    if (inputAns) {
+                        inputAns.value = ans;
+                    }
                 }
                 if (ansObj.round === 'VQ' || !ansObj.round) {
-                    const inputAns = document.getElementById(`ts${tsIdx}_extra_vq`);
+                    const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);
+                    if (inputExtra) inputExtra.value = cleanTime || '00.00';
+                    const inputAns = document.getElementById(`ts${tsIdx}_ans_vq`);
                     if (inputAns) inputAns.value = ans;
                 }
             }
         });
     }
+}
+
+function updateClientStatusBadges(connectedClients) {
+    if (!connectedClients) return;
+    const roles = ['ts1', 'ts2', 'ts3', 'ts4', 'host', 'projector'];
+    roles.forEach(role => {
+        const badge = document.getElementById(`status_badge_${role}`);
+        const info = connectedClients[role];
+        if (badge) {
+            if (info && info.connected) {
+                badge.className = 'status-indicator connected';
+                badge.innerHTML = '🟢 Đã kết nối';
+                badge.style.color = '#16a34a';
+                badge.style.background = '#dcfce7';
+                badge.style.borderColor = '#86efac';
+            } else {
+                badge.className = 'status-indicator disconnected';
+                badge.innerHTML = '🔴 Chưa kết nối';
+                badge.style.color = '#dc2626';
+                badge.style.background = '#fee2e2';
+                badge.style.borderColor = '#fca5a5';
+            }
+        }
+    });
+
+    if (connectedClients.projector) {
+        updateProjectorStatus(connectedClients.projector.connected);
+    }
+}
+
+function updateRoomCodeFromController() {
+    const input = document.getElementById('room_code_input');
+    if (!input) return;
+    const newCode = input.value.trim().toUpperCase() || 'DDVQ2026';
+    input.value = newCode;
+
+    fetch('/api/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type: 'SET_ROOM_CODE',
+            roomCode: newCode
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const badge = document.getElementById('room_code_badge');
+            if (badge) badge.innerText = `Đang hoạt động: ${newCode}`;
+            if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng mới: ${newCode}`);
+        }
+    })
+    .catch(err => {
+        console.error("Room code update error:", err);
+    });
+}
+
+let currentControllerAudio = null;
+
+function playSelectedSoundController() {
+    const select = document.getElementById('controller_sound_select');
+    if (!select) return;
+    const soundFile = select.value;
+    if (!soundFile) return;
+
+    if (currentControllerAudio) {
+        currentControllerAudio.pause();
+        currentControllerAudio.currentTime = 0;
+    }
+
+    try {
+        currentControllerAudio = new Audio(`sounds/${soundFile}`);
+        currentControllerAudio.play().catch(e => console.warn("Audio play blocked locally:", e));
+    } catch(e) {}
+
+    sendToProjector('PLAY_SOUND', { sound: soundFile });
+    if (typeof showToast === 'function') showToast(`Đang phát âm thanh: ${soundFile}`);
+}
+
+function stopSoundController() {
+    if (currentControllerAudio) {
+        currentControllerAudio.pause();
+        currentControllerAudio.currentTime = 0;
+        currentControllerAudio = null;
+    }
+    sendToProjector('STOP_SOUND');
+    if (typeof showToast === 'function') showToast('Đã dừng âm thanh!');
 }
 
 try {
@@ -912,6 +1064,8 @@ try {
                 updateProjectorStatus(true);
             } else if (event.data && event.data.type === 'PLAYER_SUBMIT_ANSWER') {
                 handleIncomingPlayerAnswer(event.data);
+            } else if (event.data && event.data.type === 'CLIENT_STATUS_UPDATE') {
+                updateClientStatusBadges(event.data.connectedClients);
             }
         };
     }
@@ -931,6 +1085,15 @@ if (typeof EventSource !== 'undefined') {
                     updateProjectorStatus(true);
                 } else if (data && (data.type === 'PLAYER_SUBMIT_ANSWER' || data.playerAnswers)) {
                     handleIncomingPlayerAnswer(data);
+                } else if (data && data.type === 'CLIENT_STATUS_UPDATE') {
+                    updateClientStatusBadges(data.connectedClients);
+                } else if (data && data.connectedClients) {
+                    updateClientStatusBadges(data.connectedClients);
+                } else if (data && data.roomCode) {
+                    const input = document.getElementById('room_code_input');
+                    const badge = document.getElementById('room_code_badge');
+                    if (input && !input.matches(':focus')) input.value = data.roomCode;
+                    if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
                 }
             } catch(e) {}
         };
@@ -1021,20 +1184,31 @@ function sendToProjector(type, payload = {}) {
 }
 
 function updateContestantName(idx, val) {
-    if (gameData.contestants && gameData.contestants[idx - 1]) {
-        gameData.contestants[idx - 1].name = val;
-        const inputs = [
-            document.getElementById(`ts_name_${idx}`),
-            document.getElementById(`ts${idx}_name`),
-            document.getElementById(`ts${idx}_name_rk`),
-            document.getElementById(`ts${idx}_name_vq`)
-        ];
-        inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
-        saveAllData();
-        if (typeof currentXuatPhatTurn !== 'undefined' && currentXuatPhatTurn === idx) {
-            if (typeof updateTab1Preview === 'function') updateTab1Preview();
-        }
+    val = (val || `Thí sinh ${idx}`).trim();
+    if (!gameData.contestants) gameData.contestants = [];
+    if (!gameData.contestants[idx - 1]) gameData.contestants[idx - 1] = { name: val, score: 0 };
+    else gameData.contestants[idx - 1].name = val;
+
+    const inputs = [
+        document.getElementById(`ts_name_${idx}`),
+        document.getElementById(`ts${idx}_name`),
+        document.getElementById(`ts${idx}_name_rk`),
+        document.getElementById(`ts${idx}_name_vs`),
+        document.getElementById(`ts${idx}_name_vq`)
+    ];
+    inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
+    saveAllData();
+    if (typeof currentXuatPhatTurn !== 'undefined' && currentXuatPhatTurn === idx) {
+        if (typeof updateTab1Preview === 'function') updateTab1Preview();
     }
+
+    // Debounced or direct broadcast
+    const payload = {
+        type: 'UPDATE_CONTESTANTS',
+        contestants: gameData.contestants,
+        timestamp: Date.now()
+    };
+    sendToProjector('UPDATE_CONTESTANTS', payload);
 }
 
 function promptScore(idx) {

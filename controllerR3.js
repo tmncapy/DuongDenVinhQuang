@@ -4,6 +4,28 @@ let vsTimerInterval = null;
 let vsTimeLeft = 20;
 let vsRevealedKeyIndices = [];
 
+function removeVietnameseTones(str) {
+    if (!str) return '';
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
+    str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+    str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+    str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+    str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+    str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+    str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
+    str = str.replace(/Đ/g, "D");
+    try {
+        str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    } catch(e) {}
+    return str;
+}
+
 function selectVSRow(row) {
     currentVSRow = row;
     const buttons = document.querySelectorAll('#tab3-content .vs-row-btn');
@@ -74,7 +96,7 @@ function onClickVSOpenRowAnswer() {
 
 function onClickVSOpenKeywordLetters() {
     const kw = (gameData.vuotSong?.keyword || gameData.vuotSong?.center?.a || document.getElementById('vs_keyword')?.value || '').trim();
-    const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
+    const cleanKw = removeVietnameseTones(kw).replace(/\s+/g, '').toUpperCase();
     const totalLen = cleanKw.length;
     
     if (totalLen === 0) {
@@ -125,7 +147,7 @@ function onClickVSOpenKeywordLetters() {
 
 function onClickVSOpenAllAnswers() {
     const kw = (gameData.vuotSong?.keyword || gameData.vuotSong?.center?.a || '').trim();
-    const cleanKw = kw.replace(/\s+/g, '').toUpperCase();
+    const cleanKw = removeVietnameseTones(kw).replace(/\s+/g, '').toUpperCase();
     vsRevealedKeyIndices = [];
     for (let i = 0; i < cleanKw.length; i++) {
         vsRevealedKeyIndices.push(i);
@@ -161,10 +183,36 @@ function onClickVSStartTimer() {
 function onClickVSShowAnswers() {
     const contestants = [];
     for (let i = 1; i <= 4; i++) {
+        const extraInput = document.getElementById(`ts${i}_extra_vs`);
+        const ansInput = document.getElementById(`ts${i}_ans_vs`);
+        let ansVal = ansInput?.value || '';
+        let timeVal = extraInput?.value || '';
+
+        // Clean any attached prefixes just in case (e.g. 🔔, [CNV], [Bấm chuông], etc.)
+        ansVal = ansVal.replace(/^[🔔\s]*(\[CNV\]|\[Bấm chuông\])?\s*/gi, '').trim();
+
+        // In case time was embedded in ansVal (e.g. "jhfurhusrehf (09.51s)" or "(09.51)")
+        const match = ansVal.match(/\(([\d\.]+)(?:s|giây)?\)/i);
+        if (match) {
+            if (!timeVal || timeVal === '00.00') {
+                timeVal = match[1];
+            }
+            ansVal = ansVal.replace(/\(([\d\.]+)(?:s|giây)?\)/i, '').trim();
+        }
+
+        // Clean timeVal to remove any 's' or 'giây'
+        timeVal = (timeVal || '00.00').toString().replace(/s|giây/gi, '').trim();
+        const num = parseFloat(timeVal);
+        if (!isNaN(num)) {
+            timeVal = num < 10 ? '0' + num.toFixed(2) : num.toFixed(2);
+        } else {
+            timeVal = '00.00';
+        }
+
         contestants.push({
             name: gameData.contestants?.[i-1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`,
-            answer: document.getElementById(`ts${i}_ans_vs`)?.value || '',
-            time: '00.00'
+            answer: ansVal,
+            time: timeVal
         });
     }
     sendToProjector('VUOT_SONG_SHOW_CONTESTANT_ANSWERS', { contestants: contestants });
@@ -182,6 +230,8 @@ function onClickVSDatLai() {
     for (let i = 1; i <= 5; i++) {
         const ansEl = document.getElementById(`ts${i}_ans_vs`);
         if (ansEl) ansEl.value = '';
+        const extraEl = document.getElementById(`ts${i}_extra_vs`);
+        if (extraEl) extraEl.value = '';
     }
 
     currentVSRow = null;

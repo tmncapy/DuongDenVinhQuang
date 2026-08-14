@@ -1,4 +1,4 @@
-// Projector.js - Màn hình hiển thị Projector
+// Graphic.js - Màn hình hiển thị Graphic (Chroma key green background)
 function showPopup(message) {
     const msgEl = document.getElementById('popup-message');
     const popEl = document.getElementById('custom-popup');
@@ -527,7 +527,7 @@ function resetVQProjector() {
         if (ansEl) ansEl.innerText = '';
     }
 
-    // 4. Switch to view 6 (which acts as a transparent empty canvas when pageWrapper is in fly-down)
+    // 4. Switch to view 6
     switchView(6);
 }
 
@@ -619,7 +619,7 @@ function startCountdown7(duration = 25) {
     }, 1000);
 }
 
-/* CONTROLLER - PROJECTOR CONNECTION */
+/* CONTROLLER - GRAPHIC CONNECTION */
 let projectorChannel = null;
 try {
     if (typeof BroadcastChannel !== 'undefined') {
@@ -631,10 +631,10 @@ try {
         };
     }
 } catch(e) {
-    console.warn("BroadcastChannel restricted in projector:", e);
+    console.warn("BroadcastChannel restricted in graphic:", e);
 }
 
-// Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector)
+// Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector/Graphic)
 if (typeof EventSource !== 'undefined') {
     try {
         const projSse = new EventSource('/api/events');
@@ -652,7 +652,7 @@ if (typeof EventSource !== 'undefined') {
             } catch(e) {}
         };
     } catch(e) {
-        console.warn("SSE projector connection error:", e);
+        console.warn("SSE graphic connection error:", e);
     }
 }
 
@@ -682,7 +682,7 @@ function updateProjectorContestants(contestants) {
     }
 }
 
-// Initial state fetch for projector
+// Initial state fetch for graphic screen
 function loadInitialProjectorState() {
     try {
         const savedContestants = localStorage.getItem('ddvq_contestants');
@@ -1054,7 +1054,6 @@ function handleProjectorMessage(data) {
         startCountdown7(data.duration || 25);
     } else if (data.type === 'VINH_QUANG_STAR_OF_HOPE') {
         safePlay(soundChooseQues);
-        // showPopup has been removed as requested
     } else if (data.type === 'VINH_QUANG_SHOW_ANSWERS') {
         switchView(8);
         const ansAudio = document.getElementById('audioVQAnswer') || document.getElementById('soundRKAnswer');

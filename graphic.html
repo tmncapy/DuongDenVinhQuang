@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projector - Đường đến Vinh quang</title>
+    <title>Graphic - Đường đến Vinh quang</title>
     <style>
         /* Global & Reset Styles */
         * {
@@ -18,17 +18,11 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            background-image: url('Images/bg.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-color: #050b14;
+            background-color: rgb(0, 255, 0);
             color: #ffffff;
             pointer-events: none; /* Disable mouse interactions */
             user-select: none;
         }
-
-
 
         /* Stage Container chuẩn 1920x1080 */
         .stage-wrapper {
@@ -246,8 +240,6 @@
 </head>
 <body>
 
-
-
     <!-- Global Custom Popup Component -->
     <div id="custom-popup">
         <div class="popup-card">
@@ -351,7 +343,6 @@
             </div>
             <audio id="vongThiAudio2" src="sounds/25sV1.mp3" preload="auto"></audio>
             <audio id="soundRKAnswer2" src="sounds/Answer.mp3" preload="auto"></audio>
-
 
             <!-- SUB-SCENE 2: CONTESTANT ANSWERS SCENE -->
             <div id="rk-scene-answers" style="display: none; position: relative; width: 1920px; height: 1080px; background-image: url('Images/RKAnswer.png'); background-size: cover;">
@@ -458,6 +449,6 @@
 
     </div>
 
-    <script src="projector.js"></script>
+    <script src="graphic.js"></script>
 </body>
 </html>

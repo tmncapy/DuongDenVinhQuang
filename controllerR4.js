@@ -236,10 +236,12 @@ function onClickVQHienDapAnTS() {
     for (let i = 1; i <= 4; i++) {
         const contestant = gameData.contestants?.[i-1] || {};
         const extraInput = document.getElementById(`ts${i}_extra_vq`);
+        const ansInput = document.getElementById(`ts${i}_ans_vq`);
+        const ansVal = ansInput?.value || extraInput?.value || '';
         contestantsData.push({
             name: contestant.name || `Thí sinh ${i}`,
             score: contestant.score || 0,
-            answer: extraInput?.value || ''
+            answer: ansVal
         });
     }
 
@@ -263,6 +265,8 @@ function onClickVQDatLai() {
     for (let i = 1; i <= 5; i++) {
         const extraEl = document.getElementById(`ts${i}_extra_vq`);
         if (extraEl) extraEl.value = '';
+        const ansEl = document.getElementById(`ts${i}_ans_vq`);
+        if (ansEl) ansEl.value = '';
     }
 
     // Reset selected pack variables on controller

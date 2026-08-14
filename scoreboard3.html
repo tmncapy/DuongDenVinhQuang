@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điểm Thí Sinh 3</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scoreboard-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('Images/ScoreBoard.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Số điểm: Tăng kích thước to hơn và căn vị trí */
+        .score {
+            position: absolute;
+            top: 38%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30vw; /* Đã phóng to số hơn */
+            font-weight: bold;
+            color: #ffffff;
+            line-height: 1;
+        }
+
+        /* Tên thí sinh: Dời xuống thấp hơn */
+        .name {
+            position: absolute;
+            top: 90%; /* Tăng khoảng cách từ trên xuống để tên dời xuống thấp hơn */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5vw;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 0.2vw;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scoreboard-container">
+        <div id="orange_flash_overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 165, 0, 0.7); pointer-events: none; z-index: 999; opacity: 0; transition: opacity 0.1s ease;"></div>
+        <div class="score" id="contestant_score">0</div>
+        <div class="name" id="contestant_name">THÍ SINH 3</div>
+    </div>
+
+    <script>
+        const CONTESTANT_ID = 3;
+        const scoreEl = document.getElementById('contestant_score');
+        const nameEl = document.getElementById('contestant_name');
+
+        function updateScoreboard(name, score) {
+            if (score !== undefined && score !== null && !isNaN(score)) {
+                scoreEl.innerText = score;
+            }
+            if (name !== undefined && name !== null && name.toString().trim() !== '') {
+                nameEl.innerText = name.toString().toUpperCase();
+            }
+        }
+
+        function loadInitialData() {
+            try {
+                const saved = localStorage.getItem('ddvq_contestants');
+                if (saved) {
+                    const list = JSON.parse(saved);
+                    if (list && list[CONTESTANT_ID - 1]) {
+                        updateScoreboard(list[CONTESTANT_ID - 1].name, list[CONTESTANT_ID - 1].score);
+                    }
+                }
+            } catch(e) {}
+
+            try {
+                const gDataStr = localStorage.getItem('duong_den_vinh_quang_data');
+                if (gDataStr) {
+                    const gData = JSON.parse(gDataStr);
+                    if (gData && gData.contestants && gData.contestants[CONTESTANT_ID - 1]) {
+                        updateScoreboard(gData.contestants[CONTESTANT_ID - 1].name, gData.contestants[CONTESTANT_ID - 1].score);
+                    }
+                }
+            } catch(e) {}
+
+            if (window.location.protocol !== 'file:') {
+                fetch('/api/state')
+                    .then(res => res.json())
+                    .then(data => handleData(data))
+                    .catch(() => {});
+            }
+        }
+
+        let flashInterval = null;
+        function triggerOrangeFlash() {
+            const overlay = document.getElementById('orange_flash_overlay');
+            if (!overlay) return;
+            if (flashInterval) clearInterval(flashInterval);
+
+            let count = 0;
+            const maxFlashes = 20;
+            let isOn = false;
+
+            flashInterval = setInterval(() => {
+                isOn = !isOn;
+                overlay.style.opacity = isOn ? '1' : '0';
+                if (isOn) {
+                    count++;
+                    if (count >= maxFlashes) {
+                        setTimeout(() => {
+                            clearInterval(flashInterval);
+                            overlay.style.opacity = '0';
+                        }, 250);
+                    }
+                }
+            }, 250);
+
+            isOn = true;
+            overlay.style.opacity = '1';
+            count = 1;
+        }
+
+        function handleData(data) {
+            if (!data) return;
+
+            if ((data.type === 'PLAYER_SUBMIT_ANSWER' && (data.isVongThi || data.round === 'VS')) || data.type === 'S3_FLASH_SCOREBOARD') {
+                if (!data.contestantId || data.contestantId === CONTESTANT_ID) {
+                    triggerOrangeFlash();
+                }
+            }
+
+            if (data.contestants && Array.isArray(data.contestants)) {
+                const myData = data.contestants[CONTESTANT_ID - 1];
+                if (myData) {
+                    updateScoreboard(myData.name, myData.score);
+                }
+            }
+
+            if (data.gameData && data.gameData.contestants && Array.isArray(data.gameData.contestants)) {
+                const myData = data.gameData.contestants[CONTESTANT_ID - 1];
+                if (myData) {
+                    updateScoreboard(myData.name, myData.score);
+                }
+            }
+
+            if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT' && data.turnIndex === CONTESTANT_ID) {
+                updateScoreboard(data.name, data.score);
+            }
+
+            if (data.latestAction && typeof data.latestAction === 'object') {
+                handleData(data.latestAction);
+            }
+        }
+
+        // BroadcastChannel
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                const channel = new BroadcastChannel('ddvq_game_channel');
+                channel.onmessage = function(e) {
+                    handleData(e.data);
+                };
+            }
+        } catch(e) {}
+
+        // Server-Sent Events (SSE)
+        if (typeof EventSource !== 'undefined' && window.location.protocol !== 'file:') {
+            try {
+                const sse = new EventSource('/api/events');
+                sse.onmessage = function(e) {
+                    try {
+                        const data = JSON.parse(e.data);
+                        handleData(data);
+                    } catch(err) {}
+                };
+            } catch(e) {}
+        }
+
+        // Window storage listener
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'ddvq_latest_action' && e.newValue) {
+                try {
+                    handleData(JSON.parse(e.newValue));
+                } catch(err) {}
+            } else if (e.key === 'ddvq_contestants' && e.newValue) {
+                try {
+                    const list = JSON.parse(e.newValue);
+                    if (list && list[CONTESTANT_ID - 1]) {
+                        updateScoreboard(list[CONTESTANT_ID - 1].name, list[CONTESTANT_ID - 1].score);
+                    }
+                } catch(err) {}
+            } else if (e.key === 'duong_den_vinh_quang_data' && e.newValue) {
+                try {
+                    const gData = JSON.parse(e.newValue);
+                    if (gData && gData.contestants && gData.contestants[CONTESTANT_ID - 1]) {
+                        updateScoreboard(gData.contestants[CONTESTANT_ID - 1].name, gData.contestants[CONTESTANT_ID - 1].score);
+                    }
+                } catch(err) {}
+            }
+        });
+
+        // Window postMessage listener
+        window.addEventListener('message', function(e) {
+            if (e.data) handleData(e.data);
+        });
+
+        // Initial fetch
+        loadInitialData();
+
+        // Polling fallback
+        setInterval(() => {
+            loadInitialData();
+        }, 1500);
+    </script>
+</body>
+</html>
