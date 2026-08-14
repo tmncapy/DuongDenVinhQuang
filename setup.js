@@ -737,29 +737,38 @@ function resetAllData() {
     }
 }
 
-function updateContestantNames() {
-    for (let i = 1; i <= 4; i++) {
-        const val = (document.getElementById(`ts_name_${i}`)?.value || `Thí sinh ${i}`).trim();
-        if (!gameData.contestants) gameData.contestants = [];
-        if (!gameData.contestants[i - 1]) gameData.contestants[i - 1] = { name: val, score: 0 };
-        else gameData.contestants[i - 1].name = val;
+function updateContestantName(i, val) {
+    if (!gameData.contestants) gameData.contestants = [];
+    
+    // Preserve raw input while converting to uppercase for Vietnamese text
+    const upperVal = (val || '').toLocaleUpperCase('vi-VN');
 
-        const inputs = [
-            document.getElementById(`ts_name_${i}`),
-            document.getElementById(`ts${i}_name`),
-            document.getElementById(`ts${i}_name_rk`),
-            document.getElementById(`ts${i}_name_vs`),
-            document.getElementById(`ts${i}_name_vq`)
-        ];
-        inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
+    if (!gameData.contestants[i - 1]) {
+        gameData.contestants[i - 1] = { name: upperVal, score: 0 };
+    } else {
+        gameData.contestants[i - 1].name = upperVal;
     }
-    if (gameData.contestants.length > 4) {
-        gameData.contestants = gameData.contestants.slice(0, 4);
-    }
-    saveAllData();
+
+    // Synchronize to other tab inputs, but DO NOT modify currently focused input to avoid interrupting IME typing / space
+    const activeEl = document.activeElement;
+    const inputs = [
+        document.getElementById(`ts_name_${i}`),
+        document.getElementById(`ts${i}_name`),
+        document.getElementById(`ts${i}_name_rk`),
+        document.getElementById(`ts${i}_name_vs`),
+        document.getElementById(`ts${i}_name_vq`)
+    ];
+
+    inputs.forEach(inp => {
+        if (inp && inp !== activeEl && inp.value !== upperVal) {
+            inp.value = upperVal;
+        }
+    });
+
+    saveAllData(false);
+
     if (typeof updateTab1Preview === 'function') updateTab1Preview();
 
-    // Broadcast to Projector and Player machines
     const payload = {
         type: 'UPDATE_CONTESTANTS',
         contestants: gameData.contestants,
@@ -782,7 +791,7 @@ function updateContestantNames() {
     } catch(e) {}
 
     try {
-        fetch('/api/state', {
+        fetch(getApiUrl('/api/state'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -791,13 +800,20 @@ function updateContestantNames() {
             })
         }).catch(() => {});
 
-        fetch('/api/action', {
+        fetch(getApiUrl('/api/action'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).catch(() => {});
     } catch(e) {}
+}
 
+function updateContestantNames() {
+    for (let i = 1; i <= 4; i++) {
+        const rawVal = document.getElementById(`ts_name_${i}`)?.value || `Thí sinh ${i}`;
+        const val = rawVal.trim().toLocaleUpperCase('vi-VN');
+        updateContestantName(i, val);
+    }
     showToast('Đã cập nhật và đồng bộ tên thí sinh sang Projector và Máy thí sinh!');
 }
 
@@ -968,14 +984,43 @@ function handleIncomingPlayerAnswer(data) {
     }
 }
 
+function getApiUrl(path) {
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'http://localhost:3000' + path;
+    }
+    return path;
+}
+
+let controllerConnectedClients = {
+    ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
+    ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
+    ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
+    ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
+    host: { connected: false, name: 'Máy MC', lastSeen: 0 },
+    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
+};
+
 function updateClientStatusBadges(connectedClients) {
     if (!connectedClients) return;
+    Object.keys(connectedClients).forEach(role => {
+        if (connectedClients[role]) {
+            controllerConnectedClients[role] = {
+                ...controllerConnectedClients[role],
+                ...connectedClients[role]
+            };
+        }
+    });
+
     const roles = ['ts1', 'ts2', 'ts3', 'ts4', 'host', 'projector'];
+    const now = Date.now();
+
     roles.forEach(role => {
         const badge = document.getElementById(`status_badge_${role}`);
-        const info = connectedClients[role];
+        const info = controllerConnectedClients[role];
+        const isRecentlyActive = info && (info.connected || (info.lastSeen && (now - info.lastSeen < 8000)));
+
         if (badge) {
-            if (info && info.connected) {
+            if (isRecentlyActive) {
                 badge.className = 'status-indicator connected';
                 badge.innerHTML = '🟢 Đã kết nối';
                 badge.style.color = '#16a34a';
@@ -991,8 +1036,9 @@ function updateClientStatusBadges(connectedClients) {
         }
     });
 
-    if (connectedClients.projector) {
-        updateProjectorStatus(connectedClients.projector.connected);
+    if (controllerConnectedClients.projector) {
+        const isProjConn = controllerConnectedClients.projector.connected || (controllerConnectedClients.projector.lastSeen && (now - controllerConnectedClients.projector.lastSeen < 8000));
+        updateProjectorStatus(isProjConn);
     }
 }
 
@@ -1002,7 +1048,7 @@ function updateRoomCodeFromController() {
     const newCode = input.value.trim().toUpperCase() || 'DDVQ2026';
     input.value = newCode;
 
-    fetch('/api/action', {
+    fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1059,13 +1105,22 @@ try {
     if (typeof BroadcastChannel !== 'undefined') {
         controllerChannel = new BroadcastChannel('ddvq_game_channel');
         controllerChannel.onmessage = function(event) {
-            if (event.data && (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG')) {
+            if (!event.data) return;
+            if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
                 lastProjectorPing = Date.now();
                 updateProjectorStatus(true);
-            } else if (event.data && event.data.type === 'PLAYER_SUBMIT_ANSWER') {
+            } else if (event.data.type === 'PLAYER_SUBMIT_ANSWER') {
                 handleIncomingPlayerAnswer(event.data);
-            } else if (event.data && event.data.type === 'CLIENT_STATUS_UPDATE') {
+            } else if (event.data.type === 'CLIENT_STATUS_UPDATE' && event.data.connectedClients) {
                 updateClientStatusBadges(event.data.connectedClients);
+            } else if (event.data.type === 'CLIENT_HEARTBEAT' || event.data.type === 'CLIENT_JOIN') {
+                const role = event.data.role || (event.data.contestantId ? `ts${event.data.contestantId}` : null);
+                if (role && controllerConnectedClients[role]) {
+                    controllerConnectedClients[role].connected = true;
+                    controllerConnectedClients[role].lastSeen = Date.now();
+                    if (event.data.name) controllerConnectedClients[role].name = event.data.name;
+                    updateClientStatusBadges(controllerConnectedClients);
+                }
             }
         };
     }
@@ -1076,7 +1131,7 @@ try {
 // Server-Sent Events (SSE) for cross-device real-time sync (Mobile, PC, Projector)
 if (typeof EventSource !== 'undefined') {
     try {
-        const sseSource = new EventSource('/api/events');
+        const sseSource = new EventSource(getApiUrl('/api/events'));
         sseSource.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
@@ -1106,6 +1161,19 @@ window.addEventListener('storage', function(event) {
     if (event.key === 'ddvq_projector_status' && event.newValue) {
         lastProjectorPing = Date.now();
         updateProjectorStatus(true);
+    } else if (event.key === 'ddvq_client_heartbeat' && event.newValue) {
+        try {
+            const data = JSON.parse(event.newValue);
+            if (data && data.role) {
+                const role = data.role;
+                if (controllerConnectedClients[role]) {
+                    controllerConnectedClients[role].connected = true;
+                    controllerConnectedClients[role].lastSeen = Date.now();
+                    if (data.name) controllerConnectedClients[role].name = data.name;
+                    updateClientStatusBadges(controllerConnectedClients);
+                }
+            }
+        } catch(e) {}
     } else if (event.key === 'ddvq_latest_action' && event.newValue) {
         try {
             const data = JSON.parse(event.newValue);
@@ -1130,13 +1198,27 @@ setInterval(() => {
     if (Date.now() - lastProjectorPing > 5000) {
         updateProjectorStatus(false);
     }
-    if (window.location.protocol !== 'file:') {
-        fetch('/api/state')
-            .then(res => res.json())
-            .then(data => handleIncomingPlayerAnswer(data))
-            .catch(() => {});
-    }
-}, 2000);
+
+    // Always attempt fetching state from server
+    fetch(getApiUrl('/api/state'))
+        .then(res => res.json())
+        .then(data => {
+            if (data) {
+                if (data.playerAnswers) handleIncomingPlayerAnswer(data);
+                if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
+                if (data.roomCode) {
+                    const input = document.getElementById('room_code_input');
+                    const badge = document.getElementById('room_code_badge');
+                    if (input && !input.matches(':focus')) input.value = data.roomCode;
+                    if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
+                }
+            }
+        })
+        .catch(() => {});
+
+    // Refresh status badges with time-based check
+    updateClientStatusBadges(controllerConnectedClients);
+}, 1500);
 
 function updateProjectorStatus(isConnected) {
     const badge = document.getElementById('projector_status_badge');

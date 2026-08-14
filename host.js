@@ -3,6 +3,13 @@ let hostAutoSync = true;
 let hostActiveScene = 1;
 let currentHostState = {};
 
+function getApiUrl(path) {
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'http://localhost:3000' + path;
+    }
+    return path;
+}
+
 function setHostAutoSync(isAuto) {
     hostAutoSync = isAuto;
     const btn = document.getElementById('tab_auto');
@@ -42,7 +49,7 @@ function onClickJoinHostRoom() {
         return;
     }
 
-    fetch('/api/action', {
+    fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,6 +82,7 @@ function onClickJoinHostRoom() {
         const modal = document.getElementById('host_room_code_modal');
         if (modal) modal.style.display = 'none';
         updateHostBadge(true, roomCode);
+        startHostHeartbeat();
     });
 }
 
@@ -99,12 +107,14 @@ let hostHeartbeatInterval = null;
 function startHostHeartbeat() {
     if (hostHeartbeatInterval) clearInterval(hostHeartbeatInterval);
     sendHostHeartbeat();
-    hostHeartbeatInterval = setInterval(sendHostHeartbeat, 3000);
+    hostHeartbeatInterval = setInterval(sendHostHeartbeat, 2500);
 }
 
 function sendHostHeartbeat() {
     if (!hostRoomCode) return;
-    fetch('/api/action', {
+
+    // 1. API POST
+    fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,6 +124,30 @@ function sendHostHeartbeat() {
             name: 'Máy MC (Host)'
         })
     }).catch(() => {});
+
+    // 2. BroadcastChannel
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('ddvq_game_channel');
+            bc.postMessage({
+                type: 'CLIENT_HEARTBEAT',
+                role: 'host',
+                roomCode: hostRoomCode,
+                name: 'Máy MC (Host)',
+                timestamp: Date.now()
+            });
+        }
+    } catch(e) {}
+
+    // 3. LocalStorage
+    try {
+        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify({
+            role: 'host',
+            roomCode: hostRoomCode,
+            name: 'Máy MC (Host)',
+            timestamp: Date.now()
+        }));
+    } catch(e) {}
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -139,7 +173,7 @@ try {
 // SSE EventSource
 if (typeof EventSource !== 'undefined') {
     try {
-        const sse = new EventSource('/api/events');
+        const sse = new EventSource(getApiUrl('/api/events'));
         sse.onmessage = function(e) {
             try {
                 const data = JSON.parse(e.data);
@@ -157,8 +191,7 @@ window.addEventListener('storage', function(e) {
 });
 
 function fetchHostState() {
-    if (window.location.protocol === 'file:') return;
-    fetch('/api/state')
+    fetch(getApiUrl('/api/state'))
         .then(r => r.json())
         .then(data => processHostAction(data))
         .catch(() => {});

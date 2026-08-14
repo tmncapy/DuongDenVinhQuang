@@ -2,6 +2,13 @@ let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
 let currentRoomCode = localStorage.getItem('ddvq_room_code') || '';
 let playerContestants = [];
 
+function getApiUrl(path) {
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'http://localhost:3000' + path;
+    }
+    return path;
+}
+
 function onLoginPlayerSelectChange() {
     const sel = document.getElementById('login_player_select');
     if (sel) {
@@ -30,7 +37,7 @@ function onClickJoinRoom() {
 
     const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
 
-    fetch('/api/action', {
+    fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -65,6 +72,7 @@ function onClickJoinRoom() {
         const modal = document.getElementById('room_code_modal');
         if (modal) modal.style.display = 'none';
         showToast(`Đã tham gia phòng (Mã: ${roomCode})`);
+        startHeartbeat();
     });
 }
 
@@ -72,23 +80,52 @@ let heartbeatInterval = null;
 function startHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     sendHeartbeat();
-    heartbeatInterval = setInterval(sendHeartbeat, 3000);
+    heartbeatInterval = setInterval(sendHeartbeat, 2500);
 }
 
 function sendHeartbeat() {
     if (!currentRoomCode) return;
     const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
-    fetch('/api/action', {
+    const roleKey = `ts${contestantId}`;
+
+    // 1. API POST
+    fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             type: 'CLIENT_HEARTBEAT',
-            role: `ts${contestantId}`,
+            role: roleKey,
             contestantId: contestantId,
             roomCode: currentRoomCode,
             name: myName
         })
     }).catch(() => {});
+
+    // 2. BroadcastChannel
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('ddvq_game_channel');
+            bc.postMessage({
+                type: 'CLIENT_HEARTBEAT',
+                role: roleKey,
+                contestantId: contestantId,
+                roomCode: currentRoomCode,
+                name: myName,
+                timestamp: Date.now()
+            });
+        }
+    } catch(e) {}
+
+    // 3. LocalStorage
+    try {
+        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify({
+            role: roleKey,
+            contestantId: contestantId,
+            roomCode: currentRoomCode,
+            name: myName,
+            timestamp: Date.now()
+        }));
+    } catch(e) {}
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -120,7 +157,7 @@ function updatePlayerContestants(contestants) {
         const currentVal = selectEl.value;
         for (let i = 1; i <= 4; i++) {
             const opt = selectEl.querySelector(`option[value="${i}"]`);
-            const name = contestants[i - 1]?.name || `Thí sinh ${i}`;
+            const name = (contestants[i - 1]?.name || `Thí sinh ${i}`).toLocaleUpperCase('vi-VN');
             if (opt) {
                 opt.innerText = `Thí sinh ${i}: ${name}`;
             }
@@ -128,7 +165,7 @@ function updatePlayerContestants(contestants) {
         selectEl.value = currentVal;
     }
 
-    const myName = contestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
+    const myName = (contestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`).toLocaleUpperCase('vi-VN');
     if (document.getElementById('s1_badge_box')) document.getElementById('s1_badge_box').innerText = `TS ${contestantId}: ${myName}`;
     if (document.getElementById('s2_badge_box')) document.getElementById('s2_badge_box').innerText = `TS ${contestantId}: ${myName}`;
     if (document.getElementById('s3_badge_box')) document.getElementById('s3_badge_box').innerText = `TS ${contestantId}: ${myName}`;

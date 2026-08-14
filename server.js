@@ -9,6 +9,17 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
+// Enable CORS for file:// and cross-origin clients
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Case-insensitive asset fallback & missing sound handler
 app.use((req, res, next) => {
   const reqPath = decodeURIComponent(req.path);

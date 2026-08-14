@@ -1501,3 +1501,51 @@ function handleRKShowContestantAnswers(data) {
         if (daEl) daEl.innerText = ans;
     }
 }
+
+function getApiUrlProj(path) {
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'http://localhost:3000' + path;
+    }
+    return path;
+}
+
+function sendProjectorHeartbeat() {
+    const projRoomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
+
+    fetch(getApiUrlProj('/api/action'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type: 'CLIENT_HEARTBEAT',
+            role: 'projector',
+            roomCode: projRoomCode,
+            name: 'Máy Chiếu'
+        })
+    }).catch(() => {});
+
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('ddvq_game_channel');
+            bc.postMessage({
+                type: 'CLIENT_HEARTBEAT',
+                role: 'projector',
+                roomCode: projRoomCode,
+                name: 'Máy Chiếu',
+                timestamp: Date.now()
+            });
+        }
+    } catch(e) {}
+
+    try {
+        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify({
+            role: 'projector',
+            roomCode: projRoomCode,
+            name: 'Máy Chiếu',
+            timestamp: Date.now()
+        }));
+        localStorage.setItem('ddvq_projector_status', Date.now().toString());
+    } catch(e) {}
+}
+
+sendProjectorHeartbeat();
+setInterval(sendProjectorHeartbeat, 2500);
