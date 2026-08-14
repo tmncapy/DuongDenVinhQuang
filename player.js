@@ -1268,7 +1268,8 @@ renderPlayerVSGrid();
 
 // 1. SSE Real-time Connection
 if (typeof EventSource !== 'undefined') {
-    const sse = new EventSource('/api/events');
+    const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+    const sse = new EventSource(ssePath);
     sse.onmessage = function(e) {
         try {
             const data = JSON.parse(e.data);
@@ -1300,8 +1301,8 @@ window.addEventListener('storage', function(e) {
 
 // 4. Initial & Interval State Polling Fallback
 function fetchCurrentState() {
-    if (window.location.protocol === 'file:') return;
-    fetch('/api/state')
+    const apiPath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
+    fetch(apiPath)
         .then(res => res.json())
         .then(data => handlePlayerMessage(data))
         .catch(() => {});

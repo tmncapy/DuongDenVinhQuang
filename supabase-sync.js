@@ -1,5 +1,14 @@
 // supabase-sync.js - Combined Supabase & MQTT/BroadcastChannel Realtime Synchronization across all DDVQ screens
 
+// --- SECTION 0: Global API URL Utility ---
+function getApiUrl(path) {
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'http://localhost:3000' + path;
+    }
+    return path;
+}
+window.getApiUrl = getApiUrl;
+
 // --- SECTION 1: GameMediaCache & GameSyncChannel (from user network_sync.js) ---
 const GameMediaCache = {
     dbName: 'GameshowMediaDB',
@@ -67,8 +76,8 @@ class GameSyncChannel {
         const urlParams = new URLSearchParams(window.location.search);
         const customRoom = urlParams.get('room') || urlParams.get('channel') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
         
-        this.baseChannelName = channelName || 'duong_den_vinh_quang';
-        this.topicName = customRoom ? `${this.baseChannelName}_${customRoom.toLowerCase()}` : `${this.baseChannelName}_main_channel_v2`;
+        this.baseChannelName = 'ddvq_game_channel';
+        this.topicName = customRoom ? `duong_den_vinh_quang_${customRoom.toLowerCase()}` : `duong_den_vinh_quang_main_channel_v2`;
         
         this.localChannel = new BroadcastChannel(this.baseChannelName);
         this.onmessageHandler = null;
@@ -220,6 +229,13 @@ class GameSyncChannel {
                         if (payload && payload._senderId !== this.instanceId) {
                             if (!this.isDuplicateAndRecord(payload)) {
                                 this.handleRemoteReload(payload);
+                                
+                                // Forward remote message to the local BroadcastChannel with _fromNetwork flag
+                                try {
+                                    payload._fromNetwork = true;
+                                    this.localChannel.postMessage(payload);
+                                } catch (e) {}
+
                                 if (typeof this.onmessageHandler === 'function') {
                                     this.onmessageHandler({ data: payload });
                                 }
@@ -441,6 +457,28 @@ function sendSupabaseAction(actionData) {
             console.warn('[Supabase Realtime] Send failed:', e);
         }
     }
+}
+
+// --- SECTION 3: BroadcastChannel Interception & Network Bridging ---
+if (typeof BroadcastChannel !== 'undefined' && !BroadcastChannel.prototype._patched) {
+    const originalPostMessage = BroadcastChannel.prototype.postMessage;
+    BroadcastChannel.prototype._patched = true;
+    BroadcastChannel.prototype.postMessage = function(message) {
+        // Call original postMessage
+        originalPostMessage.apply(this, arguments);
+
+        // Bridge messages on ddvq_game_channel across browsers and devices
+        if (this.name === 'ddvq_game_channel' && message && typeof message === 'object') {
+            if (!message._fromNetwork) {
+                // Prevent infinite loop by tagging with _fromNetwork
+                const payload = Object.assign({}, message, { _fromNetwork: true });
+                // Send over network (MQTT / Supabase)
+                if (typeof sendSupabaseAction === 'function') {
+                    sendSupabaseAction(payload);
+                }
+            }
+        }
+    };
 }
 
 function dispatchSupabaseMessage(data) {

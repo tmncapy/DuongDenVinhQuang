@@ -104,12 +104,11 @@
                 }
             } catch(e) {}
 
-            if (window.location.protocol !== 'file:') {
-                fetch('/api/state')
-                    .then(res => res.json())
-                    .then(data => handleData(data))
-                    .catch(() => {});
-            }
+            const stateUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
+            fetch(stateUrl)
+                .then(res => res.json())
+                .then(data => handleData(data))
+                .catch(() => {});
         }
 
         let flashInterval = null;
@@ -184,9 +183,10 @@
         } catch(e) {}
 
         // Server-Sent Events (SSE)
-        if (typeof EventSource !== 'undefined' && window.location.protocol !== 'file:') {
+        if (typeof EventSource !== 'undefined') {
             try {
-                const sse = new EventSource('/api/events');
+                const sseUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+                const sse = new EventSource(sseUrl);
                 sse.onmessage = function(e) {
                     try {
                         const data = JSON.parse(e.data);

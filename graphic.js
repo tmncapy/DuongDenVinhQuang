@@ -637,7 +637,8 @@ try {
 // Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector/Graphic)
 if (typeof EventSource !== 'undefined') {
     try {
-        const projSse = new EventSource('/api/events');
+        const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+        const projSse = new EventSource(ssePath);
         projSse.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
@@ -697,16 +698,15 @@ function loadInitialProjectorState() {
         }
     } catch(e) {}
 
-    if (window.location.protocol !== 'file:') {
-        fetch('/api/state')
-            .then(res => res.json())
-            .then(state => {
-                if (state && state.contestants) {
-                    updateProjectorContestants(state.contestants);
-                }
-            })
-            .catch(() => {});
-    }
+    const apiPath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
+    fetch(apiPath)
+        .then(res => res.json())
+        .then(state => {
+            if (state && state.contestants) {
+                updateProjectorContestants(state.contestants);
+            }
+        })
+        .catch(() => {});
 }
 window.addEventListener('DOMContentLoaded', loadInitialProjectorState);
 loadInitialProjectorState();

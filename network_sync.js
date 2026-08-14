@@ -69,9 +69,9 @@
             const urlParams = new URLSearchParams(window.location.search);
             const customRoom = urlParams.get('room') || urlParams.get('channel') || localStorage.getItem('ddvq_room_code');
             
-            this.baseChannelName = channelName || 'duong_den_vinh_quang';
+            this.baseChannelName = 'ddvq_game_channel';
             // All pages in the app MUST connect to the same topic to communicate!
-            this.topicName = customRoom ? `${this.baseChannelName}_${customRoom}` : `${this.baseChannelName}_main_channel_v2`;
+            this.topicName = customRoom ? `duong_den_vinh_quang_${customRoom.toLowerCase()}` : `duong_den_vinh_quang_main_channel_v2`;
             
             this.localChannel = new BroadcastChannel(this.baseChannelName);
             this.onmessageHandler = null;
@@ -227,6 +227,13 @@
                             if (payload && payload._senderId !== this.instanceId) {
                                 if (!this.isDuplicateAndRecord(payload)) {
                                     this.handleRemoteReload(payload);
+                                    
+                                    // Forward remote message to local BroadcastChannel with _fromNetwork flag
+                                    try {
+                                        payload._fromNetwork = true;
+                                        this.localChannel.postMessage(payload);
+                                    } catch (e) {}
+
                                     if (typeof this.onmessageHandler === 'function') {
                                         this.onmessageHandler({ data: payload });
                                     }
