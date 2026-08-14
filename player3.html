@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Màn Hình Thí Sinh 3 - Đường Đến Vinh Quang</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .master-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: #0f172a;
+            border-bottom: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 1000;
+            user-select: none;
+        }
+
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .left-controls label {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .left-controls select {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .scene-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1e293b;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .scene-tab {
+            padding: 5px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #94a3b8;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .scene-tab:hover {
+            color: #f8fafc;
+        }
+
+        .scene-tab.active {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .scene-tab.auto-active {
+            background: #059669;
+            color: #ffffff;
+        }
+
+        .status-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .viewport-container {
+            position: absolute;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .scene-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .scene-view.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* SCENE 1 STYLES */
+        .s1-container {
+            width: 900px;
+            height: 500px;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .s1-box-zero {
+            position: absolute;
+            left: 0;
+            top: 220px;
+            width: 80px;
+            height: 50px;
+            border: 2px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            color: #facc15;
+            transition: all 0.3s;
+        }
+
+        .s1-pagination {
+            position: absolute;
+            right: 0;
+            top: 220px;
+            display: flex;
+        }
+
+        .s1-page-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ffffff;
+            background-color: transparent;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: -1px;
+            transition: all 0.3s;
+        }
+
+        .s1-page-btn.active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #60a5fa;
+            font-size: 18px;
+            box-shadow: 0 0 12px rgba(37, 99, 235, 0.8);
+        }
+
+        .s1-page-btn.correct {
+            background-color: #16a34a;
+            color: #ffffff;
+        }
+
+        .s1-page-btn.wrong {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        .s1-question-box {
+            position: absolute;
+            left: 90px;
+            right: 0;
+            top: 290px;
+            height: 160px;
+            border: 2px solid #ffffff;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            text-align: center;
+        }
+
+        .player-score-tag {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: linear-gradient(135deg, #15803d, #16a34a);
+            color: #facc15;
+            border: 1.5px solid #4ade80;
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .s1-question-text {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        /* SCENE 2 & 4 STYLES */
+        .s2-container, .s4-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .s2-question-box, .s4-question-box {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            top: 10%;
+            height: 160px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .s2-question-text, .s4-question-text {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.5;
+            color: #ffffff;
+        }
+
+        .s2-answer-box, .s4-answer-box {
+            position: absolute;
+            left: 15%;
+            top: 40%;
+            width: 320px;
+            height: 54px;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 17px;
+            font-weight: bold;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+
+        .s2-answer-input, .s4-answer-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            padding: 0 12px;
+        }
+
+        .s2-time-box, .s4-time-box {
+            position: absolute;
+            left: calc(15% + 335px);
+            top: 40%;
+            width: 140px;
+            height: 54px;
+            border: 2px solid #eab308;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #facc15;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+        }
+
+        .s2-submit-btn, .s4-submit-btn {
+            position: absolute;
+            left: calc(15% + 490px);
+            top: 40%;
+            height: 54px;
+            padding: 0 24px;
+            border: 2px solid #60a5fa;
+            border-radius: 6px;
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .s2-submit-btn:hover, .s4-submit-btn:hover {
+            background: #1d4ed8;
+            border-color: #93c5fd;
+        }
+
+        .s2-bottom-left, .s4-bottom-left {
+            position: absolute;
+            left: 15%;
+            bottom: 10%;
+            min-width: 120px;
+            height: 60px;
+            border: 2px solid #22c55e;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #4ade80;
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+            padding: 0 12px;
+        }
+
+        .s2-bottom-right, .s4-bottom-right {
+            position: absolute;
+            right: 15%;
+            bottom: 10%;
+            min-width: 150px;
+            height: 60px;
+            border: 2px solid #38bdf8;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(15, 23, 42, 0.9);
+            color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            padding: 0 15px;
+        }
+
+        /* SCENE 3 STYLES */
+        .s3-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .s3-grid-section {
+            position: absolute;
+            left: 15%;
+            top: 7%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .s3-row-group {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .s3-number-box {
+            width: 45px;
+            height: 45px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .s3-number-box.active-row {
+            background: #eab308;
+            color: #000000;
+            border-color: #fef08a;
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+        }
+
+        .s3-matrix-row {
+            display: flex;
+        }
+
+        .s3-matrix-cell {
+            width: 38px;
+            height: 38px;
+            border: 1px solid #ffffff;
+            margin-left: -1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.02);
+            text-transform: uppercase;
+        }
+
+        .s3-matrix-cell.has-length {
+            background: #1e40af;
+            border-color: #60a5fa;
+        }
+
+        .s3-matrix-cell.opened {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #4ade80;
+        }
+
+        .s3-matrix-row .s3-matrix-cell:first-child {
+            margin-left: 0;
+        }
+
+        .s3-empty-space {
+            width: 45px;
+        }
+
+        .s3-question-box {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            top: 57%;
+            height: 160px;
+            border: 1px solid #ffffff;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .s3-question-text {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .s3-bottom-controls {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            bottom: 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .s3-bottom-left {
+            width: 100px;
+            height: 55px;
+            border: 1px solid #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .s3-answer-input-box {
+            flex: 1;
+            margin: 0 20px;
+            height: 55px;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .s3-answer-input-box input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            padding: 0 15px;
+        }
+
+        .s3-submit-btn {
+            height: 55px;
+            padding: 0 24px;
+            border: 2px solid #38bdf8;
+            border-radius: 6px;
+            background: #0284c7;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+
+        .s3-submit-btn:hover {
+            background: #0369a1;
+            border-color: #7dd3fc;
+        }
+
+        /* DYNAMIC STATUS CONFIRMATION BOX */
+        .s2-status-box, .s3-status-box, .s4-status-box {
+            position: absolute;
+            right: 15%;
+            top: 52%;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1.5px solid #3b82f6;
+            border-radius: 10px;
+            padding: 10px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            z-index: 100;
+            min-width: 220px;
+        }
+
+        .s3-status-box {
+            right: 15%;
+            bottom: 22%;
+            top: auto;
+        }
+
+        /* TOAST NOTIFICATION */
+        #toast_box {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: none;
+            z-index: 100000;
+            text-align: center;
+            border: 1.5px solid #34d399;
+        }
+
+        @media (max-width: 900px) {
+            .s2-status-box, .s4-status-box {
+                position: static !important;
+                width: 100% !important;
+                max-width: 400px;
+                margin-top: 15px;
+            }
+            .s3-status-box {
+                position: static !important;
+                width: 100% !important;
+                max-width: 450px;
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP CONTROL BAR -->
+    <div class="master-top-bar">
+        <div class="left-controls">
+            <label style="color: #60a5fa; font-size: 14px; font-weight: bold;">🔒 THÍ SINH 3</label>
+            <select id="contestant_select" disabled style="display: none;">
+                <option value="3" selected>Thí sinh 3</option>
+            </select>
+        </div>
+
+        <!-- Center Remaining Timer Display -->
+        <div id="player_master_timer_box" style="display: flex; align-items: center; gap: 8px; background: #1e293b; border: 1.5px solid #eab308; padding: 4px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; color: #facc15; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);">
+            <span>⏳ THỜI GIAN CÒN LẠI:</span>
+            <span id="player_remaining_seconds" style="font-size: 18px; color: #ffffff; min-width: 34px; text-align: center;">--</span>
+        </div>
+
+        <div class="status-area">
+        </div>
+    </div>
+
+    <!-- MAIN VIEWPORT CONTAINER -->
+    <div class="viewport-container">
+
+        <!-- SCENE 1 (PLAYER SCENE 1) -->
+        <div id="view_scene_1" class="scene-view active">
+            <div class="s1-container">
+                <button id="s1_random_btn" onclick="triggerRandomDeFromPlayer()" style="position: absolute; left: 90px; top: 160px; height: 45px; padding: 0 20px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #60a5fa; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); z-index: 10; transition: all 0.2s;">
+                    <span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span>
+                    <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>
+                </button>
+                <div class="s1-box-zero" id="s1_clock_box" title="Thời gian Xuất Phát">60</div>
+                <div class="s1-pagination">
+                    <button class="s1-page-btn" id="s1_btn_1">1</button>
+                    <button class="s1-page-btn" id="s1_btn_2">2</button>
+                    <button class="s1-page-btn" id="s1_btn_3">3</button>
+                    <button class="s1-page-btn" id="s1_btn_4">4</button>
+                    <button class="s1-page-btn" id="s1_btn_5">5</button>
+                    <button class="s1-page-btn" id="s1_btn_6">6</button>
+                    <button class="s1-page-btn" id="s1_btn_7">7</button>
+                    <button class="s1-page-btn" id="s1_btn_8">8</button>
+                    <button class="s1-page-btn" id="s1_btn_9">9</button>
+                    <button class="s1-page-btn" id="s1_btn_10">10</button>
+                </div>
+                <div class="s1-question-box">
+                    <div class="player-score-tag" id="s1_score_box">ĐIỂM: 0</div>
+                    <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 2 (PLAYER SCENE 2 - RA KHƠI) -->
+        <div id="view_scene_2" class="scene-view">
+            <div class="s2-container">
+                <!-- Question Box ON TOP -->
+                <div class="s2-question-box">
+                    <div class="player-score-tag" id="s2_score_box">ĐIỂM: 0</div>
+                    <div class="s2-question-text" id="s2_question_text">Đang chờ câu hỏi Ra Khơi...</div>
+                </div>
+
+                <!-- Answer input & Controls BELOW Question Box -->
+                <div class="s2-answer-box">
+                    <input type="text" id="s2_answer_input" class="s2-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
+                </div>
+                <div class="s2-time-box" id="s2_time_box">Thời gian</div>
+                <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
+
+                <div class="s2-bottom-row" style="display: contents;">
+                    <div class="s2-bottom-right" id="s2_badge_box">TS 3</div>
+                </div>
+
+                <!-- Dynamic Submission Status Confirmation Box -->
+                <div class="s2-status-box" id="s2_submission_status">
+                    <span style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.05em;">TRẠNG THÁI NỘP BÀI</span>
+                    <span id="s2_status_badge" style="font-size: 11px; font-weight: bold; background: #4b5563; color: #fff; padding: 2px 8px; border-radius: 9999px;">🟡 CHƯA GỬI ĐÁP ÁN</span>
+                    <span id="s2_submitted_text" style="font-size: 15px; font-weight: bold; color: #38bdf8; text-shadow: 0 0 8px rgba(56,189,248,0.2); margin-top: 2px;">--</span>
+                    <span id="s2_submitted_time" style="font-size: 11px; color: rgba(255,255,255,0.5);">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 3 (PLAYER SCENE 3 - VƯỢT SÓNG) -->
+        <div id="view_scene_3" class="scene-view">
+            <div class="s3-container">
+                <div class="s3-grid-section" id="s3_grid_section">
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_1">1</div>
+                        <div class="s3-matrix-row" id="s3_row_1"></div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_2">2</div>
+                        <div class="s3-matrix-row" id="s3_row_2"></div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_3">3</div>
+                        <div class="s3-matrix-row" id="s3_row_3"></div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-number-box" id="s3_num_4">4</div>
+                        <div class="s3-matrix-row" id="s3_row_4"></div>
+                    </div>
+                    <div class="s3-row-group">
+                        <div class="s3-empty-space"></div>
+                        <div class="s3-matrix-row" id="s3_row_center"></div>
+                    </div>
+                </div>
+
+                <div class="s3-question-box">
+                    <div class="player-score-tag" id="s3_score_box">ĐIỂM: 0</div>
+                    <div class="s3-question-text" id="s3_question_text">Đang chờ câu hỏi Vượt Sóng...</div>
+                </div>
+
+                <div class="s3-bottom-controls">
+                    <div class="s3-answer-input-box">
+                        <input type="text" id="s3_answer_input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
+                    </div>
+                    <button class="s3-submit-btn" onclick="submitScene3Answer(true)">TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
+                </div>
+
+                <!-- Dynamic Submission Status Confirmation Box -->
+                <div class="s3-status-box" id="s3_submission_status">
+                    <span style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.05em;">TRẠNG THÁI NỘP BÀI</span>
+                    <span id="s3_status_badge" style="font-size: 11px; font-weight: bold; background: #4b5563; color: #fff; padding: 2px 8px; border-radius: 9999px;">🟡 CHƯA GỬI ĐÁP ÁN</span>
+                    <span id="s3_submitted_text" style="font-size: 15px; font-weight: bold; color: #38bdf8; text-shadow: 0 0 8px rgba(56,189,248,0.2); margin-top: 2px;">--</span>
+                    <span id="s3_submitted_time" style="font-size: 11px; color: rgba(255,255,255,0.5);">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 4 (PLAYER SCENE 4 - VINH QUANG) -->
+        <div id="view_scene_4" class="scene-view">
+            <div class="s4-container">
+                <!-- Title block -->
+                <div style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; pointer-events: none;">
+                    <h2 style="color: #facc15; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">🏆 VÒNG 4: VINH QUANG 🏆</h2>
+                </div>
+
+                <!-- Question Box ON TOP -->
+                <div class="s4-question-box" style="top: 12%;">
+                    <div class="player-score-tag" id="s4_score_box">ĐIỂM: 0</div>
+                    <div class="s4-question-text" id="s4_question_text">Đang chờ câu hỏi Vinh Quang...</div>
+                </div>
+
+                <!-- Answer input & Controls BELOW Question Box -->
+                <div class="s4-answer-box" style="top: 42%;">
+                    <input type="text" id="s4_answer_input" class="s4-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene4Answer()" disabled>
+                </div>
+                <div class="s4-time-box" id="s4_time_box" style="top: 42%;">Thời gian</div>
+                <button class="s4-submit-btn" onclick="submitScene4Answer()" style="top: 42%;">GỬI ĐÁP ÁN</button>
+
+                <div class="s4-bottom-row" style="display: contents;">
+                    <div class="s4-badge-box s4-bottom-right" id="s4_badge_box">TS 3</div>
+                </div>
+
+                <!-- Dynamic Submission Status Confirmation Box -->
+                <div class="s4-status-box" id="s4_submission_status">
+                    <span style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.05em;">TRẠNG THÁI NỘP BÀI</span>
+                    <span id="s4_status_badge" style="font-size: 11px; font-weight: bold; background: #4b5563; color: #fff; padding: 2px 8px; border-radius: 9999px;">🟡 CHƯA GỬI ĐÁP ÁN</span>
+                    <span id="s4_submitted_text" style="font-size: 15px; font-weight: bold; color: #38bdf8; text-shadow: 0 0 8px rgba(56,189,248,0.2); margin-top: 2px;">--</span>
+                    <span id="s4_submitted_time" style="font-size: 11px; color: rgba(255,255,255,0.5);">--</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ROOM CODE LOGIN MODAL OVERLAY -->
+    <div id="room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #1e293b; border: 2px solid #3b82f6; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); text-align: center; color: #f8fafc;">
+            <div style="font-size: 36px; margin-bottom: 8px;">🏆</div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">ĐĂNG NHẬP THÍ SINH 3</h2>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Nhập Mã Phòng từ Ban Tổ Chức (Controller) để tham gia thi đấu</p>
+
+            <div style="text-align: left; margin-bottom: 16px;">
+                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">1. VỊ TRÍ THÍ SINH (ĐÃ CỐ ĐỊNH):</label>
+                <div style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #2563eb; border-radius: 8px; color: #60a5fa; font-size: 15px; font-weight: 800; text-align: center;">
+                    🔒 THÍ SINH 3
+                </div>
+                <select id="login_player_select" style="display: none;" disabled>
+                    <option value="3" selected>Thí sinh 3</option>
+                </select>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 24px;">
+                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">2. NHẬP MÃ PHÒNG (ROOM CODE):</label>
+                <input type="password" id="login_room_code_input" placeholder="Nhập mã phòng..." style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; outline: none;" onkeyup="if(event.key==='Enter') onClickJoinRoom()">
+            </div>
+
+            <div id="login_error_msg" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 16px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                Mã phòng không chính xác!
+            </div>
+
+            <button onclick="onClickJoinRoom()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: all 0.2s;">
+                VÀO PHÒNG THI
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast_box"></div>
+
+    <script>
+        window.FIXED_CONTESTANT_ID = 3;
+    </script>
+    <script src="player.js"></script>
+
+</body>
+</html>

@@ -343,8 +343,20 @@ app.get(['/host', '/host.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'host.html'));
 });
 
-// Serve player page strictly (unified single web player)
-app.get(['/player', '/player.html', '/player_scene1.html', '/player_scene2.html', '/player_scene3.html', '/player1.html', '/player2.html', '/player3.html'], (req, res) => {
+// Serve player pages strictly (individual player screens)
+app.get(['/player1', '/player1.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player1.html'));
+});
+app.get(['/player2', '/player2.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player2.html'));
+});
+app.get(['/player3', '/player3.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player3.html'));
+});
+app.get(['/player4', '/player4.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player4.html'));
+});
+app.get(['/player', '/player.html', '/player_scene1.html', '/player_scene2.html', '/player_scene3.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'player.html'));
 });
 

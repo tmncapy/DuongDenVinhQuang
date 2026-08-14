@@ -1,4 +1,4 @@
-let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
+let contestantId = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) ? window.FIXED_CONTESTANT_ID : (parseInt(localStorage.getItem('contestant_id')) || 1);
 let currentRoomCode = localStorage.getItem('ddvq_room_code') || '';
 let playerContestants = [];
 
@@ -10,6 +10,11 @@ function getApiUrl(path) {
 }
 
 function onLoginPlayerSelectChange() {
+    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
+        contestantId = window.FIXED_CONTESTANT_ID;
+        localStorage.setItem('contestant_id', contestantId);
+        return;
+    }
     const sel = document.getElementById('login_player_select');
     if (sel) {
         contestantId = parseInt(sel.value) || 1;
@@ -19,12 +24,33 @@ function onLoginPlayerSelectChange() {
     }
 }
 
+function onSelectContestant(val) {
+    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
+        contestantId = window.FIXED_CONTESTANT_ID;
+        const sel = document.getElementById('contestant_select');
+        if (sel) sel.value = contestantId;
+        localStorage.setItem('contestant_id', contestantId);
+        return;
+    }
+    contestantId = parseInt(val) || 1;
+    localStorage.setItem('contestant_id', contestantId);
+    const loginSel = document.getElementById('login_player_select');
+    if (loginSel) loginSel.value = contestantId;
+    if (currentRoomCode) {
+        startHeartbeat();
+    }
+}
+
 function onClickJoinRoom() {
     const sel = document.getElementById('login_player_select');
     const input = document.getElementById('login_room_code_input');
     const errorBox = document.getElementById('login_error_msg');
 
-    if (sel) contestantId = parseInt(sel.value) || 1;
+    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
+        contestantId = window.FIXED_CONTESTANT_ID;
+    } else if (sel) {
+        contestantId = parseInt(sel.value) || 1;
+    }
     const roomCode = (input ? input.value : '').trim().toUpperCase();
 
     if (!roomCode) {
@@ -129,15 +155,30 @@ function sendHeartbeat() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    const savedRoom = localStorage.getItem('ddvq_room_code');
-    const savedId = localStorage.getItem('contestant_id');
-    if (savedId) {
-        contestantId = parseInt(savedId);
+    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
+        contestantId = window.FIXED_CONTESTANT_ID;
+        localStorage.setItem('contestant_id', contestantId);
         const sel = document.getElementById('contestant_select');
-        if (sel) sel.value = contestantId;
+        if (sel) {
+            sel.value = contestantId;
+            sel.disabled = true;
+        }
         const loginSel = document.getElementById('login_player_select');
-        if (loginSel) loginSel.value = contestantId;
+        if (loginSel) {
+            loginSel.value = contestantId;
+            loginSel.disabled = true;
+        }
+    } else {
+        const savedId = localStorage.getItem('contestant_id');
+        if (savedId) {
+            contestantId = parseInt(savedId);
+            const sel = document.getElementById('contestant_select');
+            if (sel) sel.value = contestantId;
+            const loginSel = document.getElementById('login_player_select');
+            if (loginSel) loginSel.value = contestantId;
+        }
     }
+    const savedRoom = localStorage.getItem('ddvq_room_code');
     if (savedRoom) {
         const input = document.getElementById('login_room_code_input');
         if (input) input.value = savedRoom;
