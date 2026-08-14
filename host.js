@@ -210,6 +210,15 @@ setInterval(fetchHostState, 2000);
 function processHostAction(data) {
     if (!data) return;
 
+    // Room code auto-sync
+    if (data.roomCode && data.roomCode !== hostRoomCode) {
+        console.log(`[Sync] Host room code auto-syncing to: ${data.roomCode}`);
+        hostRoomCode = data.roomCode;
+        localStorage.setItem('ddvq_room_code', data.roomCode);
+        const input = document.getElementById('host_room_code_input');
+        if (input) input.value = data.roomCode;
+    }
+
     // Merge state
     currentHostState = { ...currentHostState, ...data };
 

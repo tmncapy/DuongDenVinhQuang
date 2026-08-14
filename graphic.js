@@ -641,12 +641,18 @@ if (typeof EventSource !== 'undefined') {
         projSse.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
-                if (data && data.type && data.type !== 'PING' && data.type !== 'PROJECTOR_READY') {
-                    if (data.id && data.id !== lastProcessedActionId) {
-                        lastProcessedActionId = data.id;
-                        handleProjectorMessage(data);
-                    } else if (!data.id) {
-                        handleProjectorMessage(data);
+                if (data) {
+                    if (data.roomCode && data.roomCode !== localStorage.getItem('ddvq_room_code')) {
+                        console.log(`[Sync] Graphic room code auto-syncing to: ${data.roomCode}`);
+                        localStorage.setItem('ddvq_room_code', data.roomCode);
+                    }
+                    if (data.type && data.type !== 'PING' && data.type !== 'PROJECTOR_READY') {
+                        if (data.id && data.id !== lastProcessedActionId) {
+                            lastProcessedActionId = data.id;
+                            handleProjectorMessage(data);
+                        } else if (!data.id) {
+                            handleProjectorMessage(data);
+                        }
                     }
                 }
             } catch(e) {}

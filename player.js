@@ -992,6 +992,15 @@ function highlightS3Row(rowNum) {
 function handlePlayerMessage(data) {
     if (!data) return;
 
+    // Room code auto-sync
+    if (data.roomCode && data.roomCode !== currentRoomCode) {
+        console.log(`[Sync] Player room code auto-syncing to: ${data.roomCode}`);
+        currentRoomCode = data.roomCode;
+        localStorage.setItem('ddvq_room_code', data.roomCode);
+        const roomCodeInput = document.getElementById('login_room_code_input');
+        if (roomCodeInput) roomCodeInput.value = data.roomCode;
+    }
+
     // Vượt Sóng dynamic grid sync
     if (data.type === 'VUOT_SONG_SYNC_GRID' && data.vuotSong) {
         renderPlayerVSGrid(data.vuotSong);

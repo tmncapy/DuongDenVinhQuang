@@ -1149,6 +1149,7 @@ if (typeof EventSource !== 'undefined') {
                 } else if (data && data.connectedClients) {
                     updateClientStatusBadges(data.connectedClients);
                 } else if (data && data.roomCode) {
+                    localStorage.setItem('ddvq_room_code', data.roomCode);
                     const input = document.getElementById('room_code_input');
                     const badge = document.getElementById('room_code_badge');
                     if (input && !input.matches(':focus')) input.value = data.roomCode;
@@ -1211,6 +1212,7 @@ setInterval(() => {
                 if (data.playerAnswers) handleIncomingPlayerAnswer(data);
                 if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
                 if (data.roomCode) {
+                    localStorage.setItem('ddvq_room_code', data.roomCode);
                     const input = document.getElementById('room_code_input');
                     const badge = document.getElementById('room_code_badge');
                     if (input && !input.matches(':focus')) input.value = data.roomCode;
