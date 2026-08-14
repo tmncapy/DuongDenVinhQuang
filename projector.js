@@ -1115,6 +1115,39 @@ function handleProjectorMessage(data) {
         handleVSReset();
         resetVQProjector();
         switchView(1);
+    } else if (data.type === 'PLAY_INTRO_VIDEO') {
+        const overlay = document.getElementById('intro_video_overlay');
+        const player = document.getElementById('intro_video_player');
+        const clickOverlay = document.getElementById('intro_video_play_overlay');
+        if (overlay && player) {
+            overlay.style.display = 'flex';
+            player.src = data.src;
+            player.load();
+            if (clickOverlay) clickOverlay.style.display = 'none';
+
+            player.play().then(() => {
+                if (clickOverlay) clickOverlay.style.display = 'none';
+            }).catch(err => {
+                console.warn("Intro video play blocked or failed:", err);
+                if (clickOverlay) clickOverlay.style.display = 'flex';
+            });
+
+            player.onended = () => {
+                overlay.style.display = 'none';
+                player.src = '';
+                if (clickOverlay) clickOverlay.style.display = 'none';
+            };
+        }
+    } else if (data.type === 'STOP_INTRO_VIDEO') {
+        const overlay = document.getElementById('intro_video_overlay');
+        const player = document.getElementById('intro_video_player');
+        const clickOverlay = document.getElementById('intro_video_play_overlay');
+        if (overlay && player) {
+            player.pause();
+            player.src = '';
+            overlay.style.display = 'none';
+            if (clickOverlay) clickOverlay.style.display = 'none';
+        }
     }
 }
 
@@ -1559,3 +1592,44 @@ function sendProjectorHeartbeat() {
 
 sendProjectorHeartbeat();
 setInterval(sendProjectorHeartbeat, 2500);
+
+function playIntroVideoExplicitly() {
+    const video = document.getElementById('intro_video_player');
+    const overlay = document.getElementById('intro_video_play_overlay');
+    if (video) {
+        video.play().then(() => {
+            if (overlay) overlay.style.display = 'none';
+        }).catch(err => {
+            console.warn("Explicit intro play failed:", err);
+        });
+    }
+}
+
+function startProjectorInteractive() {
+    // 1. Unlock all standard game audio assets
+    unlockAudio();
+
+    // 2. Unlock the video player by triggering a load
+    const video = document.getElementById('intro_video_player');
+    if (video) {
+        try {
+            video.load();
+            // Try to trigger a silent/short playback to register user guesture on the video tag
+            const p = video.play();
+            if (p && typeof p.then === 'function') {
+                p.then(() => {
+                    video.pause();
+                }).catch(() => {});
+            }
+        } catch(e) {
+            console.warn("Error pre-unlocking video tag:", e);
+        }
+    }
+
+    // 3. Hide the start overlay
+    const overlay = document.getElementById('projector_init_overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+    console.log("Projector fully interactive & unlocked for auto-playback!");
+}

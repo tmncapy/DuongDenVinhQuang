@@ -1007,6 +1007,13 @@
                     <button class="ctrl-btn-sm" onclick="onClickLuatXuatPhat()">Video Khởi động</button>
                     <button class="ctrl-btn-sm" onclick="showToast('Chuyển slide PPT')">Chuyển slide PPT</button>
                 </div>
+                <!-- Panel Phát Video Intro -->
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
+                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('Opening.mp4')" style="background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; font-weight: bold;">🎬 Phát Opening</button>
+                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V1.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">🏁 Phát V1</button>
+                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
+                </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
             </div>
 
@@ -1112,14 +1119,11 @@
         <!-- MAIN CONTENT GRID: CONTESTANTS (LEFT) & QUESTION SELECTOR (RIGHT) -->
         <div style="display: flex; gap: 20px; justify-content: space-between; margin-bottom: 15px; flex-shrink: 0;">
             
-            <!-- LEFT: 5 CONTESTANT CARDS (WITH VERTICAL CONNECTOR LINE) -->
-            <div style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 10px; max-width: 600px; padding-left: 15px; flex-shrink: 0;">
-                <!-- Vertical connecting line -->
-                <div style="position: absolute; left: 4px; top: 15px; bottom: 15px; width: 4px; background: #eab308; border-radius: 2px;"></div>
+            <!-- LEFT: CONTESTANT CARDS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 650px; flex-shrink: 0;">
 
                 <!-- TS 1 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts1_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(1)">✏️</span>
@@ -1147,8 +1151,7 @@
                 </div>
 
                 <!-- TS 2 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts2_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(2)">✏️</span>
@@ -1176,8 +1179,7 @@
                 </div>
 
                 <!-- TS 3 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts3_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(3)">✏️</span>
@@ -1205,8 +1207,7 @@
                 </div>
 
                 <!-- TS 4 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts4_score_disp_rk" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(4)">✏️</span>
@@ -1266,6 +1267,12 @@
                     <button class="ctrl-btn-sm" onclick="onClickRKDapAnTS()">Đáp án thí sinh</button>
                     <button class="ctrl-btn-sm" onclick="onClickGiaiMaMedia()">Giải mã Video/Ảnh</button>
                     <button class="ctrl-btn-sm" onclick="onClickDiemTS()">Điểm TS</button>
+                </div>
+                <!-- Panel Phát Video Intro -->
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
+                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V2.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">⚓ Phát V2</button>
+                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
             </div>
@@ -1353,8 +1360,8 @@
 
         <!-- MAIN CONTENT GRID -->
         <div style="display: flex; gap: 20px; justify-content: space-between; margin-bottom: 15px; flex-shrink: 0;">
-            <!-- LEFT: CONTESTANTS -->
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; max-width: 550px;">
+            <!-- LEFT: CONTESTANT CARDS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 650px; flex-shrink: 0;">
                 <!-- TS 1 -->
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
@@ -1364,11 +1371,11 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts1_name_vs" value="Thí sinh 1" oninput="updateContestantName(1, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
-                            <input type="text" id="ts1_extra_vs" placeholder="00.00" style="width: 55px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; text-align: center; padding: 0 2px;">
+                            <input type="text" id="ts1_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 1 bấm chuông CNV!')">🔔 Chuông TS1</button>
                         </div>
-                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
-                            <input type="text" id="ts1_ans_vs" placeholder="Đáp án CNV của TS1" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts1_ans_vs" placeholder="Đáp án CNV của TS1" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
                     <!-- Row reward +20 -->
@@ -1384,11 +1391,11 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts2_name_vs" value="Thí sinh 2" oninput="updateContestantName(2, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
-                            <input type="text" id="ts2_extra_vs" placeholder="00.00" style="width: 55px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; text-align: center; padding: 0 2px;">
+                            <input type="text" id="ts2_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 2 bấm chuông CNV!')">🔔 Chuông TS2</button>
                         </div>
-                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
-                            <input type="text" id="ts2_ans_vs" placeholder="Đáp án CNV của TS2" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts2_ans_vs" placeholder="Đáp án CNV của TS2" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
                     <!-- Row reward +20 -->
@@ -1404,11 +1411,11 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts3_name_vs" value="Thí sinh 3" oninput="updateContestantName(3, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
-                            <input type="text" id="ts3_extra_vs" placeholder="00.00" style="width: 55px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; text-align: center; padding: 0 2px;">
+                            <input type="text" id="ts3_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 3 bấm chuông CNV!')">🔔 Chuông TS3</button>
                         </div>
-                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
-                            <input type="text" id="ts3_ans_vs" placeholder="Đáp án CNV của TS3" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts3_ans_vs" placeholder="Đáp án CNV của TS3" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
                     <!-- Row reward +20 -->
@@ -1424,11 +1431,11 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts4_name_vs" value="Thí sinh 4" oninput="updateContestantName(4, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
-                            <input type="text" id="ts4_extra_vs" placeholder="00.00" style="width: 55px; background: #fff; border: 1px solid #ccc; height: 20px; font-size: 11px; border-radius: 2px; text-align: center; padding: 0 2px;">
+                            <input type="text" id="ts4_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="showToast('Thí sinh 4 bấm chuông CNV!')">🔔 Chuông TS4</button>
                         </div>
-                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center; padding: 0 6px;">
-                            <input type="text" id="ts4_ans_vs" placeholder="Đáp án CNV của TS4" style="width: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; outline: none;">
+                        <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
+                            <input type="text" id="ts4_ans_vs" placeholder="Đáp án CNV của TS4" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
                     <!-- Row reward +20 -->
@@ -1471,6 +1478,12 @@
                     <button class="ctrl-btn-sm" onclick="showToast('Video giới thiệu Vượt Sóng')">Video Giới thiệu</button>
                     <button class="ctrl-btn-sm" onclick="showToast('Hình ảnh Chướng ngại vật')">Hình ảnh CNV</button>
                     <button class="ctrl-btn-sm" onclick="showToast('Tổng kết Vượt Sóng')">Tổng kết Vượt Sóng</button>
+                </div>
+                <!-- Panel Phát Video Intro -->
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
+                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V3.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">🌊 Phát V3</button>
+                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
             </div>
@@ -1551,14 +1564,11 @@
         <!-- TOP SECTION: CONTESTANTS (LEFT) & CHỌN GÓI ĐIỂM (RIGHT) -->
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; flex-shrink: 0; width: 100%;">
             
-            <!-- LEFT: CONTESTANTS -->
-            <div style="position: relative; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 300px; max-width: 520px; padding-left: 15px;">
-                <!-- Vertical connecting timeline line -->
-                <div style="position: absolute; left: 4px; top: 15px; bottom: 15px; width: 4px; background: #94a3b8; border-radius: 2px;"></div>
+            <!-- LEFT: CONTESTANT CARDS -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 650px; flex-shrink: 0;">
 
                 <!-- TS 1 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts1_score_disp_vq" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(1)">✏️</span>
@@ -1566,6 +1576,7 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts1_name_vq" value="Thí sinh 1" oninput="updateContestantName(1, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts1_extra_vq" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts1_ans_vq" placeholder="Đáp án TS1" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1580,8 +1591,7 @@
                 </div>
 
                 <!-- TS 2 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts2_score_disp_vq" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(2)">✏️</span>
@@ -1589,6 +1599,7 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts2_name_vq" value="Thí sinh 2" oninput="updateContestantName(2, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts2_extra_vq" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts2_ans_vq" placeholder="Đáp án TS2" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1603,8 +1614,7 @@
                 </div>
 
                 <!-- TS 3 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts3_score_disp_vq" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(3)">✏️</span>
@@ -1612,6 +1622,7 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts3_name_vq" value="Thí sinh 3" oninput="updateContestantName(3, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts3_extra_vq" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts3_ans_vq" placeholder="Đáp án TS3" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1626,8 +1637,7 @@
                 </div>
 
                 <!-- TS 4 -->
-                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
-                    <div style="position: absolute; left: -15px; width: 8px; height: 8px; background: #eab308; border-radius: 1px;"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; width: 75px; height: 56px; background: #fff; border: 3px solid #dc2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <span id="ts4_score_disp_vq" style="font-size: 30px; font-weight: bold; color: #dc2626;">0</span>
                         <span style="position: absolute; top: 2px; right: 4px; font-size: 10px; color: #888; cursor: pointer;" onclick="promptScore(4)">✏️</span>
@@ -1635,6 +1645,7 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div style="display: flex; background: #f59e0b; padding: 4px 8px; border-radius: 2px 2px 0 0; align-items: center; gap: 5px; border: 2px solid #d97706; border-bottom: none;">
                             <input type="text" id="ts4_name_vq" value="Thí sinh 4" oninput="updateContestantName(4, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
+                            <input type="text" id="ts4_extra_vq" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts4_ans_vq" placeholder="Đáp án TS4" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1713,6 +1724,12 @@
                         <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQTGThucNghiem()">TG Thực nghiệm</button>
                     </div>
                     <button class="ctrl-btn-sm" onclick="onClickVQChuyenSlidePPT()">Chuyển slide PPT</button>
+                </div>
+                <!-- Panel Phát Video Intro -->
+                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
+                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V4.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold; width: 100%;">🏆 Phát V4</button>
+                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold; width: 100%;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%; height: 30px;">Phát âm thanh</button>
             </div>

@@ -684,6 +684,8 @@ function syncContestantsUI() {
             if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
             const tab2Input = document.getElementById(`ts${idx}_name_rk`);
             if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
+            const tab3Input = document.getElementById(`ts${idx}_name_vs`);
+            if (tab3Input) tab3Input.value = c.name || `Thí sinh ${idx}`;
             const tab4Input = document.getElementById(`ts${idx}_name_vq`);
             if (tab4Input) tab4Input.value = c.name || `Thí sinh ${idx}`;
             
@@ -691,6 +693,8 @@ function syncContestantsUI() {
             if (disp) disp.innerText = c.score || 0;
             const dispRK = document.getElementById(`ts${idx}_score_disp_rk`);
             if (dispRK) dispRK.innerText = c.score || 0;
+            const dispVS = document.getElementById(`ts${idx}_score_disp_vs`);
+            if (dispVS) dispVS.innerText = c.score || 0;
             const dispVQ = document.getElementById(`ts${idx}_score_disp_vq`);
             if (dispVQ) dispVQ.innerText = c.score || 0;
         });
@@ -1239,6 +1243,9 @@ function updateProjectorStatus(isConnected) {
 
 function sendToProjector(type, payload = {}) {
     const message = { type, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(message);
+    }
     if (controllerChannel) {
         try {
             controllerChannel.postMessage(message);
@@ -1453,4 +1460,14 @@ function onClickTongKet() {
         });
     }
     alert(summary);
+}
+
+function onClickPlayIntroVideo(src) {
+    sendToProjector('PLAY_INTRO_VIDEO', { src: src });
+    showToast(`Đang yêu cầu phát video: ${src}`);
+}
+
+function onClickStopIntroVideo() {
+    sendToProjector('STOP_INTRO_VIDEO');
+    showToast('Đã dừng phát video.');
 }
