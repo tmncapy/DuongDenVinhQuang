@@ -119,12 +119,32 @@ function onClickRKDapAnTS() {
     for (let i = 1; i <= 4; i++) {
         const ts = (gameData.contestants && gameData.contestants[i - 1]) || {};
         const nameVal = document.getElementById(`ts${i}_name_rk`)?.value || ts.name || `Thí sinh ${i}`;
-        const timeVal = document.getElementById(`ts${i}_extra_rk`)?.value || ts.rk_time || '00.00';
-        const ansVal = document.getElementById(`ts${i}_ans_rk`)?.value || ts.rk_answer || '';
+        let timeVal = document.getElementById(`ts${i}_extra_rk`)?.value || ts.rk_time || '';
+        let ansVal = document.getElementById(`ts${i}_ans_rk`)?.value || ts.rk_answer || '';
+
+        // In case time was embedded in ansVal
+        const match = ansVal.match(/\(([\d\.]+)(?:s|giây)?\)/i);
+        if (match) {
+            if (!timeVal || timeVal === '00.00') {
+                timeVal = match[1];
+            }
+            ansVal = ansVal.replace(/\(([\d\.]+)(?:s|giây)?\)/i, '').trim();
+        }
+
+        timeVal = (timeVal || '00.00').toString().replace(/s|giây/gi, '').trim();
+        const num = parseFloat(timeVal);
+        if (!isNaN(num)) {
+            timeVal = num < 10 ? '0' + num.toFixed(2) : num.toFixed(2);
+        } else {
+            timeVal = '00.00';
+        }
+
         contestantsData.push({
             name: nameVal,
             rk_time: timeVal,
-            rk_answer: ansVal
+            time: timeVal,
+            rk_answer: ansVal,
+            answer: ansVal
         });
     }
 

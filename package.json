@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "build": "echo 'No build required for static server'"
+    "build": "echo 'No build required for static server'",
+    "lint": "echo 'No lint required'"
   },
   "dependencies": {
     "express": "^5.2.1"
