@@ -1633,3 +1633,22 @@ function startProjectorInteractive() {
     }
     console.log("Projector fully interactive & unlocked for auto-playback!");
 }
+
+let isProjectorInteractiveStarted = false;
+function triggerInteractiveOnFirstInteraction() {
+    if (isProjectorInteractiveStarted) return;
+    isProjectorInteractiveStarted = true;
+    startProjectorInteractive();
+}
+
+['click', 'keydown', 'pointerdown', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, triggerInteractiveOnFirstInteraction, { once: true, capture: true });
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (!isProjectorInteractiveStarted) {
+            startProjectorInteractive();
+        }
+    }, 500);
+});
