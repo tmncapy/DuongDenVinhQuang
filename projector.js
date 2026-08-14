@@ -707,6 +707,9 @@ loadInitialProjectorState();
 
 function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(msg);
+    }
     if (projectorChannel) {
         try { projectorChannel.postMessage(msg); } catch(e) {}
     }
@@ -1512,15 +1515,22 @@ function getApiUrlProj(path) {
 function sendProjectorHeartbeat() {
     const projRoomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
 
+    const hbData = {
+        type: 'CLIENT_HEARTBEAT',
+        role: 'projector',
+        roomCode: projRoomCode,
+        name: 'Máy Chiếu',
+        timestamp: Date.now()
+    };
+
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(hbData);
+    }
+
     fetch(getApiUrlProj('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            type: 'CLIENT_HEARTBEAT',
-            role: 'projector',
-            roomCode: projRoomCode,
-            name: 'Máy Chiếu'
-        })
+        body: JSON.stringify(hbData)
     }).catch(() => {});
 
     try {

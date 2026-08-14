@@ -113,16 +113,23 @@ function startHostHeartbeat() {
 function sendHostHeartbeat() {
     if (!hostRoomCode) return;
 
+    const hbData = {
+        type: 'CLIENT_HEARTBEAT',
+        role: 'host',
+        roomCode: hostRoomCode,
+        name: 'Máy MC (Host)',
+        timestamp: Date.now()
+    };
+
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(hbData);
+    }
+
     // 1. API POST
     fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            type: 'CLIENT_HEARTBEAT',
-            role: 'host',
-            roomCode: hostRoomCode,
-            name: 'Máy MC (Host)'
-        })
+        body: JSON.stringify(hbData)
     }).catch(() => {});
 
     // 2. BroadcastChannel
