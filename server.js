@@ -62,9 +62,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static assets
+// Serve static assets with automatic .html extension resolution
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, { extensions: ['html', 'htm'], index: false }));
 
 // SSE Real-time Synchronization across all devices (Mobile, PC, Projector)
 let sseClients = [];
@@ -99,12 +99,25 @@ let currentServerState = {
 
 function broadcastAction(actionData) {
   const payload = `data: ${JSON.stringify(actionData)}\n\n`;
-  sseClients.forEach(client => {
+  for (let i = sseClients.length - 1; i >= 0; i--) {
+    const client = sseClients[i];
     try {
       client.res.write(payload);
-    } catch (e) {}
-  });
+    } catch (e) {
+      sseClients.splice(i, 1);
+    }
+  }
 }
+
+// Health check endpoint for cloud/server monitoring
+app.get(['/health', '/api/health'], (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: Math.floor(process.uptime()),
+    clients: sseClients.length,
+    timestamp: Date.now()
+  });
+});
 
 app.get('/api/state', (req, res) => {
   res.json({
@@ -114,6 +127,11 @@ app.get('/api/state', (req, res) => {
 });
 
 app.get('/api/events', (req, res) => {
+  if (req.socket) {
+    req.socket.setKeepAlive(true);
+    req.socket.setTimeout(0);
+  }
+
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
@@ -123,11 +141,15 @@ app.get('/api/events', (req, res) => {
     'Access-Control-Allow-Origin': '*'
   });
 
+  if (typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
+  }
+
   const clientId = Date.now() + Math.random().toString(36).substring(2, 7);
   const newClient = { id: clientId, res };
   sseClients.push(newClient);
 
-  res.write('retry: 1000\n\n');
+  res.write('retry: 1500\n\n');
 
   // Always send full initial state sync on connection
   const fullSyncPayload = {
@@ -141,9 +163,14 @@ app.get('/api/events', (req, res) => {
     res.write(`data: ${JSON.stringify(latestAction)}\n\n`);
   }
 
-  req.on('close', () => {
+  const cleanup = () => {
     sseClients = sseClients.filter(c => c.id !== clientId);
-  });
+  };
+
+  req.on('close', cleanup);
+  req.on('end', cleanup);
+  res.on('error', cleanup);
+  res.on('close', cleanup);
 });
 
 app.post('/api/action', (req, res) => {
@@ -326,26 +353,30 @@ setInterval(() => {
   });
 }, 5000);
 
-// Serve index.html or controller.html at root route
-app.get('/', (req, res) => {
-  if (fs.existsSync(path.join(__dirname, 'index.html'))) {
-    res.sendFile(path.join(__dirname, 'index.html'));
-  } else {
-    res.sendFile(path.join(__dirname, 'controller.html'));
+// Explicit routes for major views
+app.get(['/', '/controller', '/controller.html'], (req, res) => {
+  if (fs.existsSync(path.join(__dirname, 'index.html')) && req.path === '/') {
+    return res.sendFile(path.join(__dirname, 'index.html'));
   }
+  return res.sendFile(path.join(__dirname, 'controller.html'));
 });
 
-// Serve projector.html explicitly
-app.get(['/projector', '/projector.html', '/graphic', '/graphic.html'], (req, res) => {
+app.get(['/projector', '/projector.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'projector.html'));
 });
 
-// Serve host page (MC Host Screen)
+app.get(['/graphic', '/graphic.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'graphic.html'));
+});
+
 app.get(['/host', '/host.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'host.html'));
 });
 
-// Serve player pages strictly (individual player screens)
+app.get(['/player', '/player.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player.html'));
+});
+
 app.get(['/player1', '/player1.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'player1.html'));
 });
@@ -358,10 +389,76 @@ app.get(['/player3', '/player3.html'], (req, res) => {
 app.get(['/player4', '/player4.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'player4.html'));
 });
-app.get(['/player', '/player.html', '/player_scene1.html', '/player_scene2.html', '/player_scene3.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'player.html'));
+
+app.get(['/scoreboard1', '/scoreboard1.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard1.html'));
+});
+app.get(['/scoreboard2', '/scoreboard2.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard2.html'));
+});
+app.get(['/scoreboard3', '/scoreboard3.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard3.html'));
+});
+app.get(['/scoreboard4', '/scoreboard4.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard4.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
+// Universal wildcard matcher: Resolves any HTML file requested on Render / Linux server
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+
+  const reqPath = decodeURIComponent(req.path).replace(/^\/+/, '');
+  if (!reqPath) {
+    return res.sendFile(path.join(__dirname, 'controller.html'));
+  }
+
+  // 1. Check exact file
+  const exactFile = path.join(__dirname, reqPath);
+  if (fs.existsSync(exactFile) && fs.statSync(exactFile).isFile()) {
+    return res.sendFile(exactFile);
+  }
+
+  // 2. Check if adding .html matches
+  const htmlFile = path.join(__dirname, reqPath + '.html');
+  if (fs.existsSync(htmlFile) && fs.statSync(htmlFile).isFile()) {
+    return res.sendFile(htmlFile);
+  }
+
+  // 3. Case-insensitive matching in root directory
+  try {
+    const files = fs.readdirSync(__dirname);
+    const target = reqPath.toLowerCase();
+    const matched = files.find(f => {
+      const lower = f.toLowerCase();
+      return lower === target || lower === target + '.html';
+    });
+    if (matched) {
+      return res.sendFile(path.join(__dirname, matched));
+    }
+  } catch (e) {}
+
+  // 4. Default HTML fallback
+  if (req.accepts('html')) {
+    return res.sendFile(path.join(__dirname, 'controller.html'));
+  }
+
+  next();
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[DDVQ Server] Running on http://0.0.0.0:${PORT}`);
+});
+
+process.on('SIGTERM', () => {
+  console.log('[DDVQ Server] SIGTERM received, closing server...');
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('[DDVQ Server] SIGINT received, closing server...');
+  server.close(() => {
+    process.exit(0);
+  });
 });
