@@ -1,6 +1,8 @@
 {
-  "name": "Đường Đến Vinh Quang",
-  "description": "Projector web application for Đường đến Vinh quang game show",
+  "name": "PuzzleBoard",
+  "description": "Interactive Vietnamese game show crossword puzzle board with multi-screen audience display, host control panel, and player buzzers",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

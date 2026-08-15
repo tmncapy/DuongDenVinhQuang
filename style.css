@@ -1,0 +1,193 @@
+/* style.css */
+
+/* Tải font SVN-Gilroy Bold bạn cung cấp */
+@font-face {
+    font-family: "SVN-Gilroy Bold";
+    src: url("SVN-Gilroy Bold.otf") format("opentype");
+}
+
+/* Giữ font Helvetica hoặc font mặc định cho hệ thống ô chữ cũ */
+@font-face {
+    font-family: "HelveticaNeue-CondensedBlack";
+    src: url("helveticaneuecondensedblack.ttf") format("truetype");
+}
+
+body {
+    margin: 0;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+}
+
+#game-container {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: center center;
+}
+
+#board {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: radial-gradient(circle at center, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    background-image: url("bangochu.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+    border: none;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+}
+
+/* THIẾT LẬP BẢNG ĐIỂM CHUẨN XÁC NỔI LÊN TRÊN VÀ SỬ DỤNG FONT MỚI */
+#scoreboard {
+    position: absolute;
+    top: 40px; /* Điều chỉnh số này tăng/giảm để khớp đúng cao độ với khung Đỏ-Vàng-Xanh của bạn */
+    left: 49.9%;
+    transform: translateX(-50%);
+    width: 912px; /* Tổng chiều ngang bao phủ 3 ô điểm */
+    height: 130px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 99; /* Đảm bảo luôn nổi lên trên, không bị ô chữ đè mất */
+    pointer-events: none;
+}
+
+.player-box {
+    width: 300px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* Áp dụng font chữ SVN-Gilroy Bold */
+    font-family: "SVN-Gilroy Bold", Arial, sans-serif;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.player-name {
+    font-size: 26px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.player-score {
+    font-size: 40px;
+    font-weight: bold;
+    margin-top: -2.5px;
+    color: #ffffff; /* Hoặc đổi thành #ffcc00 nếu bạn muốn điểm hiển thị màu vàng sáng */
+}
+
+/* Cấu trúc các ô chữ (Giữ nguyên font chữ cũ của ô chữ để không bị lệch size) */
+.cell {
+    position: absolute;
+    width: 110px;
+    height: 145px;
+    background: url("defaultbox.png") center center no-repeat;
+    background-size: 100% 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "HelveticaNeue-CondensedBlack", Arial, sans-serif;
+    font-size: 90px;
+    color: #000;
+    cursor: pointer;
+    user-select: none;
+}
+
+.cell-manual {
+    font-family: "HelveticaNeue-CondensedBlack", Arial, sans-serif !important;
+    font-size: 90px !important;
+    color: #000 !important;
+    font-weight: normal !important;
+}
+
+#programThumbnail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: 1080px;
+    z-index: 999;
+    object-fit: cover;
+    display: none;
+}
+
+/* === CÁC YẾU TỐ ĐÈN MỚI THÊM VÀO (FULL MÀN HÌNH) === */
+.overlay-light {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: 1080px;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 100; /* Nổi lên trên bảng ô chữ và bảng điểm */
+    pointer-events: none; /* Không cản trở tương tác */
+    display: none; /* Ẩn mặc định */
+}
+
+#light-white {
+    background-image: url("white.png");
+}
+
+#light-green {
+    background-image: url("green.png");
+}
+
+#light-red {
+    background-image: url("red.png");
+}
+
+/* === CHUÔNG BẤM NGƯỜI CHƠI (TOSSUP BUZZER ACTIVE) === */
+.player-box.buzzed-active {
+    animation: buzz-pulse 0.4s infinite alternate;
+    border-radius: 12px;
+    box-sizing: border-box;
+}
+
+.player-box.player-1.buzzed-active {
+    box-shadow: 0 0 45px #ff3b30, inset 0 0 20px #ff3b30;
+    background: rgba(255, 59, 48, 0.4);
+    border: 3px solid #ff3b30;
+}
+.player-box.player-1.buzzed-active .player-name,
+.player-box.player-1.buzzed-active .player-score {
+    color: #ff453a !important;
+    text-shadow: 0 0 15px rgba(255, 59, 48, 1), 2px 2px 4px rgba(0,0,0,0.9);
+}
+
+.player-box.player-2.buzzed-active {
+    box-shadow: 0 0 45px #ffcc00, inset 0 0 20px #ffcc00;
+    background: rgba(255, 204, 0, 0.4);
+    border: 3px solid #ffcc00;
+}
+.player-box.player-2.buzzed-active .player-name,
+.player-box.player-2.buzzed-active .player-score {
+    color: #ffcc00 !important;
+    text-shadow: 0 0 15px rgba(255, 204, 0, 1), 2px 2px 4px rgba(0,0,0,0.9);
+}
+
+.player-box.player-3.buzzed-active {
+    box-shadow: 0 0 45px #007aff, inset 0 0 20px #007aff;
+    background: rgba(0, 122, 255, 0.4);
+    border: 3px solid #007aff;
+}
+.player-box.player-3.buzzed-active .player-name,
+.player-box.player-3.buzzed-active .player-score {
+    color: #0a84ff !important;
+    text-shadow: 0 0 15px rgba(0, 122, 255, 1), 2px 2px 4px rgba(0,0,0,0.9);
+}
+
+@keyframes buzz-pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+}

@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,456 +8,113 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-// Enable CORS for file:// and cross-origin clients
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+app.use(express.json());
 
-// Case-insensitive asset fallback & missing sound handler
-app.use((req, res, next) => {
-  const reqPath = decodeURIComponent(req.path);
-  const localPath = path.join(__dirname, reqPath);
+// Set of connected SSE clients
+const sseClients = new Set();
 
-  if (fs.existsSync(localPath)) {
-    return next();
-  }
-
-  // Check if missing 'sounds/' prefix
-  if (!reqPath.startsWith('/sounds/') && !reqPath.startsWith('/Images/')) {
-    const soundPath = path.join(__dirname, 'sounds', reqPath);
-    if (fs.existsSync(soundPath)) {
-      return res.sendFile(soundPath);
-    }
-  }
-
-  // Case-insensitive file search in requested directory
-  const dir = path.dirname(localPath);
-  const base = path.basename(localPath).toLowerCase();
-
-  if (fs.existsSync(dir)) {
-    try {
-      const files = fs.readdirSync(dir);
-      const matched = files.find(f => f.toLowerCase() === base);
-      if (matched) {
-        return res.sendFile(path.join(dir, matched));
-      }
-    } catch (e) {
-      // ignore read error
-    }
-  }
-
-  // Fallback for non-critical missing mp3 audio
-  if (reqPath.endsWith('.mp3')) {
-    res.type('audio/mpeg');
-    return res.status(200).send(Buffer.alloc(0));
-  }
-
-  next();
-});
-
-// Serve static assets with automatic .html extension resolution
-app.use(express.json({ limit: '10mb' }));
-app.use(express.static(__dirname, { extensions: ['html', 'htm'], index: false }));
-
-// SSE Real-time Synchronization across all devices (Mobile, PC, Projector)
-let sseClients = [];
-let latestAction = null;
-let currentServerState = {
-  roomCode: 'DDVQ2026',
-  connectedClients: {
-    ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
-    ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
-    ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
-    ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
-    host: { connected: false, name: 'Máy MC', lastSeen: 0 },
-    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
-  },
-  activeRound: 'XUAT_PHAT', // 'XUAT_PHAT', 'RA_KHOI', 'VUOT_SONG', 'VINH_QUANG'
-  questionText: '',
-  questionIndex: 1,
-  score: 0,
-  row: 0,
-  subject: '',
-  pack: 10,
-  contestants: [
-    { name: "Thí sinh 1", score: 0 },
-    { name: "Thí sinh 2", score: 0 },
-    { name: "Thí sinh 3", score: 0 },
-    { name: "Thí sinh 4", score: 0 }
-  ],
-  gameData: null,
-  playerAnswers: {},
-  timestamp: Date.now()
+// Current Game & Buzzer State (Buzzer is locked by default)
+let currentGameState = {
+  buzzerUnlocked: false,
+  buzzerWinner: null
 };
 
-function broadcastAction(actionData) {
-  const payload = `data: ${JSON.stringify(actionData)}\n\n`;
-  for (let i = sseClients.length - 1; i >= 0; i--) {
-    const client = sseClients[i];
-    try {
-      client.res.write(payload);
-    } catch (e) {
-      sseClients.splice(i, 1);
-    }
-  }
-}
-
-// Health check endpoint for cloud/server monitoring
-app.get(['/health', '/api/health'], (req, res) => {
-  res.json({
-    status: 'ok',
-    uptime: Math.floor(process.uptime()),
-    clients: sseClients.length,
-    timestamp: Date.now()
-  });
-});
-
-app.get('/api/state', (req, res) => {
-  res.json({
-    ...currentServerState,
-    latestAction
-  });
-});
-
+// Real-time Server-Sent Events endpoint for multi-device sync
 app.get('/api/events', (req, res) => {
-  if (req.socket) {
-    req.socket.setKeepAlive(true);
-    req.socket.setTimeout(0);
-  }
-
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache, no-transform',
+    'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-    'Content-Encoding': 'none',
     'Access-Control-Allow-Origin': '*'
   });
 
-  if (typeof res.flushHeaders === 'function') {
-    res.flushHeaders();
-  }
+  res.write(`data: ${JSON.stringify({ event: 'buzzer-state-sync', payload: currentGameState })}\n\n`);
 
-  const clientId = Date.now() + Math.random().toString(36).substring(2, 7);
-  const newClient = { id: clientId, res };
-  sseClients.push(newClient);
+  sseClients.add(res);
 
-  res.write('retry: 1500\n\n');
-
-  // Always send full initial state sync on connection
-  const fullSyncPayload = {
-    type: 'FULL_STATE_SYNC',
-    ...currentServerState,
-    latestAction
-  };
-  res.write(`data: ${JSON.stringify(fullSyncPayload)}\n\n`);
-
-  if (latestAction) {
-    res.write(`data: ${JSON.stringify(latestAction)}\n\n`);
-  }
-
-  const cleanup = () => {
-    sseClients = sseClients.filter(c => c.id !== clientId);
-  };
-
-  req.on('close', cleanup);
-  req.on('end', cleanup);
-  res.on('error', cleanup);
-  res.on('close', cleanup);
-});
-
-app.post('/api/action', (req, res) => {
-  const actionData = req.body;
-  if (actionData && typeof actionData === 'object' && actionData.type) {
-    // Room Code Verification
-    if (actionData.type === 'VERIFY_ROOM_CODE') {
-      const isMatch = (actionData.roomCode || '').toUpperCase() === (currentServerState.roomCode || '').toUpperCase();
-      return res.json({
-        success: isMatch,
-        roomCode: currentServerState.roomCode,
-        message: isMatch ? 'Đã xác thực mã phòng!' : 'Mã phòng không chính xác!'
-      });
-    }
-
-    if (actionData.type === 'SET_ROOM_CODE') {
-      if (actionData.roomCode) {
-        currentServerState.roomCode = actionData.roomCode.toUpperCase();
-        broadcastAction({
-          type: 'ROOM_CODE_UPDATED',
-          roomCode: currentServerState.roomCode,
-          timestamp: Date.now()
-        });
-      }
-      return res.json({ success: true, roomCode: currentServerState.roomCode });
-    }
-
-    // Client connection / heartbeat registration
-    if (actionData.type === 'CLIENT_JOIN' || actionData.type === 'CLIENT_HEARTBEAT') {
-      const clientRoom = (actionData.roomCode || '').toUpperCase();
-      const serverRoom = (currentServerState.roomCode || '').toUpperCase();
-
-      if (clientRoom !== serverRoom) {
-        return res.json({
-          success: false,
-          error: 'Mã phòng không chính xác!',
-          roomCode: currentServerState.roomCode
-        });
-      }
-
-      const roleKey = actionData.role || (actionData.contestantId ? `ts${actionData.contestantId}` : null);
-      if (roleKey && currentServerState.connectedClients[roleKey]) {
-        currentServerState.connectedClients[roleKey] = {
-          connected: true,
-          name: actionData.name || currentServerState.connectedClients[roleKey].name,
-          lastSeen: Date.now()
-        };
-
-        // Notify controller of client status change
-        broadcastAction({
-          type: 'CLIENT_STATUS_UPDATE',
-          connectedClients: currentServerState.connectedClients,
-          role: roleKey,
-          status: currentServerState.connectedClients[roleKey],
-          timestamp: Date.now()
-        });
-      }
-
-      return res.json({
-        success: true,
-        roomCode: currentServerState.roomCode,
-        connectedClients: currentServerState.connectedClients
-      });
-    }
-
-    // Update state fields
-    if (actionData.questionText) currentServerState.questionText = actionData.questionText;
-    if (actionData.questionIndex !== undefined) currentServerState.questionIndex = actionData.questionIndex;
-    if (actionData.score !== undefined) currentServerState.score = actionData.score;
-    if (actionData.row !== undefined) currentServerState.row = actionData.row;
-    if (actionData.subject) currentServerState.subject = actionData.subject;
-    if (actionData.pack) currentServerState.pack = actionData.pack;
-    if (actionData.contestants && Array.isArray(actionData.contestants)) {
-      currentServerState.contestants = actionData.contestants;
-      // Also update names in connectedClients for ts1..4
-      actionData.contestants.forEach((c, idx) => {
-        if (c && c.name && currentServerState.connectedClients[`ts${idx+1}`]) {
-          currentServerState.connectedClients[`ts${idx+1}`].name = c.name;
-        }
-      });
-    }
-    if (actionData.gameData) currentServerState.gameData = actionData.gameData;
-
-    // Automatically clear cached player answers on specific round milestones / question changes / resets
-    if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
-    if (actionData.type === 'RA_KHOI_SHOW_QUESTION' || actionData.type === 'RA_KHOI_RESET') {
-      Object.keys(currentServerState.playerAnswers).forEach(key => {
-        if (key.endsWith('_RK')) delete currentServerState.playerAnswers[key];
-      });
-    } else if (actionData.type === 'VUOT_SONG_SELECT_ROW' || actionData.type === 'VUOT_SONG_RESET') {
-      Object.keys(currentServerState.playerAnswers).forEach(key => {
-        if (key.endsWith('_VS')) delete currentServerState.playerAnswers[key];
-      });
-    } else if (actionData.type === 'VINH_QUANG_SELECT_PACK' || actionData.type === 'VINH_QUANG_RESET') {
-      Object.keys(currentServerState.playerAnswers).forEach(key => {
-        if (key.endsWith('_VQ')) delete currentServerState.playerAnswers[key];
-      });
-    } else if (actionData.type === 'RESET_ALL_DATA') {
-      currentServerState.playerAnswers = {};
-    }
-
-    if (actionData.type === 'PLAYER_SUBMIT_ANSWER') {
-      const tsIdx = actionData.contestantId || 1;
-      const round = actionData.round || 'RK';
-      if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
-      currentServerState.playerAnswers[`ts${tsIdx}_${round}`] = {
-        contestantId: tsIdx,
-        round: round,
-        answer: actionData.answer || '',
-        time: actionData.time || '',
-        isVongThi: !!actionData.isVongThi,
-        timestamp: Date.now()
-      };
-    }
-
-    if (actionData.type.startsWith('XUAT_PHAT_')) currentServerState.activeRound = 'XUAT_PHAT';
-    else if (actionData.type.startsWith('RA_KHOI_')) currentServerState.activeRound = 'RA_KHOI';
-    else if (actionData.type.startsWith('VUOT_SONG_')) currentServerState.activeRound = 'VUOT_SONG';
-    else if (actionData.type.startsWith('VINH_QUANG_')) currentServerState.activeRound = 'VINH_QUANG';
-
-    // Do not overwrite latestAction with heartbeats
-    if (actionData.type !== 'PROJECTOR_READY' && actionData.type !== 'PROJECTOR_PONG' && actionData.type !== 'PING' && actionData.type !== 'CLIENT_HEARTBEAT') {
-      latestAction = actionData;
-    }
-
-    currentServerState.timestamp = Date.now();
-
-    broadcastAction(actionData);
-  }
-  res.json({ success: true, timestamp: Date.now() });
-});
-
-app.post('/api/state', (req, res) => {
-  const newState = req.body;
-  if (newState && typeof newState === 'object') {
-    currentServerState = {
-      ...currentServerState,
-      ...newState,
-      timestamp: Date.now()
-    };
-    const payload = `data: ${JSON.stringify({ type: 'UPDATE_STATE', ...currentServerState })}\n\n`;
-    sseClients.forEach(client => {
-      try {
-        client.res.write(payload);
-      } catch (e) {}
-    });
-  }
-  res.json({ success: true, timestamp: Date.now() });
-});
-
-// Periodic heartbeat to keep connections alive on mobile networks/proxies
-setInterval(() => {
-  const now = Date.now();
-  let changed = false;
-
-  // Check client connection timeouts (> 8000ms)
-  if (currentServerState.connectedClients) {
-    Object.keys(currentServerState.connectedClients).forEach(key => {
-      const client = currentServerState.connectedClients[key];
-      if (client.connected && now - client.lastSeen > 8000) {
-        client.connected = false;
-        changed = true;
-      }
-    });
-  }
-
-  if (changed) {
-    broadcastAction({
-      type: 'CLIENT_STATUS_UPDATE',
-      connectedClients: currentServerState.connectedClients,
-      timestamp: now
-    });
-  }
-
-  const pingPayload = `data: ${JSON.stringify({ type: 'PING', timestamp: now })}\n\n`;
-  sseClients.forEach(client => {
-    try {
-      client.res.write(pingPayload);
-    } catch (e) {}
+  req.on('close', () => {
+    sseClients.delete(res);
   });
-}, 5000);
+});
 
-// Explicit routes for major views
-app.get(['/', '/controller', '/controller.html'], (req, res) => {
-  if (fs.existsSync(path.join(__dirname, 'index.html')) && req.path === '/') {
-    return res.sendFile(path.join(__dirname, 'index.html'));
+// Periodic heartbeat to keep SSE connections open through proxies/firewalls
+setInterval(() => {
+  for (const client of sseClients) {
+    try {
+      client.write('data: {"event":"ping"}\n\n');
+    } catch (err) {
+      sseClients.delete(client);
+    }
   }
-  return res.sendFile(path.join(__dirname, 'controller.html'));
+}, 20000);
+
+// Endpoint to fetch current buzzer state
+app.get('/api/buzzer-state', (req, res) => {
+  res.json(currentGameState);
 });
 
-app.get(['/projector', '/projector.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'projector.html'));
+// Broadcast API endpoint for any device to broadcast to all other devices
+app.post('/api/broadcast', (req, res) => {
+  const { event, payload, ts, id } = req.body;
+
+  // Track and update server-authoritative buzzer state
+  if (event === 'control-to-display' && payload) {
+    if (payload.type === 'START_TOSSUP' || payload.type === 'PLAY_TOSSUP') {
+      currentGameState.buzzerUnlocked = true;
+      currentGameState.buzzerWinner = null;
+    } else if (
+      payload.type === 'REVEAL_ALL' ||
+      payload.type === 'RESET_BOARD' ||
+      payload.type === 'LOAD_QUIZ' ||
+      payload.type === 'SHOW_MANUAL_TEXT'
+    ) {
+      currentGameState.buzzerUnlocked = false;
+      currentGameState.buzzerWinner = null;
+    }
+  } else if (event === 'player-buzz' && payload && payload.playerNum) {
+    if (currentGameState.buzzerUnlocked && !currentGameState.buzzerWinner) {
+      currentGameState.buzzerWinner = payload.playerNum;
+    }
+  }
+
+  const msgStr = JSON.stringify({ event, payload, ts: ts || Date.now(), id, buzzerState: currentGameState });
+  
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${msgStr}\n\n`);
+    } catch (err) {
+      sseClients.delete(client);
+    }
+  }
+
+  res.json({ ok: true, receivers: sseClients.size, buzzerState: currentGameState });
 });
 
-app.get(['/graphic', '/graphic.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'graphic.html'));
+// Serve all static assets from the current directory
+app.use(express.static(__dirname));
+
+// Route shortcuts
+app.get('/control', (req, res) => {
+  res.sendFile(path.join(__dirname, 'control.html'));
 });
 
-app.get(['/host', '/host.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'host.html'));
-});
-
-app.get(['/player', '/player.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'player.html'));
-});
-
-app.get(['/player1', '/player1.html'], (req, res) => {
+app.get('/player1', (req, res) => {
   res.sendFile(path.join(__dirname, 'player1.html'));
 });
-app.get(['/player2', '/player2.html'], (req, res) => {
+
+app.get('/player2', (req, res) => {
   res.sendFile(path.join(__dirname, 'player2.html'));
 });
-app.get(['/player3', '/player3.html'], (req, res) => {
+
+app.get('/player3', (req, res) => {
   res.sendFile(path.join(__dirname, 'player3.html'));
 });
-app.get(['/player4', '/player4.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'player4.html'));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get(['/scoreboard1', '/scoreboard1.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'scoreboard1.html'));
-});
-app.get(['/scoreboard2', '/scoreboard2.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'scoreboard2.html'));
-});
-app.get(['/scoreboard3', '/scoreboard3.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'scoreboard3.html'));
-});
-app.get(['/scoreboard4', '/scoreboard4.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'scoreboard4.html'));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
 
-// Universal wildcard matcher: Resolves any HTML file requested on Render / Linux server
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api/')) return next();
-
-  const reqPath = decodeURIComponent(req.path).replace(/^\/+/, '');
-  if (!reqPath) {
-    return res.sendFile(path.join(__dirname, 'controller.html'));
-  }
-
-  // 1. Check exact file
-  const exactFile = path.join(__dirname, reqPath);
-  if (fs.existsSync(exactFile) && fs.statSync(exactFile).isFile()) {
-    return res.sendFile(exactFile);
-  }
-
-  // 2. Check if adding .html matches
-  const htmlFile = path.join(__dirname, reqPath + '.html');
-  if (fs.existsSync(htmlFile) && fs.statSync(htmlFile).isFile()) {
-    return res.sendFile(htmlFile);
-  }
-
-  // 3. Case-insensitive matching in root directory
-  try {
-    const files = fs.readdirSync(__dirname);
-    const target = reqPath.toLowerCase();
-    const matched = files.find(f => {
-      const lower = f.toLowerCase();
-      return lower === target || lower === target + '.html';
-    });
-    if (matched) {
-      return res.sendFile(path.join(__dirname, matched));
-    }
-  } catch (e) {}
-
-  // 4. Default HTML fallback
-  if (req.accepts('html')) {
-    return res.sendFile(path.join(__dirname, 'controller.html'));
-  }
-
-  next();
-});
-
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[DDVQ Server] Running on http://0.0.0.0:${PORT}`);
-});
-
-process.on('SIGTERM', () => {
-  console.log('[DDVQ Server] SIGTERM received, closing server...');
-  server.close(() => {
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('[DDVQ Server] SIGINT received, closing server...');
-  server.close(() => {
-    process.exit(0);
-  });
-});

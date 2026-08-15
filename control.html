@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bảng Điều Khiển Ô Chữ (Kỹ Thuật)</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 8px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            color: #5ac8fa;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        /* Bố cục chia 3 cột chính nằm ngang */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.1fr;
+            gap: 12px;
+            align-items: start;
+        }
+
+        /* Khung bao bọc phân vùng khoa học */
+        .section-wrapper {
+            background: #262626;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #3a3a3a;
+            padding-bottom: 6px;
+            color: #5ac8fa;
+            font-size: 13.5px;
+            text-transform: uppercase;
+        }
+
+        .group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .group-center {
+            justify-content: center;
+        }
+
+        button {
+            padding: 6px 10px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Định nghĩa màu sắc cố định theo thiết kế gốc */
+        .btn-main { background-color: #27ae60; color: white; }
+        .btn-excel { background-color: #8e44ad; color: white; width: 100%; padding: 8px; }
+        .btn-reveal { background-color: #2980b9; color: white; }
+        .btn-reset { background-color: #ff00ff; color: white; }
+        .btn-tossup, .btn-solve { background-color: #f1c40f; color: black; flex: 1; }
+        .btn-quiz { background-color: #34495e; color: white; width: calc(33.33% - 4px); box-sizing: border-box; }
+        .btn-time-30 { background-color: #2980b9; color: white; }
+        .btn-time-10 { background-color: #27ae60; color: white; }
+
+        .btn-letter {
+            background-color: #8e44ad;
+            color: #fff;
+            width: calc(14.28% - 4px);
+            padding: 6px 0;
+            font-size: 12px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .btn-letter:disabled {
+            background-color: #444 !important;
+            color: #777 !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .active {
+            background-color: #ff3b30 !important;
+            color: white !important;
+            box-shadow: 0 0 12px #ff3b30;
+        }
+
+        /* Cấu trúc bảng điểm theo hàng dọc dọc */
+        .score-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .player-ctrl-box {
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .player-ctrl-box h4 {
+            margin: 0 0 8px 0;
+            color: #ffcc00;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .ctrl-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+
+        .ctrl-input {
+            flex: 1;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #1a1a1a;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            font-size: 12px;
+            min-width: 0;
+        }
+
+        .score-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+
+        .score-actions button {
+            padding: 5px 0;
+            font-size: 11px;
+        }
+
+        .input-manual {
+            padding: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #1a1a1a;
+            color: white;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        /* Trạng thái đệm popup alert */
+        .custom-popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+
+        .custom-popup-box {
+            background: #2b2b2b;
+            border: 2px solid #5ac8fa;
+            padding: 20px 30px;
+            border-radius: 8px;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .custom-popup-msg {
+            font-size: 15px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .custom-popup-btn {
+            background: #5ac8fa;
+            color: #000;
+            padding: 8px 25px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+        <h2 style="margin: 0; text-align: left;">BẢNG ĐIỀU KHIỂN TRÒ CHƠI (REALTIME)</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="togglePreview()" style="background: #27ae60; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                👁️ Live Preview (Hiện/Ẩn Màn Hình Khán Giả)
+            </button>
+            <a href="index.html" target="_blank" style="background: #2980b9; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                📺 Mở Màn Hình Khán Giả (Tab Mới)
+            </a>
+        </div>
+    </div>
+
+    <!-- Embedded Audience Screen Preview Container -->
+    <div id="previewSection" style="display: none; margin-bottom: 15px; background: #000; padding: 10px; border-radius: 10px; border: 2px solid #2980b9; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #5ac8fa; font-weight: bold; font-size: 13px; flex-wrap: wrap; gap: 8px;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+                📺 MÀN HÌNH KHÁN GIẢ (XEM TRỰC TIẾP TRÊN BẢNG ĐIỀU KHIỂN)
+                <button id="muteToggleBtn" onclick="togglePreviewAudio()" style="background: #e74c3c; color: #fff; padding: 4px 10px; border: none; border-radius: 4px; font-weight: bold; font-size: 11px; cursor: pointer;">
+                    🔇 Âm thanh Xem thử: ĐÃ TẮT
+                </button>
+            </span>
+            <span style="font-size: 11px; color: #aaa;">Mọi thao tác bên dưới sẽ tác động trực tiếp lên ô chữ này và tab khán giả riêng biệt!</span>
+        </div>
+        <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 6px;">
+            <iframe id="audiencePreviewFrame" name="audiencePreviewFrame" src="index.html?muted=1" style="position: absolute; top:0; left:0; width:100%; height:100%; border:none; background: #000;"></iframe>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        
+        <div class="column">
+            <div class="section-wrapper">
+                <h3>1. Nạp File Excel</h3>
+                <button class="btn-excel" onclick="document.getElementById('excelInput').click()">NẠP FILE DỮ LIỆU EXCEL</button>
+                <input type="file" id="excelInput" accept=".xlsx, .xls" style="display:none;" onchange="handleExcel(this)">
+            </div>
+
+            <div class="section-wrapper">
+                <h3>2. Chọn Đề Thi</h3>
+                <div class="group" style="gap: 8px 6px;">
+                    <script>
+                        for (let i = 1; i <= 12; i++) {
+                            document.write(`<button class="btn-quiz" id="btnQuiz${i}" onclick="loadQuizFromExcel(${i - 1})">ĐỀ ${i}</button>`);
+                        }
+                    </script>
+                </div>
+            </div>
+
+            <div class="section-wrapper">
+                <h3>3. Nhập Từ Khóa Thủ Công</h3>
+                <textarea id="manualTextInput" class="input-manual" rows="3" placeholder="DÒNG 1&#10;DÒNG 2&#10;DÒNG 3..."></textarea>
+                <button class="btn-main" style="width: 100%; margin-top: 8px; padding: 12px 0;" onclick="sendManualText()">SHOW CHỮ LÊN BẢNG</button>
+            </div>
+
+            <div class="section-wrapper">
+                <h3>🔍 Xem Đề Ô Chữ Đã Nạp</h3>
+                <div class="group" style="gap: 4px; margin-bottom: 8px; display: grid; grid-template-columns: repeat(4, 1fr);">
+                    <script>
+                        for (let i = 1; i <= 12; i++) {
+                            document.write(`<button id="btnPreviewQuiz${i}" style="background: #34495e; color: #fff; padding: 6px 0; font-size: 10px; border-radius: 3px;" onclick="selectPreviewQuiz(${i - 1})">ĐỀ ${i}</button>`);
+                        }
+                    </script>
+                </div>
+                <div id="quizPreviewBox">
+                    <div style="color: #aaa; font-style: italic; text-align: center; padding: 15px; font-size: 11px;">
+                        Chưa có dữ liệu đề. Hãy nạp file Excel để xem!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="section-wrapper">
+                <h3>4. Luồng Chạy Bảng Chính</h3>
+                <div class="group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button class="btn-main" style="grid-column: span 2; padding: 12px 0;" onclick="sendCmd('SHOW_BOARD')">SHOW Ô CHỮ CHÍNH</button>
+                    <button style="background-color: #2980b9; color: white;" onclick="sendCmd('SHOW_THUMBNAIL')">HIỆN THUMBNAIL</button>
+                    <button style="background-color: #7f8c8d; color: white;" onclick="sendCmd('HIDE_THUMBNAIL')">ẨN THUMBNAIL</button>
+                </div>
+            </div>
+
+            <div class="section-wrapper">
+                <h3>5. Vòng Lật Ô Nhanh (Toss-Up)</h3>
+                <div id="buzzerLockIndicator" style="background: #2c3e50; color: #ecf0f1; padding: 6px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-align: center; margin-bottom: 8px; border: 1px solid #34495e;">
+                    🔒 CHUÔNG 3 PLAYER: <span id="buzzerLockStatusText" style="color: #e74c3c;">ĐANG KHÓA</span>
+                </div>
+                <div id="buzzerStatusBanner" style="display: none; background: #c0392b; color: #fff; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; margin-bottom: 10px; border: 1px solid #ff3b30; box-shadow: 0 0 10px rgba(255,59,48,0.5);">
+                    🔔 PLAYER <span id="buzzerWinnerNum">1</span> ĐÃ BẤM CHUÔNG!
+                </div>
+                <div class="group" style="margin-bottom: 8px;">
+                    <button class="btn-tossup" id="startBtn" onclick="clickStartTossup()">START</button>
+                    <button class="btn-tossup" id="pauseBtn" onclick="clickPauseTossup()">PAUSE</button>
+                    <button class="btn-tossup" id="playBtn" onclick="clickPlayTossup()">PLAY</button>
+                </div>
+                <button class="btn-solve" id="solveBtn" style="width: 100%; padding: 10px 0;" onclick="solveTossUp()">GIẢI ĐÁP TOSS-UP (SOLVE)</button>
+            </div>
+
+            <div class="section-wrapper" style="background: #1f1f1f;">
+                <h3>6. Âm Thanh SFX & Khẩn Cấp</h3>
+                                <div class="group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Hệ Thống & Đoán Ô Chữ -->
+                    <button style="background-color: #2ecc71; color: white;" onclick="sendCmd('PLAY_SFX', 'ding.mp3')">🔔 DING (ĐÚNG CHỮ)</button>
+                    <button style="background-color: #d63031; color: white;" onclick="sendCmd('PLAY_SFX', 'wrong.mp3')">❌ SAI (Wrong)</button>
+                    <button style="background-color: #34495e; color: white;" onclick="sendCmd('PLAY_SFX', 'reveal.mp3')">🎬 SOUND SHOW BẢNG</button>
+                    <button style="background-color: #1abc9c; color: white;" onclick="sendCmd('PLAY_SFX', 'ClearPuzzle.mp3')">🎉 THẮNG VÒNG CHÍNH</button>
+                    
+                    <!-- Nhạc Nền Toss-Up -->
+                    <button style="background-color: #e67e22; color: white;" onclick="sendCmd('PLAY_SFX', 'TossUpStart.mp3')">⏱️ BẮT ĐẦU TOSS-UP</button>
+                    <button style="background-color: #e67e22; color: white;" onclick="sendCmd('PLAY_SFX', 'tossup.mp3')">🎵 NHẠC NỀN TOSS-UP</button>
+                    <button style="background-color: #f1c40f; color: black;" onclick="sendCmd('PLAY_SFX', 'toss.mp3')">🪙 TOSS SOUND</button>
+                    <button style="background-color: #f1c40f; color: black;" onclick="sendCmd('PLAY_SFX', 'tosssound.mp3')">🔊 TOSS SOUND 2</button>
+                    <button style="background-color: #9b59b6; color: white; grid-column: span 2;" onclick="sendCmd('PLAY_SFX', 'ClearTossUp.mp3')">🏆 CHIẾN THẮNG TOSS-UP</button>
+
+                    <!-- Nhạc Hẹn Giờ & Suy Nghĩ -->
+                    <button style="background-color: #3498db; color: white;" onclick="sendCmd('PLAY_SFX', '10s.mp3')">⏳ ĐẾM NGƯỢC 10S</button>
+                    <button style="background-color: #3498db; color: white;" onclick="sendCmd('PLAY_SFX', '30s.mp3')">⏱️ ĐẾM NGƯỢC 30S</button>
+                    <button style="background-color: #2c3e50; color: white;" onclick="sendCmd('PLAY_SFX', 'think.mp3')">🤔 SUY NGHĨ 1</button>
+                    <button style="background-color: #2c3e50; color: white;" onclick="sendCmd('PLAY_SFX', 'think1.mp3')">🧠 SUY NGHĨ 2</button>
+
+                    <!-- Vòng Bonus (Đề 10-12) -->
+                    <button style="background-color: #2ecc71; color: white;" onclick="sendCmd('PLAY_SFX', 'BonusPuzzle.mp3')">🧩 HIỆN Ô CHỮ BONUS</button>
+                    <button style="background-color: #9b59b6; color: white;" onclick="sendCmd('PLAY_SFX', 'LetterBonus.mp3')">✨ LẬT CHỮ BONUS</button>
+                    <button style="background-color: #f39c12; color: white;" onclick="sendCmd('PLAY_SFX', '10sBonus.mp3')">⏳ SUY NGHĨ 10S BONUS</button>
+                    <button style="background-color: #3498db; color: white;" onclick="sendCmd('PLAY_SFX', '30sBonus.mp3')">⏱️ NHẠC 30S BONUS</button>
+                    <button style="background-color: #27ae60; color: white;" onclick="sendCmd('PLAY_SFX', 'ClearBonus.mp3')">🌟 ĐÚNG BONUS</button>
+                    <button style="background-color: #27ae60; color: white;" onclick="sendCmd('PLAY_SFX', 'bonussolve.mp3')">💎 GIẢI ĐÁP BONUS WIN</button>
+                    <button style="background-color: #c0392b; color: white; grid-column: span 2;" onclick="sendCmd('PLAY_SFX', 'FailBonus.mp3')">💥 SAI BONUS (HIỆN HẾT CHỮ)</button>
+
+                    <!-- Hiệu Ứng Vòng Quay & Ô Đặc Biệt -->
+                    <button style="background-color: #7f8c8d; color: white;" onclick="sendCmd('PLAY_SFX', 'speedup.mp3')">⚡ SPEED UP</button>
+                    <button style="background-color: #d35400; color: white;" onclick="sendCmd('PLAY_SFX', 'finalspin.mp3')">🔄 FINAL SPIN</button>
+                    <button style="background-color: #d35400; color: white;" onclick="sendCmd('PLAY_SFX', 'SpinFinal.mp3')">🎡 SPIN FINAL 2</button>
+                    <button style="background-color: #16a085; color: white;" onclick="sendCmd('PLAY_SFX', 'mystery.mp3')">❓ Ô BÍ ẨN (MYSTERY)</button>
+                    <button style="background-color: #c0392b; color: white;" onclick="sendCmd('PLAY_SFX', 'bankrupt.mp3')">📉 MẤT ĐIỂM (BANKRUPT)</button>
+                    <button style="background-color: #c0392b; color: white;" onclick="sendCmd('PLAY_SFX', 'horn.mp3')">📯 TIẾNG CÒI (HORN)</button>
+
+                    <!-- Nhạc Nền Sân Khấu & Bed Music -->
+                    <button style="background-color: #2c3e50; color: white;" onclick="sendCmd('PLAY_SFX', 'ExpressBed.mp3')">🚂 EXPRESS BED</button>
+                    <button style="background-color: #2c3e50; color: white;" onclick="sendCmd('PLAY_SFX', 'FinalSpinBed.mp3')">🎵 FINAL SPIN BED</button>
+                    <button style="background-color: #7f8c8d; color: white;" onclick="sendCmd('PLAY_SFX', 'final.mp3')">🏁 FINAL MUSIC</button>
+                    <button style="background-color: #2c3e50; color: white;" onclick="sendCmd('PLAY_SFX', 'theme.mp3')">🎶 GAME THEME</button>
+
+                    <!-- Nhạc Mở Đầu & Giới Thiệu -->
+                    <button style="background-color: #111; color: #5ac8fa; border: 1px solid #5ac8fa;" onclick="sendCmd('PLAY_SFX', 'OpeningTheme.mp3')">🎼 OPENING THEME</button>
+                    <button style="background-color: #111; color: #5ac8fa; border: 1px solid #5ac8fa;" onclick="sendCmd('PLAY_SFX', 'intro.mp3')">🎙️ INTRO MAIN</button>
+                    <button style="background-color: #111; color: #5ac8fa; border: 1px solid #5ac8fa;" onclick="sendCmd('PLAY_SFX', 'intro1.mp3')">🎙️ INTRO 1</button>
+                    <button style="background-color: #111; color: #5ac8fa; border: 1px solid #5ac8fa;" onclick="sendCmd('PLAY_SFX', 'intro2.mp3')">🎙️ INTRO 2</button>
+                    <button style="background-color: #8e44ad; color: white;" onclick="sendCmd('PLAY_SFX', 'showprize.mp3')">🎁 SHOW GIẢI THƯỞNG</button>
+                    <button style="background-color: #2c3e50; color: white;" onclick="sendCmd('PLAY_SFX', 'i6.mp3')">🎵 INTERLUDE 6</button>
+
+                    <!-- Hiển Thị Ô Chữ Khác -->
+                    <button style="background-color: #34495e; color: white;" onclick="sendCmd('PLAY_SFX', 'showpuzzle.mp3')">🧩 SHOW PUZZLE 1</button>
+                    <button style="background-color: #34495e; color: white;" onclick="sendCmd('PLAY_SFX', 'showpuzzle2.mp3')">🧩 SHOW PUZZLE 2</button>
+                    <button style="background-color: #34495e; color: white;" onclick="sendCmd('PLAY_SFX', 'showpuzzle3.mp3')">🧩 SHOW PUZZLE 3</button>
+                    <button style="background-color: #34495e; color: white;" onclick="sendCmd('PLAY_SFX', 'showpuzzle4.mp3')">🧩 SHOW PUZZLE 4</button>
+
+                    <!-- Tín Hiệu Đèn Kỹ Thuật -->
+                    <button style="background-color: #ecf0f1; color: black; font-weight: bold;" onclick="sendCmd('PLAY_SFX', 'FlashWhite.mp3')">⚪ ĐÈN FLASH TRẮNG</button>
+                    <button style="background-color: #2ecc71; color: white; font-weight: bold;" onclick="sendCmd('PLAY_SFX', 'FlashGreen.mp3')">🟢 ĐÈN FLASH XANH</button>
+                    <button style="background-color: #e74c3c; color: white; font-weight: bold; grid-column: span 2;" onclick="sendCmd('PLAY_SFX', 'FlashRed.mp3')">🔴 ĐÈN FLASH ĐỎ</button>
+                    <button style="background-color: #e74c3c; color: white;" onclick="sendCmd('PLAY_SFX', 'red.mp3')">🚨 ĐÈN ĐỎ CẢNH BÁO</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #444; padding-top: 10px;">
+                    <button class="btn-reveal" style="background-color: #c0392b; padding: 10px 0;" onclick="sendCmd('REVEAL_ALL')">🔓 MỞ HẾT TOÀN BỘ Ô CHỮ</button>
+                    <button style="background-color: #f1c40f; color: black;" onclick="sendCmd('STOP_ALL_SFX')">🛑 DỪNG TẤT CẢ ÂM THANH</button>
+                    <button class="btn-reset" style="padding: 8px 0;" onclick="sendCmd('RESET_BOARD')">♻️ RESET BẢNG TRỐNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="section-wrapper">
+                <h3>7. Điểm Số & Tên Người Chơi</h3>
+                <div class="score-panel">
+                    <div class="player-ctrl-box">
+                        <h4>Người Chơi 1</h4>
+                        <div class="ctrl-row">
+                            <input type="text" id="pName1" class="ctrl-input" value="Player 1" placeholder="Tên" oninput="updateScoreboard()">
+                            <input type="number" id="pScore1" class="ctrl-input" value="0" placeholder="Điểm" oninput="updateScoreboard()">
+                        </div>
+                        <div class="score-actions">
+                            <button style="background-color: #2ecc71; color: white;" onclick="modifyScore(1, 50)">+50</button>
+                            <button style="background-color: #27ae60; color: white;" onclick="modifyScore(1, 100)">+100</button>
+                            <button style="background-color: #f39c12; color: white;" onclick="modifyScore(1, 'x2')">x2</button>
+                            <button style="background-color: #c0392b; color: white;" onclick="modifyScore(1, '0')">Mất(0)</button>
+                        </div>
+                    </div>
+
+                    <div class="player-ctrl-box">
+                        <h4>Người Chơi 2</h4>
+                        <div class="ctrl-row">
+                            <input type="text" id="pName2" class="ctrl-input" value="Player 2" placeholder="Tên" oninput="updateScoreboard()">
+                            <input type="number" id="pScore2" class="ctrl-input" value="0" placeholder="Điểm" oninput="updateScoreboard()">
+                        </div>
+                        <div class="score-actions">
+                            <button style="background-color: #2ecc71; color: white;" onclick="modifyScore(2, 50)">+50</button>
+                            <button style="background-color: #27ae60; color: white;" onclick="modifyScore(2, 100)">+100</button>
+                            <button style="background-color: #f39c12; color: white;" onclick="modifyScore(2, 'x2')">x2</button>
+                            <button style="background-color: #c0392b; color: white;" onclick="modifyScore(2, '0')">Mất(0)</button>
+                        </div>
+                    </div>
+
+                    <div class="player-ctrl-box">
+                        <h4>Người Chơi 3</h4>
+                        <div class="ctrl-row">
+                            <input type="text" id="pName3" class="ctrl-input" value="Player 3" placeholder="Tên" oninput="updateScoreboard()">
+                            <input type="number" id="pScore3" class="ctrl-input" value="0" placeholder="Điểm" oninput="updateScoreboard()">
+                        </div>
+                        <div class="score-actions">
+                            <button style="background-color: #2ecc71; color: white;" onclick="modifyScore(3, 50)">+50</button>
+                            <button style="background-color: #27ae60; color: white;" onclick="modifyScore(3, 100)">+100</button>
+                            <button style="background-color: #f39c12; color: white;" onclick="modifyScore(3, 'x2')">x2</button>
+                            <button style="background-color: #c0392b; color: white;" onclick="modifyScore(3, '0')">Mất(0)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="alphabetSection" class="section-wrapper" style="display: none;">
+                <h3>8. Bàn Phím & Điều Hướng Ô Chữ</h3>
+                <div class="group group-center" id="alphabetContainer" style="gap: 4px;"></div>
+
+                <div style="border-top: 1px solid #444; padding-top: 10px; margin-top: 10px;">
+                    <div class="group group-center" style="margin-bottom: 8px;">
+                        <label style="font-weight: bold; color: aqua; font-size: 11px;">MỞ ĐỒNG THỜI:</label>
+                        <input type="number" id="numCells" style="font-weight: bold; padding: 4px; width: 45px; text-align: center; border-radius: 4px; border:1px solid #666; background:#1a1a1a; color:#fff;" min="0" max="52" oninput="generateChildTextBoxes()">
+                        <div id="childTextBoxes" style="display:inline-flex; gap: 3px; max-width: 140px; overflow-x: auto;"></div>
+                    </div>
+                    <div class="group group-center">
+                        <button class="btn-reset" style="background-color:#9b59b6; padding: 8px 10px; font-size: 11px;" onclick="triggerSequence('MARK_SEQ')">LẦN 1 (DẤU)</button>
+                        <button class="btn-reset" style="background-color:#e67e22; padding: 8px 10px; font-size: 11px;" onclick="triggerSequence('REVEAL_SEQ')">LẦN 2 (MỞ)</button>
+                    </div>
+                </div>
+
+                <div id="extraLettersSection" style="display: none; margin-top: 10px; border-top: 1px dashed #5ac8fa; padding-top: 10px;">
+                    <div class="group group-center" style="margin-bottom: 8px;">
+                        <div id="extraLettersContainer" style="display: inline-block;">
+                            <script>
+                                for (let i = 0; i < 5; i++) {
+                                    document.write('<input type="text" maxlength="1" class="extra-letter-input" style="width: 24px; height: 24px; font-weight: bold; text-align: center; font-size: 13px; margin: 0 1px; text-transform: uppercase; border-radius: 4px; border: 1px solid #555; background:#1a1a1a; color:#fff;">');
+                                }
+                            </script>
+                        </div>
+                        <button style="background-color: green; color: white; padding: 5px 8px; font-size: 11px;" onclick="confirmExtraLetters()">OK</button>
+                        <button style="background-color: #7f8c8d; color: white; padding: 5px 8px; font-size: 11px;" onclick="clearExtraLetters()">XÓA</button>
+                    </div>
+                    
+                    <div class="group group-center">
+                        <button class="btn-time-30" style="padding: 6px 10px; font-size: 11px;" onclick="sendCmd('PLAY_TIMER', 30)">HẸN GIỜ 30S</button>
+                        <button class="btn-time-10" style="padding: 6px 10px; font-size: 11px;" onclick="sendCmd('PLAY_TIMER', 10)">HẸN GIỜ 10S</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="customPopup" class="custom-popup-overlay">
+        <div class="custom-popup-box">
+            <p id="popupMessage" class="custom-popup-msg"></p>
+            <button class="custom-popup-btn" onclick="closePopup()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        var SUPABASE_URL = "https://tukabyhjmcyptuwmwedp.supabase.co";
+        var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1a2FieWhqbWN5cHR1d213ZWRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NDk3NDksImV4cCI6MjA5NjAyNTc0OX0.gNWdvZ_hRdon_w_KL3C3eXFFiV_EoA4eLgikcYb6dpQ";
+
+        var supabaseClient = null;
+        var channel = null;
+        try {
+            if (typeof supabase !== "undefined" && supabase.createClient) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                channel = supabaseClient.channel('crossword_broadcast_room', {
+                    config: { broadcast: { ack: false, self: true } }
+                });
+            }
+        } catch (err) {
+            console.warn("Supabase initialization error, falling back to Server/BroadcastChannel/localStorage:", err);
+        }
+
+        const localBC = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel('crossword_broadcast_room') : null;
+
+        let tossupTimeout = null;
+        let isTossupRunning = false;
+        let controlActiveQuizLetters = []; 
+        let controlRevealedStates = new Array(52).fill(false); 
+
+        function updateScoreboard() {
+            const data = {
+                p1: { name: document.getElementById("pName1").value, score: parseInt(document.getElementById("pScore1").value) || 0 },
+                p2: { name: document.getElementById("pName2").value, score: parseInt(document.getElementById("pScore2").value) || 0 },
+                p3: { name: document.getElementById("pName3").value, score: parseInt(document.getElementById("pScore3").value) || 0 }
+            };
+            sendCmd("UPDATE_SCOREBOARD", data);
+        }
+
+        function modifyScore(playerNum, action) {
+            const scoreInput = document.getElementById(`pScore${playerNum}`);
+            let currentScore = parseInt(scoreInput.value) || 0;
+            if (action === 50) currentScore += 50;
+            else if (action === 100) currentScore += 100;
+            else if (action === 'x2') currentScore *= 2;
+            else if (action === '0') currentScore = 0;
+            scoreInput.value = currentScore;
+            updateScoreboard();
+        }
+
+        function handleDisplayMessage(payload) {
+            if (!payload) return;
+            const { type, data } = payload;
+            if (type === "UPDATE_QUIZ_ACTIVE") {
+                for (let i = 1; i <= 12; i++) {
+                    const btn = document.getElementById(`btnQuiz${i}`);
+                    if (btn) btn.classList.remove("active");
+                }
+                if(data >= 0) {
+                    const activeBtn = document.getElementById(`btnQuiz${data + 1}`);
+                    if (activeBtn) activeBtn.classList.add("active");
+                }
+                const targetQuizzes = [2, 3, 4, 8, 9, 10, 11];
+                if (targetQuizzes.includes(data)) {
+                    document.getElementById("alphabetSection").style.display = "block";
+                } else {
+                    document.getElementById("alphabetSection").style.display = "none";
+                }
+                if ([9, 10, 11].includes(data)) {
+                    document.getElementById("extraLettersSection").style.display = "block";
+                } else {
+                    document.getElementById("extraLettersSection").style.display = "none";
+                }
+                document.querySelectorAll(".btn-letter").forEach(btn => btn.disabled = false);
+                document.getElementById("numCells").value = "";
+                document.getElementById("childTextBoxes").innerHTML = "";
+            }
+            if (type === "UPDATE_CTRL_ACTIVE") {
+                document.getElementById("startBtn").classList.remove("active");
+                document.getElementById("pauseBtn").classList.remove("active");
+                document.getElementById("playBtn").classList.remove("active");
+                if (data) document.getElementById(data).classList.add("active");
+                if (data === "startBtn" || data === "playBtn") isTossupRunning = true;
+                else if (data === "pauseBtn" || data === null) {
+                    isTossupRunning = false;
+                    clearTimeout(tossupTimeout);
+                }
+            }
+            if (type === "FILL_POSITIONS") {
+                document.getElementById("numCells").value = data.length;
+                generateChildTextBoxes(data);
+            }
+        }
+
+        function togglePreview() {
+            const sec = document.getElementById("previewSection");
+            if (sec.style.display === "none") {
+                sec.style.display = "block";
+            } else {
+                sec.style.display = "none";
+            }
+        }
+
+        let previewMuted = true;
+        function togglePreviewAudio() {
+            previewMuted = !previewMuted;
+            const btn = document.getElementById("muteToggleBtn");
+            if (btn) {
+                if (previewMuted) {
+                    btn.style.background = "#e74c3c";
+                    btn.textContent = "🔇 Âm thanh Xem thử: ĐÃ TẮT";
+                } else {
+                    btn.style.background = "#27ae60";
+                    btn.textContent = "🔊 Âm thanh Xem thử: ĐÃ BẬT";
+                }
+            }
+            const frame = document.getElementById("audiencePreviewFrame");
+            if (frame && frame.contentWindow) {
+                frame.contentWindow.postMessage({ type: 'SET_MUTE_STATE', muted: previewMuted }, "*");
+            }
+        }
+
+        let lastProcessedDisplayTs = 0;
+
+        function handleDisplayMessageWrapper(payload, ts) {
+            if (!payload) return;
+            if (ts && ts <= lastProcessedDisplayTs) return;
+            if (ts) lastProcessedDisplayTs = ts;
+            handleDisplayMessage(payload);
+        }
+
+        // 1. Supabase Realtime Listener
+        if (channel) {
+            try {
+                channel.on('broadcast', { event: 'display-to-control' }, ({ payload }) => handleDisplayMessageWrapper(payload, Date.now()));
+                channel.on('broadcast', { event: 'player-buzz' }, ({ payload }) => {
+                    if (payload && payload.playerNum) {
+                        handlePlayerBuzz(payload.playerNum);
+                    }
+                });
+                channel.subscribe();
+            } catch (e) {}
+        }
+
+        // 2. Server-Sent Events (SSE) Listener for multi-device
+        try {
+            if (typeof EventSource !== "undefined") {
+                const sse = new EventSource('/api/events');
+                sse.onmessage = (e) => {
+                    try {
+                        const msg = JSON.parse(e.data);
+                        if (!msg) return;
+                        if (msg.event === 'buzzer-state-sync' && msg.payload) {
+                            updateBuzzerLockUI(msg.payload.buzzerUnlocked);
+                            if (msg.payload.buzzerWinner) {
+                                handlePlayerBuzz(msg.payload.buzzerWinner);
+                            } else if (!msg.payload.buzzerWinner && activeBuzzerWinner) {
+                                clearControlBuzzer();
+                            }
+                        } else if (msg.buzzerState) {
+                            updateBuzzerLockUI(msg.buzzerState.buzzerUnlocked);
+                            if (msg.buzzerState.buzzerWinner) {
+                                handlePlayerBuzz(msg.buzzerState.buzzerWinner);
+                            } else if (!msg.buzzerState.buzzerWinner && activeBuzzerWinner) {
+                                clearControlBuzzer();
+                            }
+                        }
+                        if (msg.event === 'display-to-control' && msg.payload) {
+                            handleDisplayMessageWrapper(msg.payload, msg.ts || Date.now());
+                        } else if (msg.event === 'player-buzz' && msg.payload && msg.payload.playerNum) {
+                            handlePlayerBuzz(msg.payload.playerNum);
+                        }
+                    } catch(err){}
+                };
+            }
+        } catch(e) {}
+
+        // 3. Local BroadcastChannel
+        if (localBC) {
+            localBC.onmessage = (event) => {
+                if (event.data) {
+                    if (event.data.event === 'display-to-control') {
+                        handleDisplayMessageWrapper(event.data.payload, event.data.ts || Date.now());
+                    } else if (event.data.event === 'player-buzz' && event.data.payload) {
+                        handlePlayerBuzz(event.data.payload.playerNum);
+                    }
+                }
+            };
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data) {
+                if (event.data.event === 'display-to-control') {
+                    handleDisplayMessageWrapper(event.data.payload, event.data.ts || Date.now());
+                } else if (event.data.event === 'player-buzz' && event.data.payload) {
+                    handlePlayerBuzz(event.data.payload.playerNum);
+                }
+            }
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'display-to-control-msg' && e.newValue) {
+                try {
+                    const data = JSON.parse(e.newValue);
+                    if (data && data.payload) {
+                        handleDisplayMessageWrapper(data.payload, data.ts);
+                    }
+                } catch (err) {}
+            }
+            if (e.key === 'player-buzz-msg' && e.newValue) {
+                try {
+                    const data = JSON.parse(e.newValue);
+                    if (data && data.payload && data.payload.playerNum) {
+                        handlePlayerBuzz(data.payload.playerNum);
+                    }
+                } catch (err) {}
+            }
+        });
+
+        setInterval(() => {
+            try {
+                const raw = localStorage.getItem('display-to-control-msg');
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data && data.payload && data.ts && data.ts > lastProcessedDisplayTs) {
+                        handleDisplayMessageWrapper(data.payload, data.ts);
+                    }
+                }
+            } catch (err) {}
+        }, 100);
+
+        function updateBuzzerLockUI(isUnlocked) {
+            const txt = document.getElementById("buzzerLockStatusText");
+            if (txt) {
+                if (isUnlocked) {
+                    txt.textContent = "ĐÃ MỞ (SẴN SÀNG NHẬN)";
+                    txt.style.color = "#2ecc71";
+                } else {
+                    txt.textContent = "ĐANG KHÓA";
+                    txt.style.color = "#e74c3c";
+                }
+            }
+        }
+
+        let activeBuzzerWinner = null;
+        function handlePlayerBuzz(playerNum) {
+            if (!playerNum) return;
+            if (activeBuzzerWinner !== null) return;
+            
+            activeBuzzerWinner = playerNum;
+            localStorage.setItem('tossup-buzzer-winner', playerNum);
+            
+            // Show status on host banner
+            const banner = document.getElementById("buzzerStatusBanner");
+            const numSpan = document.getElementById("buzzerWinnerNum");
+            if (banner && numSpan) {
+                numSpan.textContent = playerNum;
+                banner.style.display = "block";
+            }
+            
+            // Pause the Tossup reveal instantly, but keep the music playing
+            clickPauseTossup(true);
+            
+            // Send command to display to show the winner highlight and play ding
+            sendCmd('PLAYER_BUZZ_WIN', { playerNum: playerNum });
+        }
+        
+        function clearControlBuzzer() {
+            activeBuzzerWinner = null;
+            localStorage.removeItem('tossup-buzzer-winner');
+            const banner = document.getElementById("buzzerStatusBanner");
+            if (banner) {
+                banner.style.display = "none";
+            }
+        }
+
+        let activePreviewIndex = 0;
+        function selectPreviewQuiz(index) {
+            activePreviewIndex = index;
+            // Update active state of the preview buttons
+            for (let i = 1; i <= 12; i++) {
+                const btn = document.getElementById(`btnPreviewQuiz${i}`);
+                if (btn) {
+                    if (i === (index + 1)) {
+                        btn.style.background = "#2ecc71";
+                        btn.style.color = "#000";
+                    } else {
+                        btn.style.background = "#34495e";
+                        btn.style.color = "#fff";
+                    }
+                }
+            }
+            
+            // Reconstruct and display preview
+            const container = document.getElementById("quizPreviewBox");
+            if (!container) return;
+            
+            const letters = importedQuizzes[index];
+            if (!letters || letters.length === 0) {
+                container.innerHTML = "<div style='color: #aaa; font-style: italic; text-align: center; padding: 15px; font-size: 11px;'>Chưa có dữ liệu cho Đề này. Hãy nạp file Excel trước!</div>";
+                return;
+            }
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #111; border-radius: 6px;">';
+            const lines = [
+                { start: 0, end: 12 },
+                { start: 12, end: 26 },
+                { start: 26, end: 40 },
+                { start: 40, end: 52 }
+            ];
+            
+            let reconstructedWords = [];
+            let currentWord = "";
+            
+            lines.forEach((line, lineIdx) => {
+                html += '<div style="display: flex; justify-content: center; gap: 2px;">';
+                for (let i = line.start; i < line.end; i++) {
+                    const char = letters[i] || "";
+                    const isLetter = char.trim() !== "";
+                    const displayChar = isLetter ? char : " ";
+                    const bgColor = isLetter ? "#27ae60" : "#222";
+                    const borderColor = isLetter ? "#2ecc71" : "#333";
+                    html += `<span style="display: inline-block; width: 14px; height: 18px; line-height: 18px; text-align: center; background: ${bgColor}; border: 1px solid ${borderColor}; color: #fff; font-weight: bold; border-radius: 2px; font-size: 10px;">${displayChar}</span>`;
+                    
+                    if (isLetter) {
+                        currentWord += char;
+                    } else {
+                        if (currentWord) {
+                            reconstructedWords.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                }
+                if (currentWord) {
+                    reconstructedWords.push(currentWord);
+                    currentWord = "";
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            // Filter empty items
+            reconstructedWords = reconstructedWords.filter(w => w.trim() !== "");
+            const fullAnswer = reconstructedWords.join(" ");
+            
+            html += `<div style="margin-top: 10px; padding: 8px; background: #222; border-radius: 4px; font-weight: bold; font-size: 12px; color: #ffcc00; word-break: break-all;">🔑 ĐÁP ÁN: ${fullAnswer || "Trống"}</div>`;
+            container.innerHTML = html;
+        }
+
+        function sendManualText() {
+            const txt = document.getElementById("manualTextInput").value.toUpperCase().replace(/\r/g, "");
+            const lines = txt.split("\n").map(l => l.trim()).filter(l => l !== "");
+            if (lines.length === 0) { showCustomAlert("Vui lòng nhập văn bản."); return; }
+            if (lines.length > 4) { showCustomAlert("Tối đa 4 dòng."); return; }
+            const maxLen = [12, 14, 14, 12];
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].length > maxLen[i]) {
+                    showCustomAlert(`Dòng ${i + 1} chỉ được tối đa ${maxLen[i]} ký tự.`);
+                    return;
+                }
+            }
+            sendCmd("SHOW_MANUAL_TEXT", lines);
+            clearControlBuzzer();
+        }
+
+        let importedQuizzes = [];
+
+        // Auto-load default excel data on start if available
+        window.addEventListener('DOMContentLoaded', () => {
+            const loadDefaultFile = (filename) => {
+                fetch(filename)
+                    .then(res => {
+                        if (!res.ok) throw new Error("File not found");
+                        return res.arrayBuffer();
+                    })
+                    .then(buffer => {
+                        const data = new Uint8Array(buffer);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        importedQuizzes = [];
+                        for (let i = 0; i < Math.min(workbook.SheetNames.length, 12); i++) {
+                            importedQuizzes.push(parseExcelGrid(workbook.Sheets[workbook.SheetNames[i]]));
+                        }
+                        setTimeout(() => { selectPreviewQuiz(0); }, 500);
+                    })
+                    .catch(() => {
+                        if (filename === 'data.xlsx') loadDefaultFile('2B.xlsx');
+                    });
+            };
+            loadDefaultFile('data.xlsx');
+            clearControlBuzzer();
+            fetch('/api/buzzer-state')
+                .then(r => r.json())
+                .then(st => {
+                    if (st) {
+                        localStorage.setItem('tossup-buzzer-unlocked', st.buzzerUnlocked ? 'true' : 'false');
+                        updateBuzzerLockUI(st.buzzerUnlocked);
+                    }
+                })
+                .catch(() => updateBuzzerLockUI(false));
+        });
+
+        function handleExcel(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                importedQuizzes = [];
+                for (let i = 0; i < Math.min(workbook.SheetNames.length, 12); i++) {
+                    importedQuizzes.push(parseExcelGrid(workbook.Sheets[workbook.SheetNames[i]]));
+                }
+                showCustomAlert(`Thành công! Đã nạp ${importedQuizzes.length} đề.`);
+                selectPreviewQuiz(0);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseExcelGrid(sheet) {
+            let letters = [];
+            for (let c = 1; c <= 12; c++) { let cellRef = XLSX.utils.encode_cell({ r: 1, c: c }); letters.push(sheet[cellRef] ? String(sheet[cellRef].v) : ""); }
+            for (let c = 0; c <= 13; c++) { let cellRef = XLSX.utils.encode_cell({ r: 2, c: c }); letters.push(sheet[cellRef] ? String(sheet[cellRef].v) : ""); }
+            for (let c = 0; c <= 13; c++) { let cellRef = XLSX.utils.encode_cell({ r: 3, c: c }); letters.push(sheet[cellRef] ? String(sheet[cellRef].v) : ""); }
+            for (let c = 1; c <= 12; c++) { let cellRef = XLSX.utils.encode_cell({ r: 4, c: c }); letters.push(sheet[cellRef] ? String(sheet[cellRef].v) : ""); }
+            return letters;
+        }
+
+        function loadQuizFromExcel(quizIndex) {
+            if (importedQuizzes.length === 0) { showCustomAlert("Vui lòng nạp file Excel trước!"); return; }
+            const quizLetters = importedQuizzes[quizIndex];
+            if (!quizLetters) { showCustomAlert("Không tìm thấy dữ liệu đề!"); return; }
+            controlActiveQuizLetters = quizLetters;
+            controlRevealedStates = new Array(52).fill(false);
+            clearTimeout(tossupTimeout);
+            isTossupRunning = false;
+            sendCmd('LOAD_QUIZ', { index: quizIndex, letters: quizLetters });
+            clearControlBuzzer();
+            selectPreviewQuiz(quizIndex);
+            setTimeout(updateScoreboard, 300);
+        }
+
+        function controlRevealRandomCell() {
+            if (!isTossupRunning) return;
+            let hiddenIndices = [];
+            controlActiveQuizLetters.forEach((letter, i) => {
+                if (letter !== "" && letter !== " " && letter && !controlRevealedStates[i]) hiddenIndices.push(i);
+            });
+            if (hiddenIndices.length === 0) { isTossupRunning = false; clearTimeout(tossupTimeout); sendCmd('STOP_TOSSUP_MUSIC'); return; }
+            const randomIndex = hiddenIndices[Math.floor(Math.random() * hiddenIndices.length)];
+            controlRevealedStates[randomIndex] = true;
+            sendCmd('TOSSUP_REVEAL_CELL', { absoluteIndex: randomIndex + 1 });
+            tossupTimeout = setTimeout(controlRevealRandomCell, Math.random() * (1500 - 1000) + 1000);
+        }
+
+        function clickStartTossup() {
+            if (controlActiveQuizLetters.length === 0) { showCustomAlert("Vui lòng nạp đề bài trước!"); return; }
+            clearTimeout(tossupTimeout);
+            controlRevealedStates = new Array(52).fill(false);
+            isTossupRunning = true;
+            sendCmd('START_TOSSUP');
+            clearControlBuzzer();
+            controlRevealRandomCell();
+        }
+
+        function clickPauseTossup(keepMusic = false) { isTossupRunning = false; clearTimeout(tossupTimeout); sendCmd('PAUSE_TOSSUP', { keepMusic: keepMusic }); }
+        function clickPlayTossup() { if (isTossupRunning) return; isTossupRunning = true; sendCmd('PLAY_TOSSUP'); clearControlBuzzer(); controlRevealRandomCell(); }
+
+        const vietnameseAlphabet = ["A", "Ă", "Â", "B", "C", "D", "Đ", "E", "Ê", "G", "H", "I", "K", "L", "M", "N", "O", "Ô", "Ơ", "P", "Q", "R", "S", "T", "U", "Ư", "V", "X", "Y"];
+        const container = document.getElementById("alphabetContainer");
+        vietnameseAlphabet.forEach(letter => {
+            const btn = document.createElement("button");
+            btn.className = "btn-letter";
+            btn.id = `btn-char-${letter}`;
+            btn.textContent = letter;
+            btn.onclick = () => { btn.disabled = true; sendCmd('GUESS_LETTER', letter); };
+            container.appendChild(btn);
+        });
+
+        function solveTossUp() { isTossupRunning = false; clearTimeout(tossupTimeout); sendCmd('REVEAL_ALL'); sendCmd('STOP_TOSSUP_MUSIC'); clearControlBuzzer(); }
+        function showCustomAlert(message) { document.getElementById("popupMessage").textContent = message; document.getElementById("customPopup").style.display = "flex"; }
+        function closePopup() { document.getElementById("customPopup").style.display = "none"; }
+        function sendCmd(type, data = null) {
+            if (type === 'START_TOSSUP' || type === 'PLAY_TOSSUP') {
+                localStorage.setItem('tossup-buzzer-unlocked', 'true');
+                localStorage.removeItem('tossup-buzzer-winner');
+                updateBuzzerLockUI(true);
+            } else if (type === 'REVEAL_ALL' || type === 'RESET_BOARD' || type === 'LOAD_QUIZ' || type === 'SHOW_MANUAL_TEXT') {
+                localStorage.setItem('tossup-buzzer-unlocked', 'false');
+                localStorage.removeItem('tossup-buzzer-winner');
+                updateBuzzerLockUI(false);
+            }
+
+            const payload = { type: type, data: data };
+            const ts = Date.now();
+            const msgObj = { event: 'control-to-display', payload: payload, ts: ts };
+
+            // 1. Post to Server API for instant multi-device sync
+            try {
+                fetch('/api/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(msgObj)
+                }).catch(() => {});
+            } catch (e) {}
+
+            // 2. Supabase Realtime Broadcast
+            if (channel) {
+                try {
+                    channel.send({ type: 'broadcast', event: 'control-to-display', payload: payload });
+                } catch (e) {}
+            }
+
+            // 3. Local BroadcastChannel
+            if (localBC) {
+                try {
+                    localBC.postMessage(msgObj);
+                } catch (e) {}
+            }
+
+            // 4. LocalStorage fallback
+            try {
+                localStorage.setItem('control-to-display-msg', JSON.stringify(msgObj));
+            } catch (e) {}
+
+            // 5. PostMessage for preview iframe and parent windows
+            try {
+                window.postMessage(msgObj, "*");
+                if (window.opener) window.opener.postMessage(msgObj, "*");
+                if (window.parent && window.parent !== window) window.parent.postMessage(msgObj, "*");
+                const previewFrame = document.getElementById("audiencePreviewFrame");
+                if (previewFrame && previewFrame.contentWindow) {
+                    previewFrame.contentWindow.postMessage(msgObj, "*");
+                }
+            } catch (e) {}
+        }
+
+        function generateChildTextBoxes(autoValues = []) {
+            const num = parseInt(document.getElementById("numCells").value) || 0;
+            const container = document.getElementById("childTextBoxes");
+            container.innerHTML = "";
+            for (let i = 0; i < num; i++) {
+                const input = document.createElement("input");
+                input.type = "number";
+                input.style.cssText = "font-weight: bold; width: 28px; padding: 4px; text-align: center; border-radius: 4px; border:1px solid #555; background:#1a1a1a; color:#fff; font-size:11px;";
+                input.className = "child-pos-input";
+                if (autoValues[i] !== undefined) input.value = autoValues[i];
+                container.appendChild(input);
+            }
+        }
+
+        function triggerSequence(actionType) {
+            const inputs = document.querySelectorAll(".child-pos-input");
+            let positions = [];
+            inputs.forEach(input => {
+                const val = parseInt(input.value);
+                if (!isNaN(val) && val >= 1 && val <= 52) positions.push(val);
+            });
+            if (positions.length > 0) { positions.sort((a, b) => a - b); sendCmd(actionType, positions); }
+        }
+
+        function confirmExtraLetters() {
+            const inputs = document.querySelectorAll(".extra-letter-input");
+            let letters = [];
+            inputs.forEach(inp => { const val = inp.value.trim().toUpperCase(); if (val !== "") letters.push(val); });
+            if (letters.length === 0) { showCustomAlert("Vui lòng nhập ít nhất 1 chữ cái!"); return; }
+            sendCmd("GUESS_MULTI_LETTERS", letters);
+        }
+        function clearExtraLetters() { document.querySelectorAll(".extra-letter-input").forEach(inp => inp.value = ""); }
+    </script>
+</body>
+
+</html>
