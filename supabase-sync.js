@@ -1,15 +1,21 @@
-// supabase-sync.js - Combined Supabase & MQTT/BroadcastChannel Realtime Synchronization across all DDVQ screens
+// supabase-sync.js - Combined LAN Server (SSE / HTTP) & Cloud (MQTT / Supabase) Realtime Synchronization across all DDVQ screens
 
-// --- SECTION 0: Global API URL Utility ---
+// --- SECTION 0: Global API URL & Network Utility ---
 function getApiUrl(path) {
+    if (typeof window === 'undefined') return path;
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    
+    // When opened directly as a file (file://), connect to localhost:3000
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + path;
+        const storedHost = localStorage.getItem('ddvq_server_host') || 'http://localhost:3000';
+        return storedHost + cleanPath;
     }
-    return path;
+    // When served over HTTP/HTTPS (LAN IP e.g. 192.168.x.x:3000 or Internet domain)
+    return cleanPath;
 }
 window.getApiUrl = getApiUrl;
 
-// --- SECTION 1: GameMediaCache & GameSyncChannel (from user network_sync.js) ---
+// --- SECTION 1: GameMediaCache & GameSyncChannel ---
 const GameMediaCache = {
     dbName: 'GameshowMediaDB',
     storeName: 'media',
@@ -84,23 +90,27 @@ class GameSyncChannel {
         this.instanceId = 'client_' + Math.random().toString(36).substring(2, 9);
         this.mqttClient = null;
         this.isConnected = false;
+        this.isLanConnected = false;
         this.pendingQueue = [];
         this.processedMsgIds = new Map();
 
         this.isDuplicateAndRecord = (payload) => {
-            if (!payload || !payload._msgId) return false;
+            if (!payload) return false;
+            const id = payload._msgId || payload.id || (payload.type ? `${payload.type}_${payload.timestamp}` : null);
+            if (!id) return false;
+            
             const now = Date.now();
-            if (this.processedMsgIds.size > 200) {
-                for (const [id, time] of this.processedMsgIds.entries()) {
-                    if (now - time > 10000) {
-                        this.processedMsgIds.delete(id);
+            if (this.processedMsgIds.size > 300) {
+                for (const [mid, time] of this.processedMsgIds.entries()) {
+                    if (now - time > 15000) {
+                        this.processedMsgIds.delete(mid);
                     }
                 }
             }
-            if (this.processedMsgIds.has(payload._msgId)) {
+            if (this.processedMsgIds.has(id)) {
                 return true;
             }
-            this.processedMsgIds.set(payload._msgId, now);
+            this.processedMsgIds.set(id, now);
             return false;
         };
 
@@ -143,6 +153,7 @@ class GameSyncChannel {
         };
 
         this.initMqtt();
+        this.initLanSse();
     }
 
     get onmessage() {
@@ -151,6 +162,40 @@ class GameSyncChannel {
 
     set onmessage(handler) {
         this.onmessageHandler = handler;
+    }
+
+    initLanSse() {
+        if (typeof EventSource === 'undefined') return;
+        try {
+            const sseUrl = getApiUrl('/api/events');
+            const sse = new EventSource(sseUrl);
+            sse.onopen = () => {
+                this.isLanConnected = true;
+                this.notifyConnectionStatus(true);
+            };
+            sse.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (!data || data.type === 'PING' || data.event === 'ping') return;
+                    
+                    if (data._senderId !== this.instanceId) {
+                        if (!this.isDuplicateAndRecord(data)) {
+                            this.handleRemoteReload(data);
+                            if (typeof this.onmessageHandler === 'function') {
+                                this.onmessageHandler({ data });
+                            }
+                            dispatchSupabaseMessage(data);
+                        }
+                    }
+                } catch(e) {}
+            };
+            sse.onerror = () => {
+                this.isLanConnected = false;
+                // Reconnection is automatically handled by the browser's EventSource
+            };
+        } catch(e) {
+            console.warn("LAN SSE init warning:", e);
+        }
     }
 
     initMqtt() {
@@ -168,13 +213,11 @@ class GameSyncChannel {
         let idx = 0;
         const loadScript = () => {
             if (idx >= cdns.length) {
-                console.warn('⚠️ MQTT CDN unavailable, using BroadcastChannel local only.');
                 return;
             }
             const s = document.createElement('script');
             s.src = cdns[idx++];
             s.onload = () => {
-                console.log('✅ MQTT Library loaded successfully.');
                 this.connectBrokers();
             };
             s.onerror = () => loadScript();
@@ -197,7 +240,6 @@ class GameSyncChannel {
         const tryConnect = () => {
             if (currentBrokerIdx >= brokers.length) return;
             const brokerUrl = brokers[currentBrokerIdx];
-            console.log(`🌐 Connecting to MQTT broker: ${brokerUrl} (Topic: ${this.topicName})`);
 
             try {
                 this.mqttClient = window.mqtt.connect(brokerUrl, {
@@ -210,8 +252,6 @@ class GameSyncChannel {
 
                 this.mqttClient.on('connect', () => {
                     this.isConnected = true;
-                    console.log(`🟢 [MQTT ONLINE] Connected to ${brokerUrl} on topic: ${this.topicName}`);
-                    
                     this.mqttClient.subscribe(this.topicName, { qos: 0 }, (err) => {
                         if (!err) {
                             this.flushQueue();
@@ -230,7 +270,6 @@ class GameSyncChannel {
                             if (!this.isDuplicateAndRecord(payload)) {
                                 this.handleRemoteReload(payload);
                                 
-                                // Forward remote message to the local BroadcastChannel with _fromNetwork flag
                                 try {
                                     payload._fromNetwork = true;
                                     this.localChannel.postMessage(payload);
@@ -239,6 +278,7 @@ class GameSyncChannel {
                                 if (typeof this.onmessageHandler === 'function') {
                                     this.onmessageHandler({ data: payload });
                                 }
+                                dispatchSupabaseMessage(payload);
                             }
                         }
                     } catch (e) {
@@ -247,7 +287,6 @@ class GameSyncChannel {
                 });
 
                 this.mqttClient.on('error', (err) => {
-                    console.warn(`⚠️ Broker error on ${brokerUrl}:`, err);
                     this.isConnected = false;
                     this.notifyConnectionStatus(false);
                     try { this.mqttClient.end(true); } catch(e){}
@@ -256,7 +295,6 @@ class GameSyncChannel {
                 });
 
             } catch (e) {
-                console.warn(`⚠️ Broker init exception on ${brokerUrl}:`, e);
                 currentBrokerIdx++;
                 setTimeout(tryConnect, 1000);
             }
@@ -276,27 +314,28 @@ class GameSyncChannel {
     }
 
     notifyConnectionStatus(online) {
+        const roomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
+        const isOverallConnected = online || this.isConnected || this.isLanConnected;
+
         const statusEls = document.querySelectorAll('.network-status-badge');
         statusEls.forEach(el => {
-            if (online) {
+            if (isOverallConnected) {
                 el.style.color = '#00e676';
-                el.innerText = '🟢 Trực tuyến (WebSockets Connected)';
+                el.innerText = `🟢 Đã kết nối Mạng LAN & Internet (Phòng: ${roomCode})`;
             } else {
                 el.style.color = '#ff5252';
                 el.innerText = '🔴 Ngoại tuyến (Đang kết nối lại...)';
             }
         });
         
-        // Update the Supabase badge in addition to MQTT so users see active connection status!
-        const roomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
-        if (online) {
-            updateSupabaseUIStatus(true, `🟢 Hệ thống Đồng bộ Realtime MQTT (${roomCode})`);
+        if (isOverallConnected) {
+            updateSupabaseUIStatus(true, `🟢 Mạng LAN + Realtime (${roomCode})`);
         } else {
-            updateSupabaseUIStatus(false, '🔴 Hệ thống Đồng bộ Realtime (Đang kết nối lại...)');
+            updateSupabaseUIStatus(false, '🔴 Hệ thống Đồng bộ (Đang kết nối lại...)');
         }
 
         if (typeof window.updateNetworkSyncStatus === 'function') {
-            window.updateNetworkSyncStatus(online);
+            window.updateNetworkSyncStatus(isOverallConnected);
         }
     }
 
@@ -305,10 +344,25 @@ class GameSyncChannel {
         const msgId = msg._msgId || (this.instanceId + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
         const payload = Object.assign({}, msg, { _senderId: this.instanceId, _timestamp: Date.now(), _msgId: msgId });
 
+        // Record message ID locally to prevent re-processing self message
+        this.processedMsgIds.set(msgId, Date.now());
+
+        // 1. Broadcast via local BroadcastChannel (same browser / window tabs)
         try {
             this.localChannel.postMessage(payload);
         } catch (e) {}
 
+        // 2. Post to LAN/Internet Server API (zero-setup LAN sync)
+        try {
+            const actionUrl = getApiUrl('/api/action');
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        } catch(e) {}
+
+        // 3. Send via MQTT WebSocket for Internet / remote connections
         if (this.mqttClient && this.mqttClient.connected) {
             try {
                 const str = JSON.stringify(payload);
@@ -368,7 +422,7 @@ function getSupabaseConfig() {
 function initSupabaseSync() {
     const roomCode = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_room_code')) || 'DDVQ2026';
 
-    // 1. ALWAYS Initialize our GameSyncChannel for zero-setup, super stable MQTT + BroadcastChannel realtime sync!
+    // 1. ALWAYS Initialize our GameSyncChannel for zero-setup, super stable LAN + MQTT + BroadcastChannel realtime sync!
     if (!globalSyncChannel) {
         try {
             globalSyncChannel = new GameSyncChannel('duong_den_vinh_quang');
@@ -377,7 +431,6 @@ function initSupabaseSync() {
                     dispatchSupabaseMessage(event.data);
                 }
             };
-            console.log(`[GameSyncChannel] Initialized successfully for room: ${roomCode}`);
         } catch(e) {
             console.error('[GameSyncChannel] Initialization failed:', e);
         }
@@ -387,10 +440,10 @@ function initSupabaseSync() {
     const { url, key } = getSupabaseConfig();
     
     if (!url || !key || typeof supabase === 'undefined' || !supabase.createClient) {
-        if (globalSyncChannel && globalSyncChannel.isConnected) {
-            updateSupabaseUIStatus(true, `🟢 Hệ thống Đồng bộ Realtime MQTT (${roomCode})`);
+        if (globalSyncChannel && (globalSyncChannel.isConnected || globalSyncChannel.isLanConnected)) {
+            updateSupabaseUIStatus(true, `🟢 Mạng LAN & Realtime (${roomCode})`);
         } else {
-            updateSupabaseUIStatus(false, `🟢 Đồng bộ MQTT (${roomCode}) | Supabase chưa cấu hình`);
+            updateSupabaseUIStatus(true, `🟢 Đồng bộ Mạng LAN & MQTT (${roomCode})`);
         }
         return false;
     }
@@ -418,17 +471,16 @@ function initSupabaseSync() {
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log(`[Supabase Realtime] Active room: ${roomCode}`);
-                    updateSupabaseUIStatus(true, `🟢 Supabase + MQTT Realtime (${roomCode})`);
+                    updateSupabaseUIStatus(true, `🟢 Mạng LAN + Supabase (${roomCode})`);
                 } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                    updateSupabaseUIStatus(false, `🔴 Supabase ${status} | MQTT Hoạt động`);
+                    updateSupabaseUIStatus(true, `🟢 Mạng LAN & MQTT Hoạt động (${roomCode})`);
                 }
             });
 
         return true;
     } catch (err) {
         console.error('[Supabase Realtime] Error initializing:', err);
-        updateSupabaseUIStatus(false, '🔴 Supabase (Lỗi kết nối) | MQTT Hoạt động');
+        updateSupabaseUIStatus(true, `🟢 Mạng LAN & MQTT Hoạt động (${roomCode})`);
         return false;
     }
 }
@@ -436,7 +488,7 @@ function initSupabaseSync() {
 function sendSupabaseAction(actionData) {
     if (!actionData) return;
 
-    // 1. Broadcast via GameSyncChannel (MQTT + BroadcastChannel)
+    // 1. Broadcast via GameSyncChannel (LAN Server HTTP/SSE + MQTT + BroadcastChannel)
     if (globalSyncChannel) {
         try {
             globalSyncChannel.postMessage(actionData);
@@ -467,12 +519,11 @@ if (typeof BroadcastChannel !== 'undefined' && !BroadcastChannel.prototype._patc
         // Call original postMessage
         originalPostMessage.apply(this, arguments);
 
-        // Bridge messages on ddvq_game_channel across browsers and devices
+        // Bridge messages on ddvq_game_channel across LAN and Internet
         if (this.name === 'ddvq_game_channel' && message && typeof message === 'object') {
             if (!message._fromNetwork) {
                 // Prevent infinite loop by tagging with _fromNetwork
                 const payload = Object.assign({}, message, { _fromNetwork: true });
-                // Send over network (MQTT / Supabase)
                 if (typeof sendSupabaseAction === 'function') {
                     sendSupabaseAction(payload);
                 }

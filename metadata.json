@@ -1,6 +1,6 @@
 {
-  "name": "PuzzleBoard",
-  "description": "Interactive Vietnamese game show crossword puzzle board with multi-screen audience display, host control panel, and player buzzers",
+  "name": "Đường Đến Vinh Quang",
+  "description": "Hệ thống Gameshow Đường Đến Vinh Quang hỗ trợ đồng bộ thời gian thực qua mạng LAN cục bộ và Internet cho máy điều khiển, máy chiếu, MC và 4 thí sinh",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -8,18 +9,121 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Enable JSON body parsing and CORS for all LAN and Internet origins
+app.use(express.json({ limit: '10mb' }));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
-// Set of connected SSE clients
+// Set of connected Server-Sent Events (SSE) clients across LAN & Internet
 const sseClients = new Set();
 
-// Current Game & Buzzer State (Buzzer is locked by default)
-let currentGameState = {
-  buzzerUnlocked: false,
-  buzzerWinner: null
+// Comprehensive In-Memory Game & Server State
+let serverState = {
+  roomCode: 'DDVQ2026',
+  contestants: [
+    { name: 'Thí sinh 1', score: 0 },
+    { name: 'Thí sinh 2', score: 0 },
+    { name: 'Thí sinh 3', score: 0 },
+    { name: 'Thí sinh 4', score: 0 }
+  ],
+  gameData: {
+    xuatPhat: {},
+    raKhoi: [],
+    vuotSong: { h1: { q: '', a: '' }, h2: { q: '', a: '' }, h3: { q: '', a: '' }, h4: { q: '', a: '' }, center: { q: '', a: '' }, keyword: '' },
+    vinhQuang: { 10: [], 20: [], 30: [] },
+    cauHoiPhu: [],
+    contestants: [
+      { name: 'Thí sinh 1', score: 0 },
+      { name: 'Thí sinh 2', score: 0 },
+      { name: 'Thí sinh 3', score: 0 },
+      { name: 'Thí sinh 4', score: 0 }
+    ]
+  },
+  playerAnswers: {},
+  connectedClients: {
+    ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
+    ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
+    ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
+    ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
+    host: { connected: false, name: 'Máy MC', lastSeen: 0 },
+    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
+  },
+  buzzerState: {
+    buzzerUnlocked: false,
+    buzzerWinner: null
+  },
+  latestAction: null,
+  lastUpdated: Date.now()
 };
 
-// Real-time Server-Sent Events endpoint for multi-device sync
+// Function to broadcast messages to all connected SSE clients (LAN & Internet)
+function broadcastToClients(data) {
+  const msgStr = `data: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(msgStr);
+    } catch (err) {
+      sseClients.delete(client);
+    }
+  }
+}
+
+// Function to collect all Local Area Network (LAN) IPv4 addresses of the host machine
+function getLocalNetworkAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const net of interfaces[name] || []) {
+      // IPv4 and non-internal only
+      if (net.family === 'IPv4' && !net.internal) {
+        addresses.push({
+          interface: name,
+          ip: net.address,
+          url: `http://${net.address}:${PORT}`
+        });
+      }
+    }
+  }
+  return addresses;
+}
+
+// GET /api/network-info - Returns host IP, LAN addresses, and shortcuts for quick pairing
+app.get('/api/network-info', (req, res) => {
+  const lanAddresses = getLocalNetworkAddresses();
+  const hostHeader = req.headers.host || `localhost:${PORT}`;
+  const protocol = req.protocol || 'http';
+  const currentUrl = `${protocol}://${hostHeader}`;
+
+  res.json({
+    status: 'online',
+    port: PORT,
+    currentUrl: currentUrl,
+    lanAddresses: lanAddresses,
+    links: {
+      controller: `${currentUrl}/controller`,
+      projector: `${currentUrl}/projector`,
+      host: `${currentUrl}/host`,
+      player: `${currentUrl}/player`,
+      graphic: `${currentUrl}/graphic`,
+      scoreboard: `${currentUrl}/scoreboard`,
+      player1: `${currentUrl}/player1`,
+      player2: `${currentUrl}/player2`,
+      player3: `${currentUrl}/player3`,
+      player4: `${currentUrl}/player4`
+    },
+    roomCode: serverState.roomCode,
+    connectedReceivers: sseClients.size
+  });
+});
+
+// GET /api/events - Real-time Server-Sent Events (SSE) endpoint for zero-latency LAN & Web sync
 app.get('/api/events', (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -28,7 +132,19 @@ app.get('/api/events', (req, res) => {
     'Access-Control-Allow-Origin': '*'
   });
 
-  res.write(`data: ${JSON.stringify({ event: 'buzzer-state-sync', payload: currentGameState })}\n\n`);
+  // Immediately send initial state sync to newly connected client
+  res.write(`data: ${JSON.stringify({
+    type: 'INITIAL_STATE_SYNC',
+    event: 'buzzer-state-sync',
+    roomCode: serverState.roomCode,
+    contestants: serverState.contestants,
+    gameData: serverState.gameData,
+    connectedClients: serverState.connectedClients,
+    playerAnswers: serverState.playerAnswers,
+    buzzerState: serverState.buzzerState,
+    latestAction: serverState.latestAction,
+    timestamp: Date.now()
+  })}\n\n`);
 
   sseClients.add(res);
 
@@ -37,57 +153,182 @@ app.get('/api/events', (req, res) => {
   });
 });
 
-// Periodic heartbeat to keep SSE connections open through proxies/firewalls
+// Periodic heartbeat to keep connections alive across LAN Wi-Fi and Internet proxies
 setInterval(() => {
+  const now = Date.now();
+  // Check client timeouts
+  let clientChanged = false;
+  Object.keys(serverState.connectedClients).forEach(role => {
+    const client = serverState.connectedClients[role];
+    if (client && client.connected && (now - client.lastSeen > 12000)) {
+      client.connected = false;
+      clientChanged = true;
+    }
+  });
+
+  if (clientChanged) {
+    broadcastToClients({
+      type: 'CLIENT_STATUS_UPDATE',
+      connectedClients: serverState.connectedClients
+    });
+  }
+
   for (const client of sseClients) {
     try {
-      client.write('data: {"event":"ping"}\n\n');
+      client.write('data: {"type":"PING","event":"ping"}\n\n');
     } catch (err) {
       sseClients.delete(client);
     }
   }
-}, 20000);
+}, 15000);
 
-// Endpoint to fetch current buzzer state
-app.get('/api/buzzer-state', (req, res) => {
-  res.json(currentGameState);
+// GET /api/state - Retrieve current authoritative game state
+app.get('/api/state', (req, res) => {
+  res.json({
+    roomCode: serverState.roomCode,
+    contestants: serverState.contestants,
+    gameData: serverState.gameData,
+    connectedClients: serverState.connectedClients,
+    playerAnswers: serverState.playerAnswers,
+    buzzerState: serverState.buzzerState,
+    latestAction: serverState.latestAction,
+    lastUpdated: serverState.lastUpdated,
+    connectedReceivers: sseClients.size
+  });
 });
 
-// Broadcast API endpoint for any device to broadcast to all other devices
+// POST /api/state - Update game state
+app.post('/api/state', (req, res) => {
+  const body = req.body || {};
+  if (body.contestants) {
+    serverState.contestants = body.contestants;
+    if (serverState.gameData) serverState.gameData.contestants = body.contestants;
+  }
+  if (body.gameData) {
+    serverState.gameData = Object.assign(serverState.gameData, body.gameData);
+  }
+  if (body.roomCode) {
+    serverState.roomCode = body.roomCode.trim().toUpperCase();
+  }
+  serverState.lastUpdated = Date.now();
+
+  broadcastToClients({
+    type: 'STATE_UPDATED',
+    contestants: serverState.contestants,
+    gameData: serverState.gameData,
+    roomCode: serverState.roomCode,
+    timestamp: serverState.lastUpdated
+  });
+
+  res.json({ success: true, state: serverState });
+});
+
+// POST /api/action - Handle game commands, answer submissions, client heartbeats & buzzer events
+app.post('/api/action', (req, res) => {
+  const action = req.body || {};
+  const type = action.type || action.event || 'UNKNOWN_ACTION';
+  const now = Date.now();
+
+  serverState.latestAction = action;
+  serverState.lastUpdated = now;
+
+  // Handle Client Join / Heartbeats
+  if (type === 'CLIENT_JOIN' || type === 'CLIENT_HEARTBEAT') {
+    const role = action.role || (action.contestantId ? `ts${action.contestantId}` : null);
+    if (role && serverState.connectedClients[role]) {
+      serverState.connectedClients[role].connected = true;
+      serverState.connectedClients[role].lastSeen = now;
+      if (action.name) serverState.connectedClients[role].name = action.name;
+    }
+  }
+
+  // Handle Room Code Changes
+  if (type === 'SET_ROOM_CODE' && action.roomCode) {
+    serverState.roomCode = action.roomCode.trim().toUpperCase();
+  }
+
+  // Handle Contestant updates
+  if (type === 'UPDATE_CONTESTANTS' && action.contestants) {
+    serverState.contestants = action.contestants;
+    if (serverState.gameData) serverState.gameData.contestants = action.contestants;
+  }
+
+  // Handle Player Answer Submissions
+  if (type === 'PLAYER_SUBMIT_ANSWER' && action.contestantId) {
+    const tsIdx = action.contestantId;
+    serverState.playerAnswers[`ts${tsIdx}`] = {
+      contestantId: tsIdx,
+      answer: action.answer || '',
+      time: action.time || '00.00',
+      round: action.round || '',
+      isVongThi: !!action.isVongThi,
+      timestamp: now
+    };
+  }
+
+  // Handle Reset / Clear Answers
+  if (type === 'CLEAR_PLAYER_ANSWERS' || type === 'XUAT_PHAT_START' || type === 'RA_KHOI_OPEN_QUESTION' || type === 'VUOT_SONG_OPEN_HANG_NGANG' || type === 'VINH_QUANG_START') {
+    serverState.playerAnswers = {};
+  }
+
+  // Handle Complete Data Reset
+  if (type === 'RESET_ALL_DATA') {
+    serverState.playerAnswers = {};
+    if (serverState.contestants) {
+      serverState.contestants.forEach(c => { c.score = 0; });
+    }
+    if (serverState.gameData && serverState.gameData.contestants) {
+      serverState.gameData.contestants.forEach(c => { c.score = 0; });
+    }
+    serverState.buzzerState = { buzzerUnlocked: false, buzzerWinner: null };
+  }
+
+  // Broadcast action to all clients on LAN & Internet
+  broadcastToClients(action);
+
+  res.json({ success: true, type, receivedAt: now, receivers: sseClients.size });
+});
+
+// GET /api/buzzer-state - Fetch current buzzer lock status
+app.get('/api/buzzer-state', (req, res) => {
+  res.json(serverState.buzzerState);
+});
+
+// POST /api/broadcast - General broadcast API endpoint
 app.post('/api/broadcast', (req, res) => {
-  const { event, payload, ts, id } = req.body;
+  const { event, payload, ts, id } = req.body || {};
 
   // Track and update server-authoritative buzzer state
   if (event === 'control-to-display' && payload) {
     if (payload.type === 'START_TOSSUP' || payload.type === 'PLAY_TOSSUP') {
-      currentGameState.buzzerUnlocked = true;
-      currentGameState.buzzerWinner = null;
+      serverState.buzzerState.buzzerUnlocked = true;
+      serverState.buzzerState.buzzerWinner = null;
     } else if (
       payload.type === 'REVEAL_ALL' ||
       payload.type === 'RESET_BOARD' ||
       payload.type === 'LOAD_QUIZ' ||
       payload.type === 'SHOW_MANUAL_TEXT'
     ) {
-      currentGameState.buzzerUnlocked = false;
-      currentGameState.buzzerWinner = null;
+      serverState.buzzerState.buzzerUnlocked = false;
+      serverState.buzzerState.buzzerWinner = null;
     }
   } else if (event === 'player-buzz' && payload && payload.playerNum) {
-    if (currentGameState.buzzerUnlocked && !currentGameState.buzzerWinner) {
-      currentGameState.buzzerWinner = payload.playerNum;
+    if (serverState.buzzerState.buzzerUnlocked && !serverState.buzzerState.buzzerWinner) {
+      serverState.buzzerState.buzzerWinner = payload.playerNum;
     }
   }
 
-  const msgStr = JSON.stringify({ event, payload, ts: ts || Date.now(), id, buzzerState: currentGameState });
-  
-  for (const client of sseClients) {
-    try {
-      client.write(`data: ${msgStr}\n\n`);
-    } catch (err) {
-      sseClients.delete(client);
-    }
-  }
+  const msgObj = {
+    event,
+    payload,
+    ts: ts || Date.now(),
+    id,
+    buzzerState: serverState.buzzerState
+  };
 
-  res.json({ ok: true, receivers: sseClients.size, buzzerState: currentGameState });
+  broadcastToClients(msgObj);
+
+  res.json({ ok: true, receivers: sseClients.size, buzzerState: serverState.buzzerState });
 });
 
 // Serve all static assets from the current directory
@@ -110,11 +351,59 @@ app.get('/player3', (req, res) => {
   res.sendFile(path.join(__dirname, 'player3.html'));
 });
 
+app.get('/player4', (req, res) => {
+  res.sendFile(path.join(__dirname, 'player4.html'));
+});
+
+app.get('/player', (req, res) => {
+  res.sendFile(path.join(__dirname, 'player.html'));
+});
+
+app.get('/host', (req, res) => {
+  res.sendFile(path.join(__dirname, 'host.html'));
+});
+
+app.get('/controller', (req, res) => {
+  res.sendFile(path.join(__dirname, 'controller.html'));
+});
+
+app.get('/projector', (req, res) => {
+  res.sendFile(path.join(__dirname, 'projector.html'));
+});
+
+app.get('/graphic', (req, res) => {
+  res.sendFile(path.join(__dirname, 'graphic.html'));
+});
+
+app.get('/scoreboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Scoreboard.html'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Start Express server on 0.0.0.0:3000 to listen on all network interfaces (LAN + Internet)
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://0.0.0.0:${PORT}`);
+  const lanAddresses = getLocalNetworkAddresses();
+  console.log('================================================================');
+  console.log('  🎮 ĐƯỜNG ĐẾN VINH QUANG - MÁY CHỦ SẴN SÀNG HOẠT ĐỘNG');
+  console.log('================================================================');
+  console.log(`  🏠 Cục bộ (Localhost) : http://localhost:${PORT}`);
+  if (lanAddresses.length > 0) {
+    console.log('  🌐 Mạng LAN (Điện thoại / Laptop cùng Wi-Fi):');
+    lanAddresses.forEach(net => {
+      console.log(`     👉 [${net.interface}] : ${net.url}`);
+    });
+  } else {
+    console.log(`  🌐 Mạng LAN/Internet  : http://0.0.0.0:${PORT}`);
+  }
+  console.log('----------------------------------------------------------------');
+  console.log(`  📱 Điều khiển (Controller): http://localhost:${PORT}/controller`);
+  console.log(`  🖥️  Máy chiếu (Projector) : http://localhost:${PORT}/projector`);
+  console.log(`  🎤 Màn hình MC (Host)    : http://localhost:${PORT}/host`);
+  console.log(`  ⚡ Thí sinh 1..4 (Player) : http://localhost:${PORT}/player`);
+  console.log(`  📊 Bảng điểm (Scoreboard) : http://localhost:${PORT}/scoreboard`);
+  console.log('================================================================');
 });
 
