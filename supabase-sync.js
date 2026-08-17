@@ -149,6 +149,12 @@ class GameSyncChannel {
         this.isLanConnected = false;
         this.pendingQueue = [];
         this.processedMsgIds = new Map();
+        
+        // Controlled MQTT Failover & Exponential Backoff state
+        this.currentBrokerIdx = 0;
+        this.mqttRetryCycle = 0;
+        this.mqttRetryTimer = null;
+        this.isMqttConnecting = false;
 
         this.isDuplicateAndRecord = (payload) => {
             if (!payload) return false;
@@ -325,6 +331,17 @@ class GameSyncChannel {
             return;
         }
 
+        if (window.__MQTT_SCRIPT_LOADING__) {
+            const checkTimer = setInterval(() => {
+                if (typeof window.mqtt !== 'undefined') {
+                    clearInterval(checkTimer);
+                    this.connectBrokers();
+                }
+            }, 300);
+            return;
+        }
+        window.__MQTT_SCRIPT_LOADING__ = true;
+
         const cdns = [
             'https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js',
             'https://cdn.jsdelivr.net/npm/mqtt@5.3.4/dist/mqtt.min.js',
@@ -334,11 +351,13 @@ class GameSyncChannel {
         let idx = 0;
         const loadScript = () => {
             if (idx >= cdns.length) {
+                window.__MQTT_SCRIPT_LOADING__ = false;
                 return;
             }
             const s = document.createElement('script');
             s.src = cdns[idx++];
             s.onload = () => {
+                window.__MQTT_SCRIPT_LOADING__ = false;
                 this.connectBrokers();
             };
             s.onerror = () => loadScript();
@@ -348,36 +367,85 @@ class GameSyncChannel {
     }
 
     connectBrokers() {
-        if (!window.mqtt) return;
+        if (!window.mqtt || this.isConnected || this.isMqttConnecting) return;
 
-        // Reliable WebSocket MQTT brokers with SSL support
+        // Reliable WebSocket MQTT brokers with standard trusted SSL certificates (WSS)
         const brokers = [
-            'wss://broker.hivemq.com:8884/mqtt',
-            'wss://test.mosquitto.org:8081/mqtt',
-            'wss://broker.emqx.io:8084/mqtt'
+            'wss://broker.emqx.io:8084/mqtt',
+            'wss://broker.hivemq.com:8884/mqtt'
         ];
 
-        let currentBrokerIdx = 0;
+        if (this.mqttRetryTimer) {
+            clearTimeout(this.mqttRetryTimer);
+            this.mqttRetryTimer = null;
+        }
 
         const tryConnect = () => {
-            if (currentBrokerIdx >= brokers.length) return;
-            const brokerUrl = brokers[currentBrokerIdx];
+            if (this.isConnected) return;
+            if (this.currentBrokerIdx >= brokers.length) {
+                // Completed one full cycle of brokers without success -> Apply Exponential Backoff
+                this.currentBrokerIdx = 0;
+                this.mqttRetryCycle++;
+                const backoffDelay = Math.min(60000, Math.max(5000, 5000 * Math.pow(1.5, Math.min(this.mqttRetryCycle, 5))));
+                this.isMqttConnecting = false;
+                this.mqttRetryTimer = setTimeout(tryConnect, backoffDelay);
+                return;
+            }
+
+            const brokerUrl = brokers[this.currentBrokerIdx];
+            this.isMqttConnecting = true;
+
+            // Ensure any previous client is completely destroyed
+            if (this.mqttClient) {
+                try {
+                    this.mqttClient.removeAllListeners();
+                    this.mqttClient.end(true);
+                } catch (e) {}
+                this.mqttClient = null;
+            }
+
+            let attemptFinished = false;
+
+            const handleAttemptFailure = (reason) => {
+                if (attemptFinished) return;
+                attemptFinished = true;
+                this.isMqttConnecting = false;
+                this.isConnected = false;
+
+                if (this.mqttClient) {
+                    try {
+                        this.mqttClient.removeAllListeners();
+                        this.mqttClient.end(true);
+                    } catch (e) {}
+                    this.mqttClient = null;
+                }
+
+                // Advance to next broker with a controlled delay
+                this.currentBrokerIdx++;
+                const delay = this.currentBrokerIdx < brokers.length ? 2500 : 5000;
+                this.mqttRetryTimer = setTimeout(tryConnect, delay);
+            };
 
             try {
+                // CRITICAL: reconnectPeriod must be 0 (disabled) so mqtt.js does not run parallel internal reconnect loops
                 this.mqttClient = window.mqtt.connect(brokerUrl, {
                     clientId: 'gs_' + this.instanceId,
                     keepalive: 30,
                     clean: true,
-                    reconnectPeriod: 4000,
-                    connectTimeout: 7000
+                    reconnectPeriod: 0,
+                    connectTimeout: 8000
                 });
 
                 this.mqttClient.on('connect', () => {
+                    attemptFinished = true;
                     this.isConnected = true;
+                    this.isMqttConnecting = false;
+                    this.mqttRetryCycle = 0;
+                    this.notifyConnectionStatus(true);
+
                     this.mqttClient.subscribe(this.topicName, { qos: 0 }, (err) => {
                         if (!err) {
                             this.flushQueue();
-                            this.notifyConnectionStatus(true);
                             if (typeof this.onmessageHandler === 'function') {
                                 this.onmessageHandler({ data: { action: 'mqtt_connected' } });
                             }
@@ -409,23 +477,15 @@ class GameSyncChannel {
                 });
 
                 this.mqttClient.on('error', (err) => {
-                    this.isConnected = false;
-                    this.notifyConnectionStatus(false);
-                    try { this.mqttClient.end(true); } catch(e){}
-                    currentBrokerIdx++;
-                    setTimeout(tryConnect, 1000);
+                    handleAttemptFailure('error');
                 });
 
                 this.mqttClient.on('close', () => {
-                    if (!this.isConnected && currentBrokerIdx < brokers.length - 1) {
-                        currentBrokerIdx++;
-                        setTimeout(tryConnect, 1000);
-                    }
+                    handleAttemptFailure('close');
                 });
 
             } catch (e) {
-                currentBrokerIdx++;
-                setTimeout(tryConnect, 1000);
+                handleAttemptFailure('exception');
             }
         };
 
