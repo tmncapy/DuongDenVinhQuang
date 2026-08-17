@@ -296,7 +296,6 @@ function getLocalNetworkAddresses() {
   const addresses = [];
   for (const name of Object.keys(interfaces)) {
     for (const net of interfaces[name] || []) {
-      // IPv4 and non-internal only
       if (net.family === 'IPv4' && !net.internal) {
         addresses.push({
           interface: name,
@@ -309,7 +308,7 @@ function getLocalNetworkAddresses() {
   return addresses;
 }
 
-// GET /api/network-info - Returns host IP, LAN addresses, and shortcuts for quick pairing
+// GET /api/network-info
 app.get('/api/network-info', (req, res) => {
   const lanAddresses = getLocalNetworkAddresses();
   const hostHeader = req.headers.host || `localhost:${PORT}`;
@@ -348,7 +347,6 @@ const handleSseConnection = (req, res) => {
     'Access-Control-Allow-Origin': '*'
   });
 
-  // Immediately send initial state sync to newly connected client
   res.write(`data: ${JSON.stringify({
     type: 'INITIAL_STATE_SYNC',
     event: 'buzzer-state-sync',
@@ -458,7 +456,6 @@ app.get('/sounds/:filename', (req, res, next) => {
     return res.sendFile(exactPath);
   }
   
-  // Case-insensitive lookup and aliases
   try {
     const files = fs.readdirSync(soundsDir);
     const match = files.find(f => f.toLowerCase() === reqName.toLowerCase());
@@ -466,7 +463,6 @@ app.get('/sounds/:filename', (req, res, next) => {
       return res.sendFile(path.join(soundsDir, match));
     }
     
-    // Alias / Fallback for 60s.mp3 -> 25sV1.mp3
     if (reqName.toLowerCase().includes('60s')) {
       const fallbackFile = path.join(soundsDir, '25sV1.mp3');
       if (fs.existsSync(fallbackFile)) {
@@ -483,55 +479,20 @@ app.get('/sounds/:filename', (req, res, next) => {
 app.use(express.static(__dirname));
 
 // Route shortcuts
-app.get('/control', (req, res) => {
-  res.sendFile(path.join(__dirname, 'control.html'));
-});
+app.get('/control', (req, res) => { res.sendFile(path.join(__dirname, 'control.html')); });
+app.get('/player1', (req, res) => { res.sendFile(path.join(__dirname, 'player1.html')); });
+app.get('/player2', (req, res) => { res.sendFile(path.join(__dirname, 'player2.html')); });
+app.get('/player3', (req, res) => { res.sendFile(path.join(__dirname, 'player3.html')); });
+app.get('/player4', (req, res) => { res.sendFile(path.join(__dirname, 'player4.html')); });
+app.get('/player', (req, res) => { res.sendFile(path.join(__dirname, 'player.html')); });
+app.get('/host', (req, res) => { res.sendFile(path.join(__dirname, 'host.html')); });
+app.get('/controller', (req, res) => { res.sendFile(path.join(__dirname, 'controller.html')); });
+app.get('/projector', (req, res) => { res.sendFile(path.join(__dirname, 'projector.html')); });
+app.get('/graphic', (req, res) => { res.sendFile(path.join(__dirname, 'graphic.html')); });
+app.get('/scoreboard', (req, res) => { res.sendFile(path.join(__dirname, 'Scoreboard.html')); });
+app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 
-app.get('/player1', (req, res) => {
-  res.sendFile(path.join(__dirname, 'player1.html'));
-});
-
-app.get('/player2', (req, res) => {
-  res.sendFile(path.join(__dirname, 'player2.html'));
-});
-
-app.get('/player3', (req, res) => {
-  res.sendFile(path.join(__dirname, 'player3.html'));
-});
-
-app.get('/player4', (req, res) => {
-  res.sendFile(path.join(__dirname, 'player4.html'));
-});
-
-app.get('/player', (req, res) => {
-  res.sendFile(path.join(__dirname, 'player.html'));
-});
-
-app.get('/host', (req, res) => {
-  res.sendFile(path.join(__dirname, 'host.html'));
-});
-
-app.get('/controller', (req, res) => {
-  res.sendFile(path.join(__dirname, 'controller.html'));
-});
-
-app.get('/projector', (req, res) => {
-  res.sendFile(path.join(__dirname, 'projector.html'));
-});
-
-app.get('/graphic', (req, res) => {
-  res.sendFile(path.join(__dirname, 'graphic.html'));
-});
-
-app.get('/scoreboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Scoreboard.html'));
-});
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Start HTTP + WebSocket server on 0.0.0.0:3000 to listen on all network interfaces (LAN + Internet)
+// Start HTTP + WebSocket server
 server.listen(PORT, '0.0.0.0', () => {
   const lanAddresses = getLocalNetworkAddresses();
   console.log('================================================================');
@@ -555,5 +516,3 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`  📊 Bảng điểm (Scoreboard) : http://localhost:${PORT}/scoreboard`);
   console.log('================================================================');
 });
-
-
