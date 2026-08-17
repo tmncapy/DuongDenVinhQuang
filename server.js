@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import os from 'os';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
 
@@ -338,8 +339,8 @@ app.get('/api/network-info', (req, res) => {
   });
 });
 
-// GET /api/events - Real-time Server-Sent Events (SSE) endpoint fallback
-app.get('/api/events', (req, res) => {
+// GET /api/events & /events - Real-time Server-Sent Events (SSE) endpoint fallback
+const handleSseConnection = (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -366,10 +367,12 @@ app.get('/api/events', (req, res) => {
   req.on('close', () => {
     sseClients.delete(res);
   });
-});
+};
+app.get('/api/events', handleSseConnection);
+app.get('/events', handleSseConnection);
 
-// GET /api/state - Retrieve current authoritative game state
-app.get('/api/state', (req, res) => {
+// GET /api/state & /state - Retrieve current authoritative game state
+const handleGetState = (req, res) => {
   res.json({
     roomCode: serverState.roomCode,
     contestants: serverState.contestants,
@@ -382,10 +385,12 @@ app.get('/api/state', (req, res) => {
     connectedWsClients: wsClients.size,
     connectedReceivers: sseClients.size + wsClients.size
   });
-});
+};
+app.get('/api/state', handleGetState);
+app.get('/state', handleGetState);
 
-// POST /api/state - Update game state
-app.post('/api/state', (req, res) => {
+// POST /api/state & /state - Update game state
+const handlePostState = (req, res) => {
   const body = req.body || {};
   if (body.contestants) {
     serverState.contestants = body.contestants;
@@ -410,19 +415,25 @@ app.post('/api/state', (req, res) => {
   broadcastToClients(updateMsg);
 
   res.json({ success: true, state: serverState });
-});
+};
+app.post('/api/state', handlePostState);
+app.post('/state', handlePostState);
 
-// POST /api/action - Handle game commands, answer submissions, client heartbeats & buzzer events
-app.post('/api/action', (req, res) => {
+// POST /api/action & /action - Handle game commands, answer submissions, client heartbeats & buzzer events
+const handlePostAction = (req, res) => {
   const action = req.body || {};
   handleIncomingAction(action);
   res.json({ success: true, receivedAt: Date.now(), wsReceivers: wsClients.size, sseReceivers: sseClients.size });
-});
+};
+app.post('/api/action', handlePostAction);
+app.post('/action', handlePostAction);
 
-// GET /api/buzzer-state - Fetch current buzzer lock status
-app.get('/api/buzzer-state', (req, res) => {
+// GET /api/buzzer-state & /buzzer-state - Fetch current buzzer lock status
+const handleGetBuzzerState = (req, res) => {
   res.json(serverState.buzzerState);
-});
+};
+app.get('/api/buzzer-state', handleGetBuzzerState);
+app.get('/buzzer-state', handleGetBuzzerState);
 
 // POST /api/broadcast - General broadcast API endpoint
 app.post('/api/broadcast', (req, res) => {
@@ -435,6 +446,37 @@ app.post('/api/broadcast', (req, res) => {
   };
   handleIncomingAction(msgObj);
   res.json({ ok: true, wsReceivers: wsClients.size, buzzerState: serverState.buzzerState });
+});
+
+// Robust Case-Insensitive Sound Route & Fallback
+app.get('/sounds/:filename', (req, res, next) => {
+  const reqName = req.params.filename;
+  const soundsDir = path.join(__dirname, 'sounds');
+  const exactPath = path.join(soundsDir, reqName);
+  
+  if (fs.existsSync(exactPath)) {
+    return res.sendFile(exactPath);
+  }
+  
+  // Case-insensitive lookup and aliases
+  try {
+    const files = fs.readdirSync(soundsDir);
+    const match = files.find(f => f.toLowerCase() === reqName.toLowerCase());
+    if (match) {
+      return res.sendFile(path.join(soundsDir, match));
+    }
+    
+    // Alias / Fallback for 60s.mp3 -> 25sV1.mp3
+    if (reqName.toLowerCase().includes('60s')) {
+      const fallbackFile = path.join(soundsDir, '25sV1.mp3');
+      if (fs.existsSync(fallbackFile)) {
+        return res.sendFile(fallbackFile);
+      }
+    }
+  } catch (e) {
+    console.warn('[Sound Route] Warning:', e);
+  }
+  next();
 });
 
 // Serve all static assets from the current directory

@@ -1254,8 +1254,8 @@ function handlePlayerMessage(data) {
 // Initial render of Vượt Sóng grid
 renderPlayerVSGrid();
 
-// 1. SSE Real-time Connection (if server backend is present)
-if (typeof EventSource !== 'undefined' && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+// 1. SSE Real-time Connection fallback (if syncChannel is not present)
+if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
     try {
         const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
         const sse = new EventSource(ssePath);

@@ -1144,8 +1144,8 @@ try {
     console.warn("BroadcastChannel restricted:", e);
 }
 
-// Server-Sent Events (SSE) for cross-device real-time sync (Mobile, PC, Projector)
-if (typeof EventSource !== 'undefined' && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+// Server-Sent Events (SSE) fallback if supabase-sync.js has not initialized it
+if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
     try {
         const sseSource = new EventSource(getApiUrl('/api/events'));
         sseSource.onmessage = function(event) {
