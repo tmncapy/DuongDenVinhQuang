@@ -184,9 +184,9 @@
             if (!window.mqtt) return;
 
             const brokers = [
-                'wss://broker.emqx.io:8084/mqtt',
                 'wss://broker.hivemq.com:8884/mqtt',
-                'wss://test.mosquitto.org:8081/mqtt'
+                'wss://test.mosquitto.org:8081/mqtt',
+                'wss://broker.emqx.io:8084/mqtt'
             ];
 
             let currentBrokerIdx = 0;
@@ -202,7 +202,7 @@
                         keepalive: 30,
                         clean: true,
                         reconnectPeriod: 4000,
-                        connectTimeout: 6000
+                        connectTimeout: 7000
                     });
 
                     this.mqttClient.on('connect', () => {
@@ -251,6 +251,13 @@
                         try { this.mqttClient.end(true); } catch(e){}
                         currentBrokerIdx++;
                         setTimeout(tryConnect, 1000);
+                    });
+
+                    this.mqttClient.on('close', () => {
+                        if (!this.isConnected && currentBrokerIdx < brokers.length - 1) {
+                            currentBrokerIdx++;
+                            setTimeout(tryConnect, 1000);
+                        }
                     });
 
                 } catch (e) {

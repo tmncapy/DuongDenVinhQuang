@@ -790,20 +790,22 @@ function updateContestantName(i, val) {
     } catch(e) {}
 
     try {
-        fetch(getApiUrl('/api/state'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contestants: gameData.contestants,
-                gameData: gameData
-            })
-        }).catch(() => {});
+        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+            fetch(getApiUrl('/api/state'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestants: gameData.contestants,
+                    gameData: gameData
+                })
+            }).catch(() => {});
 
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(() => {});
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
     } catch(e) {}
 }
 
@@ -821,14 +823,16 @@ function syncDataToProjector() {
     updateContestantNames();
     sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants, gameData: gameData });
     try {
-        fetch('/api/state', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contestants: gameData.contestants,
-                gameData: gameData
-            })
-        }).catch(() => {});
+        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+            fetch(getApiUrl('/api/state'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestants: gameData.contestants,
+                    gameData: gameData
+                })
+            }).catch(() => {});
+        }
     } catch(e) {}
     showToast('Đã đồng bộ toàn bộ dữ liệu sang Màn Hình Chiếu!');
 }
@@ -1046,26 +1050,39 @@ function updateRoomCodeFromController() {
     if (!input) return;
     const newCode = input.value.trim().toUpperCase() || 'DDVQ2026';
     input.value = newCode;
+    localStorage.setItem('ddvq_room_code', newCode);
 
-    fetch(getApiUrl('/api/action'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    const badge = document.getElementById('room_code_badge');
+    if (badge) badge.innerText = `Đang hoạt động: ${newCode}`;
+
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({
             type: 'SET_ROOM_CODE',
             roomCode: newCode
+        });
+    }
+
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        fetch(getApiUrl('/api/action'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'SET_ROOM_CODE',
+                roomCode: newCode
+            })
         })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            const badge = document.getElementById('room_code_badge');
-            if (badge) badge.innerText = `Đang hoạt động: ${newCode}`;
-            if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng mới: ${newCode}`);
-        }
-    })
-    .catch(err => {
-        console.error("Room code update error:", err);
-    });
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng mới: ${newCode}`);
+            }
+        })
+        .catch(err => {
+            console.error("Room code update error:", err);
+        });
+    } else {
+        if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng mới: ${newCode}`);
+    }
 }
 
 let currentControllerAudio = null;
@@ -1128,7 +1145,7 @@ try {
 }
 
 // Server-Sent Events (SSE) for cross-device real-time sync (Mobile, PC, Projector)
-if (typeof EventSource !== 'undefined') {
+if (typeof EventSource !== 'undefined' && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
     try {
         const sseSource = new EventSource(getApiUrl('/api/events'));
         sseSource.onmessage = function(event) {
@@ -1199,23 +1216,25 @@ setInterval(() => {
         updateProjectorStatus(false);
     }
 
-    // Always attempt fetching state from server
-    fetch(getApiUrl('/api/state'))
-        .then(res => res.json())
-        .then(data => {
-            if (data) {
-                if (data.playerAnswers) handleIncomingPlayerAnswer(data);
-                if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
-                if (data.roomCode) {
-                    localStorage.setItem('ddvq_room_code', data.roomCode);
-                    const input = document.getElementById('room_code_input');
-                    const badge = document.getElementById('room_code_badge');
-                    if (input && !input.matches(':focus')) input.value = data.roomCode;
-                    if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
+    // Attempt fetching state from server if backend is present
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        fetch(getApiUrl('/api/state'))
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    if (data.playerAnswers) handleIncomingPlayerAnswer(data);
+                    if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
+                    if (data.roomCode) {
+                        localStorage.setItem('ddvq_room_code', data.roomCode);
+                        const input = document.getElementById('room_code_input');
+                        const badge = document.getElementById('room_code_badge');
+                        if (input && !input.matches(':focus')) input.value = data.roomCode;
+                        if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
+                    }
                 }
-            }
-        })
-        .catch(() => {});
+            })
+            .catch(() => {});
+    }
 
     // Refresh status badges with time-based check
     updateClientStatusBadges(controllerConnectedClients);
@@ -1260,13 +1279,15 @@ function sendToProjector(type, payload = {}) {
             window.opener.postMessage(message, '*');
         }
     } catch(e) {}
-    try {
-        fetch('/api/action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(message)
-        }).catch(() => {});
-    } catch(e) {}
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        try {
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(message)
+            }).catch(() => {});
+        } catch(e) {}
+    }
 }
 
 function updateContestantName(idx, val) {

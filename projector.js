@@ -727,14 +727,15 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
-    if (window.location.protocol === 'file:') return;
-    try {
-        fetch('/api/action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(msg)
-        }).catch(() => {});
-    } catch(e) {}
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        try {
+            fetch(getApiUrlProj('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msg)
+            }).catch(() => {});
+        } catch(e) {}
+    }
 }
 notifyControllerReady();
 setInterval(notifyControllerReady, 3000);
@@ -1566,11 +1567,15 @@ function sendProjectorHeartbeat() {
         sendSupabaseAction(hbData);
     }
 
-    fetch(getApiUrlProj('/api/action'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hbData)
-    }).catch(() => {});
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        try {
+            fetch(getApiUrlProj('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(hbData)
+            }).catch(() => {});
+        } catch(e) {}
+    }
 
     try {
         if (typeof BroadcastChannel !== 'undefined') {

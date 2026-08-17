@@ -1,16 +1,50 @@
 // supabase-sync.js - Combined LAN Server (SSE / HTTP) & Cloud (MQTT / Supabase) Realtime Synchronization across all DDVQ screens
 
 // --- SECTION 0: Global API URL & Network Utility ---
+function hasLocalServerBackend() {
+    if (typeof window === 'undefined') return false;
+    
+    // 1. If user or query parameter explicitly provided a backend server
+    const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) return true;
+
+    const protocol = window.location.protocol;
+    const hostname = (window.location.hostname || '').toLowerCase();
+
+    // 2. If opened directly from file system (file://), connect to localhost:3000
+    if (protocol === 'file:' || !hostname) {
+        return true;
+    }
+
+    // 3. Static web hosting environments without custom Node.js Express backend
+    if (
+        hostname.endsWith('github.io') ||
+        hostname.endsWith('gitlab.io') ||
+        hostname.endsWith('pages.dev') ||
+        hostname.endsWith('surge.sh')
+    ) {
+        return false;
+    }
+
+    // 4. Otherwise running on a full-stack web/node host (localhost, 127.0.0.1, LAN 192.168.x.x, 10.x.x.x, Cloud Run, Render, etc.)
+    return true;
+}
+window.hasLocalServerBackend = hasLocalServerBackend;
+
 function getApiUrl(path) {
     if (typeof window === 'undefined') return path;
     const cleanPath = path.startsWith('/') ? path : '/' + path;
     
+    const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) {
+        return customHost.replace(/\/$/, '') + cleanPath;
+    }
+
     // When opened directly as a file (file://), connect to localhost:3000
     if (window.location.protocol === 'file:' || !window.location.host) {
-        const storedHost = localStorage.getItem('ddvq_server_host') || 'http://localhost:3000';
-        return storedHost + cleanPath;
+        return 'http://localhost:3000' + cleanPath;
     }
-    // When served over HTTP/HTTPS (LAN IP e.g. 192.168.x.x:3000 or Internet domain)
+    // When served over HTTP/HTTPS
     return cleanPath;
 }
 window.getApiUrl = getApiUrl;
@@ -165,7 +199,7 @@ class GameSyncChannel {
     }
 
     initLanSse() {
-        if (typeof EventSource === 'undefined') return;
+        if (typeof EventSource === 'undefined' || !hasLocalServerBackend()) return;
         try {
             const sseUrl = getApiUrl('/api/events');
             const sse = new EventSource(sseUrl);
@@ -229,10 +263,11 @@ class GameSyncChannel {
     connectBrokers() {
         if (!window.mqtt) return;
 
+        // Reliable WebSocket MQTT brokers with SSL support
         const brokers = [
-            'wss://broker.emqx.io:8084/mqtt',
             'wss://broker.hivemq.com:8884/mqtt',
-            'wss://test.mosquitto.org:8081/mqtt'
+            'wss://test.mosquitto.org:8081/mqtt',
+            'wss://broker.emqx.io:8084/mqtt'
         ];
 
         let currentBrokerIdx = 0;
@@ -247,7 +282,7 @@ class GameSyncChannel {
                     keepalive: 30,
                     clean: true,
                     reconnectPeriod: 4000,
-                    connectTimeout: 6000
+                    connectTimeout: 7000
                 });
 
                 this.mqttClient.on('connect', () => {
@@ -292,6 +327,13 @@ class GameSyncChannel {
                     try { this.mqttClient.end(true); } catch(e){}
                     currentBrokerIdx++;
                     setTimeout(tryConnect, 1000);
+                });
+
+                this.mqttClient.on('close', () => {
+                    if (!this.isConnected && currentBrokerIdx < brokers.length - 1) {
+                        currentBrokerIdx++;
+                        setTimeout(tryConnect, 1000);
+                    }
                 });
 
             } catch (e) {
@@ -352,15 +394,17 @@ class GameSyncChannel {
             this.localChannel.postMessage(payload);
         } catch (e) {}
 
-        // 2. Post to LAN/Internet Server API (zero-setup LAN sync)
-        try {
-            const actionUrl = getApiUrl('/api/action');
-            fetch(actionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(() => {});
-        } catch(e) {}
+        // 2. Post to LAN/Internet Server API (ONLY if server backend is present)
+        if (hasLocalServerBackend()) {
+            try {
+                const actionUrl = getApiUrl('/api/action');
+                fetch(actionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(() => {});
+            } catch(e) {}
+        }
 
         // 3. Send via MQTT WebSocket for Internet / remote connections
         if (this.mqttClient && this.mqttClient.connected) {
