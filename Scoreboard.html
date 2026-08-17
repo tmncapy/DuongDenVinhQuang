@@ -61,9 +61,46 @@
 <body>
 
     <div class="scoreboard-container">
-        <div class="score">0</div>
-        <div class="name">ĐĂNG KHOA</div>
+        <div class="score" id="sb_score">0</div>
+        <div class="name" id="sb_name">THÍ SINH</div>
     </div>
 
+    <script src="network_sync.js"></script>
+    <script src="supabase-sync.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let playerIdx = parseInt(urlParams.get('player') || urlParams.get('ts') || '1') - 1;
+        if (playerIdx < 0 || playerIdx > 3) playerIdx = 0;
+
+        function updateScoreboardView(contestants) {
+            if (!Array.isArray(contestants) || !contestants[playerIdx]) return;
+            const c = contestants[playerIdx];
+            const scoreEl = document.getElementById('sb_score');
+            const nameEl = document.getElementById('sb_name');
+            if (scoreEl) scoreEl.innerText = c.score !== undefined ? c.score : 0;
+            if (nameEl) nameEl.innerText = (c.name || `THÍ SINH ${playerIdx + 1}`).toUpperCase();
+        }
+
+        window.handleBroadcastMessage = function(data) {
+            if (!data) return;
+            if (data.contestants) {
+                updateScoreboardView(data.contestants);
+            }
+            if (data.type === 'INITIAL_STATE_SYNC' && data.contestants) {
+                updateScoreboardView(data.contestants);
+            }
+            if (data.type === 'UPDATE_SCORES' && data.contestants) {
+                updateScoreboardView(data.contestants);
+            }
+            if (data.type === 'UPDATE_CONTESTANTS' && data.contestants) {
+                updateScoreboardView(data.contestants);
+            }
+        };
+
+        // Fallback fetch
+        if (typeof fetchCurrentState === 'function') {
+            fetchCurrentState();
+        }
+    </script>
 </body>
 </html>

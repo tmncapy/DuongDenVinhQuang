@@ -1,4 +1,4 @@
-// supabase-sync.js - Combined LAN Server (SSE / HTTP) & Cloud (MQTT / Supabase) Realtime Synchronization across all DDVQ screens
+// supabase-sync.js - Combined WebSocket, LAN Server & Cloud Realtime Synchronization across all DDVQ screens
 
 // --- SECTION 0: Global API URL & Network Utility ---
 function hasLocalServerBackend() {
@@ -48,6 +48,20 @@ function getApiUrl(path) {
     return cleanPath;
 }
 window.getApiUrl = getApiUrl;
+
+function getWsUrl() {
+    if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
+    const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) {
+        return customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
+    }
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'ws://localhost:3000/ws';
+    }
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}/ws`;
+}
+window.getWsUrl = getWsUrl;
 
 // --- SECTION 1: GameMediaCache & GameSyncChannel ---
 const GameMediaCache = {
@@ -122,6 +136,14 @@ class GameSyncChannel {
         this.localChannel = new BroadcastChannel(this.baseChannelName);
         this.onmessageHandler = null;
         this.instanceId = 'client_' + Math.random().toString(36).substring(2, 9);
+        
+        // Native WebSocket link
+        this.ws = null;
+        this.isWsConnected = false;
+        this.wsReconnectTimer = null;
+        this.wsQueue = [];
+
+        // Cloud MQTT & SSE links
         this.mqttClient = null;
         this.isConnected = false;
         this.isLanConnected = false;
@@ -130,7 +152,7 @@ class GameSyncChannel {
 
         this.isDuplicateAndRecord = (payload) => {
             if (!payload) return false;
-            const id = payload._msgId || payload.id || (payload.type ? `${payload.type}_${payload.timestamp}` : null);
+            const id = payload._msgId || payload.id || (payload.type ? `${payload.type}_${payload.timestamp || payload._timestamp || ''}` : null);
             if (!id) return false;
             
             const now = Date.now();
@@ -186,6 +208,7 @@ class GameSyncChannel {
             }
         };
 
+        this.initWebSocket();
         this.initMqtt();
         this.initLanSse();
     }
@@ -196,6 +219,71 @@ class GameSyncChannel {
 
     set onmessage(handler) {
         this.onmessageHandler = handler;
+    }
+
+    initWebSocket() {
+        if (typeof WebSocket === 'undefined' || !hasLocalServerBackend()) return;
+        try {
+            if (this.wsReconnectTimer) {
+                clearTimeout(this.wsReconnectTimer);
+                this.wsReconnectTimer = null;
+            }
+            const wsUrl = getWsUrl();
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                this.isWsConnected = true;
+                this.notifyConnectionStatus(true);
+                
+                // Flush any pending WS messages
+                while (this.wsQueue.length > 0) {
+                    const msg = this.wsQueue.shift();
+                    try {
+                        this.ws.send(JSON.stringify(msg));
+                    } catch(e) {}
+                }
+
+                if (typeof this.onmessageHandler === 'function') {
+                    this.onmessageHandler({ data: { action: 'ws_connected' } });
+                }
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (!data || data.type === 'PONG' || data.type === 'PING') return;
+
+                    if (data._senderId !== this.instanceId) {
+                        if (!this.isDuplicateAndRecord(data)) {
+                            this.handleRemoteReload(data);
+                            if (typeof this.onmessageHandler === 'function') {
+                                this.onmessageHandler({ data });
+                            }
+                            dispatchSupabaseMessage(data);
+                        }
+                    }
+                } catch (err) {
+                    console.error('[WebSocket] Message parse error:', err);
+                }
+            };
+
+            this.ws.onerror = (err) => {
+                this.isWsConnected = false;
+            };
+
+            this.ws.onclose = () => {
+                this.isWsConnected = false;
+                this.notifyConnectionStatus(false);
+                if (!this.wsReconnectTimer && hasLocalServerBackend()) {
+                    this.wsReconnectTimer = setTimeout(() => {
+                        this.initWebSocket();
+                    }, 2500);
+                }
+            };
+        } catch (e) {
+            console.warn('[WebSocket] Init warning:', e);
+            this.isWsConnected = false;
+        }
     }
 
     initLanSse() {
@@ -225,7 +313,6 @@ class GameSyncChannel {
             };
             sse.onerror = () => {
                 this.isLanConnected = false;
-                // Reconnection is automatically handled by the browser's EventSource
             };
         } catch(e) {
             console.warn("LAN SSE init warning:", e);
@@ -357,13 +444,14 @@ class GameSyncChannel {
 
     notifyConnectionStatus(online) {
         const roomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
-        const isOverallConnected = online || this.isConnected || this.isLanConnected;
+        const isOverallConnected = online || this.isWsConnected || this.isConnected || this.isLanConnected;
 
         const statusEls = document.querySelectorAll('.network-status-badge');
         statusEls.forEach(el => {
             if (isOverallConnected) {
                 el.style.color = '#00e676';
-                el.innerText = `🟢 Đã kết nối Mạng LAN & Internet (Phòng: ${roomCode})`;
+                const channelType = this.isWsConnected ? 'WebSocket' : (this.isLanConnected ? 'Mạng LAN' : 'Cloud');
+                el.innerText = `🟢 Đã kết nối ${channelType} & Realtime (Phòng: ${roomCode})`;
             } else {
                 el.style.color = '#ff5252';
                 el.innerText = '🔴 Ngoại tuyến (Đang kết nối lại...)';
@@ -371,7 +459,8 @@ class GameSyncChannel {
         });
         
         if (isOverallConnected) {
-            updateSupabaseUIStatus(true, `🟢 Mạng LAN + Realtime (${roomCode})`);
+            const syncType = this.isWsConnected ? '⚡ WebSocket Trực tiếp' : '🟢 Realtime Sync';
+            updateSupabaseUIStatus(true, `${syncType} (${roomCode})`);
         } else {
             updateSupabaseUIStatus(false, '🔴 Hệ thống Đồng bộ (Đang kết nối lại...)');
         }
@@ -394,8 +483,16 @@ class GameSyncChannel {
             this.localChannel.postMessage(payload);
         } catch (e) {}
 
-        // 2. Post to LAN/Internet Server API (ONLY if server backend is present)
-        if (hasLocalServerBackend()) {
+        // 2. Send via native WebSocket to Node.js server (ultra-low latency full-duplex)
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            try {
+                this.ws.send(JSON.stringify(payload));
+            } catch (e) {
+                if (this.wsQueue.length < 30) this.wsQueue.push(payload);
+            }
+        } else if (hasLocalServerBackend()) {
+            if (this.wsQueue.length < 30) this.wsQueue.push(payload);
+            // Fallback HTTP POST if WS is still connecting
             try {
                 const actionUrl = getApiUrl('/api/action');
                 fetch(actionUrl, {

@@ -138,7 +138,8 @@
                 }
             };
 
-            // 2. Load MQTT Library for Cross-Device WebSockets
+            // 2. Load Native WebSocket & MQTT Library for Cross-Device WebSockets
+            this.initWebSocket();
             this.initMqtt();
         }
 
@@ -148,6 +149,71 @@
 
         set onmessage(handler) {
             this.onmessageHandler = handler;
+        }
+
+        initWebSocket() {
+            if (typeof WebSocket === 'undefined') return;
+            try {
+                if (this.wsReconnectTimer) {
+                    clearTimeout(this.wsReconnectTimer);
+                    this.wsReconnectTimer = null;
+                }
+                const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
+                let wsUrl = 'ws://localhost:3000/ws';
+                if (customHost) {
+                    wsUrl = customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
+                } else if (window.location.protocol !== 'file:' && window.location.host) {
+                    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    wsUrl = `${proto}//${window.location.host}/ws`;
+                }
+
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    this.isWsConnected = true;
+                    this.notifyConnectionStatus(true);
+                    
+                    if (this.wsQueue && this.wsQueue.length > 0) {
+                        while (this.wsQueue.length > 0) {
+                            const msg = this.wsQueue.shift();
+                            try {
+                                this.ws.send(JSON.stringify(msg));
+                            } catch(e) {}
+                        }
+                    }
+                };
+
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (!data || data.type === 'PONG' || data.type === 'PING') return;
+
+                        if (data._senderId !== this.instanceId) {
+                            if (!this.isDuplicateAndRecord(data)) {
+                                this.handleRemoteReload(data);
+                                if (typeof this.onmessageHandler === 'function') {
+                                    this.onmessageHandler({ data });
+                                }
+                            }
+                        }
+                    } catch (err) {}
+                };
+
+                this.ws.onerror = () => {
+                    this.isWsConnected = false;
+                };
+
+                this.ws.onclose = () => {
+                    this.isWsConnected = false;
+                    if (!this.wsReconnectTimer) {
+                        this.wsReconnectTimer = setTimeout(() => {
+                            this.initWebSocket();
+                        }, 3000);
+                    }
+                };
+            } catch (e) {
+                this.isWsConnected = false;
+            }
         }
 
         initMqtt() {
