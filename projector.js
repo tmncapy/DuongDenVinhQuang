@@ -65,7 +65,7 @@ let score1 = 0, timeLeft1 = 60, timerInterval1 = null, isRolling1 = false, curre
 let soundShowTitle1 = new Audio('sounds/ShowTitle.mp3');
 let soundRandomSet1 = new Audio('sounds/RandomSet.mp3');
 let soundBeginQues1 = new Audio('sounds/BeginQues.mp3');
-let sound60s1 = new Audio('sounds/25sV1.mp3');
+let sound60s1 = new Audio('sounds/60s.mp3');
 let soundTick1 = new Audio('sounds/Tick.mp3');
 let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
 let soundRight1 = new Audio('sounds/right.mp3');
@@ -77,39 +77,61 @@ let soundRightV3 = new Audio('sounds/RightV3.mp3');
 let soundActivate = new Audio('sounds/Activate.mp3');
 
 let isAudioUnlocked = false;
-let globalAudioCtx = null;
 
 function unlockAudio() {
     if (isAudioUnlocked) return;
     isAudioUnlocked = true;
-    try {
-        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtxClass) {
-            if (!globalAudioCtx) globalAudioCtx = new AudioCtxClass();
-            if (globalAudioCtx.state === 'suspended') {
-                globalAudioCtx.resume().catch(() => {});
-            }
+
+    const allAudios = [
+        soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, 
+        soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundRKTimer, soundChooseQues, soundRightV3,
+        soundActivate,
+        document.getElementById('vongThiAudio2'),
+        document.getElementById('soundRKAnswer2'),
+        document.getElementById('vongThiAudio4'),
+        document.getElementById('soundVSAnswer'),
+        document.getElementById('vongThiAudio7'),
+        document.getElementById('audioVQAnswer')
+    ];
+
+    allAudios.forEach(aud => {
+        if (aud) {
+            try {
+                aud.load();
+                let p = aud.play();
+                if (p && typeof p.then === 'function') {
+                    p.then(() => {
+                        aud.pause();
+                        aud.currentTime = 0;
+                    }).catch(() => {});
+                }
+            } catch(e) {}
         }
-    } catch(e) {}
+    });
 }
 
-['click', 'keydown', 'pointerdown', 'touchstart'].forEach(evt => {
+['click', 'keydown', 'pointerdown', 'touchstart', 'mousemove', 'wheel'].forEach(evt => {
     window.addEventListener(evt, unlockAudio, { once: true, capture: true });
 });
+window.addEventListener('DOMContentLoaded', unlockAudio);
 
 function safePlay(audio) {
     if (!audio) return;
     try {
-        unlockAudio();
         audio.currentTime = 0;
         let p = audio.play();
         if (p && typeof p.then === 'function') {
             p.catch(e => {
-                console.log("[Audio] Play prevented until user interaction:", e.message || e);
+                console.log("Audio play blocked, attempting silent unlock and retry:", e);
+                unlockAudio();
+                try {
+                    audio.currentTime = 0;
+                    audio.play().catch(err => console.log("Retry play failed:", err));
+                } catch(err) {}
             });
         }
     } catch(e) {
-        console.warn("[Audio] Play exception:", e);
+        console.log("Audio exception:", e);
     }
 }
 
@@ -612,8 +634,8 @@ try {
     console.warn("BroadcastChannel restricted in projector:", e);
 }
 
-// Server-Sent Events (SSE) fallback only if supabase-sync.js has not initialized it
-if (typeof EventSource !== 'undefined' && !window.syncChannel) {
+// Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector)
+if (typeof EventSource !== 'undefined') {
     try {
         const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
         const projSse = new EventSource(ssePath);
@@ -691,9 +713,6 @@ loadInitialProjectorState();
 
 function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(msg);
-    }
     if (projectorChannel) {
         try { projectorChannel.postMessage(msg); } catch(e) {}
     }
@@ -705,16 +724,14 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : '/api/action';
-            fetch(actionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(msg)
-            }).catch(() => {});
-        } catch(e) {}
-    }
+    try {
+        const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : (typeof getApiUrlProj === 'function' ? getApiUrlProj('/api/action') : '/api/action');
+        fetch(actionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(msg)
+        }).catch(() => {});
+    } catch(e) {}
 }
 notifyControllerReady();
 setInterval(notifyControllerReady, 3000);
@@ -1524,11 +1541,27 @@ function handleRKShowContestantAnswers(data) {
     }
 }
 
+const ONRENDER_BASE_URL_PROJ = 'https://ddvq.onrender.com';
+
 function getApiUrlProj(path) {
-    if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + path;
+    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function') {
+        return window.getApiUrl(path);
     }
-    return path;
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+    try {
+        const customUrl = localStorage.getItem('ddvq_server_url');
+        if (customUrl && customUrl.trim()) {
+            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
+        }
+    } catch(e) {}
+
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return ONRENDER_BASE_URL_PROJ + cleanPath;
+    }
+    return cleanPath;
 }
 
 function sendProjectorHeartbeat() {
@@ -1542,19 +1575,11 @@ function sendProjectorHeartbeat() {
         timestamp: Date.now()
     };
 
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(hbData);
-    }
-
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            fetch(getApiUrlProj('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(hbData)
-            }).catch(() => {});
-        } catch(e) {}
-    }
+    fetch(getApiUrlProj('/api/action'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(hbData)
+    }).catch(() => {});
 
     try {
         if (typeof BroadcastChannel !== 'undefined') {

@@ -1,8 +1,6 @@
 {
   "name": "Đường Đến Vinh Quang",
-  "description": "Hệ thống Gameshow Đường Đến Vinh Quang hỗ trợ đồng bộ thời gian thực qua mạng LAN cục bộ và Internet cho máy điều khiển, máy chiếu, MC và 4 thí sinh",
+  "description": "Projector web application for Đường đến Vinh quang game show",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <!-- Disable DevTools -->
+    <script src="disable-devtools.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảng Điểm Thí Sinh 1</title>
     <style>
         * {
             box-sizing: border-box;
+            font-weight: bold !important;
         }
 
         body, html {
@@ -67,8 +71,6 @@
     </div>
 
     <script src="network_sync.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-sync.js"></script>
     <script>
         const CONTESTANT_ID = 1;
         const scoreEl = document.getElementById('contestant_score');

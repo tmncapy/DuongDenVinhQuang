@@ -3,11 +3,27 @@ let hostAutoSync = true;
 let hostActiveScene = 1;
 let currentHostState = {};
 
+const ONRENDER_BASE_URL_HOST = 'https://ddvq.onrender.com';
+
 function getApiUrl(path) {
-    if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + path;
+    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
+        return window.getApiUrl(path);
     }
-    return path;
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+    try {
+        const customUrl = localStorage.getItem('ddvq_server_url');
+        if (customUrl && customUrl.trim()) {
+            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
+        }
+    } catch(e) {}
+
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return ONRENDER_BASE_URL_HOST + cleanPath;
+    }
+    return cleanPath;
 }
 
 function setHostAutoSync(isAuto) {
@@ -120,10 +136,6 @@ function sendHostHeartbeat() {
         name: 'Máy MC (Host)',
         timestamp: Date.now()
     };
-
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(hbData);
-    }
 
     // 1. API POST
     fetch(getApiUrl('/api/action'), {

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <!-- Disable DevTools -->
+    <script src="disable-devtools.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Màn Hình Thí Sinh 4 - Đường Đến Vinh Quang</title>
@@ -9,6 +12,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-weight: bold !important;
         }
 
         body, html {
@@ -807,8 +811,6 @@
     <div id="toast_box"></div>
 
     <script src="network_sync.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-sync.js"></script>
     <script>
         window.FIXED_CONTESTANT_ID = 4;
     </script>

@@ -1,59 +1,79 @@
 import express from 'express';
-import http from 'http';
 import path from 'path';
-import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { WebSocketServer, WebSocket } from 'ws';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const server = http.createServer(app);
 const PORT = 3000;
 
-// Enable JSON body parsing and CORS for all LAN and Internet origins
-app.use(express.json({ limit: '10mb' }));
+// Enable CORS for file:// and cross-origin clients
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   next();
 });
 
-// Set of connected Server-Sent Events (SSE) clients across LAN & Internet
-const sseClients = new Set();
+// Case-insensitive asset fallback & missing sound handler
+app.use((req, res, next) => {
+  const reqPath = decodeURIComponent(req.path);
+  const localPath = path.join(__dirname, reqPath);
 
-// Set of connected WebSocket clients
-const wsClients = new Set();
+  if (fs.existsSync(localPath)) {
+    return next();
+  }
 
-// Comprehensive In-Memory Game & Server State
-let serverState = {
+  // Check if missing 'sounds/' prefix
+  if (!reqPath.startsWith('/sounds/') && !reqPath.startsWith('/Images/')) {
+    const soundPath = path.join(__dirname, 'sounds', reqPath);
+    if (fs.existsSync(soundPath)) {
+      return res.sendFile(soundPath);
+    }
+  }
+
+  // Case-insensitive file search in requested directory
+  const dir = path.dirname(localPath);
+  const base = path.basename(localPath).toLowerCase();
+
+  if (fs.existsSync(dir)) {
+    try {
+      const files = fs.readdirSync(dir);
+      const matched = files.find(f => f.toLowerCase() === base);
+      if (matched) {
+        return res.sendFile(path.join(dir, matched));
+      }
+    } catch (e) {
+      // ignore read error
+    }
+  }
+
+  // Fallback for non-critical missing mp3 audio
+  if (reqPath.endsWith('.mp3')) {
+    res.type('audio/mpeg');
+    return res.status(200).send(Buffer.alloc(0));
+  }
+
+  next();
+});
+
+// Handle favicon.ico
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Serve static assets
+app.use(express.json({ limit: '10mb' }));
+app.use(express.static(__dirname));
+
+// SSE Real-time Synchronization across all devices (Mobile, PC, Projector)
+let sseClients = [];
+let latestAction = null;
+let currentServerState = {
   roomCode: 'DDVQ2026',
-  contestants: [
-    { name: 'Thí sinh 1', score: 0 },
-    { name: 'Thí sinh 2', score: 0 },
-    { name: 'Thí sinh 3', score: 0 },
-    { name: 'Thí sinh 4', score: 0 }
-  ],
-  gameData: {
-    xuatPhat: {},
-    raKhoi: [],
-    vuotSong: { h1: { q: '', a: '' }, h2: { q: '', a: '' }, h3: { q: '', a: '' }, h4: { q: '', a: '' }, center: { q: '', a: '' }, keyword: '' },
-    vinhQuang: { 10: [], 20: [], 30: [] },
-    cauHoiPhu: [],
-    contestants: [
-      { name: 'Thí sinh 1', score: 0 },
-      { name: 'Thí sinh 2', score: 0 },
-      { name: 'Thí sinh 3', score: 0 },
-      { name: 'Thí sinh 4', score: 0 }
-    ]
-  },
-  playerAnswers: {},
   connectedClients: {
     ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
     ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
@@ -62,457 +82,354 @@ let serverState = {
     host: { connected: false, name: 'Máy MC', lastSeen: 0 },
     projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
   },
-  buzzerState: {
-    buzzerUnlocked: false,
-    buzzerWinner: null
-  },
-  latestAction: null,
-  lastUpdated: Date.now()
+  activeRound: 'XUAT_PHAT', // 'XUAT_PHAT', 'RA_KHOI', 'VUOT_SONG', 'VINH_QUANG'
+  questionText: '',
+  questionIndex: 1,
+  score: 0,
+  row: 0,
+  subject: '',
+  pack: 10,
+  contestants: [
+    { name: "Thí sinh 1", score: 0 },
+    { name: "Thí sinh 2", score: 0 },
+    { name: "Thí sinh 3", score: 0 },
+    { name: "Thí sinh 4", score: 0 }
+  ],
+  gameData: null,
+  playerAnswers: {},
+  timestamp: Date.now()
 };
 
-// Function to broadcast messages to all connected WebSocket & SSE clients (LAN & Web)
-function broadcastToClients(data, senderWs = null) {
-  const jsonStr = JSON.stringify(data);
-
-  // 1. Broadcast to WebSocket clients
-  for (const client of wsClients) {
-    if (client !== senderWs && client.readyState === WebSocket.OPEN) {
-      try {
-        client.send(jsonStr);
-      } catch (err) {
-        wsClients.delete(client);
-      }
-    }
-  }
-
-  // 2. Broadcast to SSE clients
-  const sseMsgStr = `data: ${jsonStr}\n\n`;
-  for (const client of sseClients) {
+function broadcastAction(actionData) {
+  const payload = `data: ${JSON.stringify(actionData)}\n\n`;
+  sseClients.forEach(client => {
     try {
-      client.write(sseMsgStr);
-    } catch (err) {
-      sseClients.delete(client);
-    }
-  }
+      client.res.write(payload);
+    } catch (e) {}
+  });
 }
 
-// Function to process incoming game action and mutate serverState
-function handleIncomingAction(action, senderWs = null) {
-  if (!action || typeof action !== 'object') return;
-  const type = action.type || action.event || 'UNKNOWN_ACTION';
-  const now = Date.now();
-
-  serverState.latestAction = action;
-  serverState.lastUpdated = now;
-
-  // Handle Client Join / Heartbeats
-  if (type === 'CLIENT_JOIN' || type === 'CLIENT_HEARTBEAT') {
-    const role = action.role || (action.contestantId ? `ts${action.contestantId}` : null);
-    if (role && serverState.connectedClients[role]) {
-      serverState.connectedClients[role].connected = true;
-      serverState.connectedClients[role].lastSeen = now;
-      if (action.name) serverState.connectedClients[role].name = action.name;
-    }
-  }
-
-  // Handle Room Code Changes
-  if (type === 'SET_ROOM_CODE' && action.roomCode) {
-    serverState.roomCode = action.roomCode.trim().toUpperCase();
-  }
-
-  // Handle Contestant updates
-  if (type === 'UPDATE_CONTESTANTS' && action.contestants) {
-    serverState.contestants = action.contestants;
-    if (serverState.gameData) serverState.gameData.contestants = action.contestants;
-  }
-
-  if (type === 'UPDATE_SCORES' && action.contestants) {
-    serverState.contestants = action.contestants;
-    if (serverState.gameData) serverState.gameData.contestants = action.contestants;
-  }
-
-  // Handle Player Answer Submissions
-  if (type === 'PLAYER_SUBMIT_ANSWER' && action.contestantId) {
-    const tsIdx = action.contestantId;
-    serverState.playerAnswers[`ts${tsIdx}`] = {
-      contestantId: tsIdx,
-      answer: action.answer || '',
-      time: action.time || '00.00',
-      round: action.round || '',
-      isVongThi: !!action.isVongThi,
-      timestamp: now
-    };
-  }
-
-  // Handle Reset / Clear Answers
-  if (type === 'CLEAR_PLAYER_ANSWERS' || type === 'XUAT_PHAT_START' || type === 'RA_KHOI_OPEN_QUESTION' || type === 'VUOT_SONG_OPEN_HANG_NGANG' || type === 'VINH_QUANG_START') {
-    serverState.playerAnswers = {};
-  }
-
-  // Handle Complete Data Reset
-  if (type === 'RESET_ALL_DATA') {
-    serverState.playerAnswers = {};
-    if (serverState.contestants) {
-      serverState.contestants.forEach(c => { c.score = 0; });
-    }
-    if (serverState.gameData && serverState.gameData.contestants) {
-      serverState.gameData.contestants.forEach(c => { c.score = 0; });
-    }
-    serverState.buzzerState = { buzzerUnlocked: false, buzzerWinner: null };
-  }
-
-  // Handle Tossup & Buzzer control
-  if (type === 'control-to-display' && action.payload) {
-    if (action.payload.type === 'START_TOSSAV' || action.payload.type === 'START_TOSSUP' || action.payload.type === 'PLAY_TOSSUP') {
-      serverState.buzzerState.buzzerUnlocked = true;
-      serverState.buzzerState.buzzerWinner = null;
-    } else if (
-      action.payload.type === 'REVEAL_ALL' ||
-      action.payload.type === 'RESET_BOARD' ||
-      action.payload.type === 'LOAD_QUIZ' ||
-      action.payload.type === 'SHOW_MANUAL_TEXT'
-    ) {
-      serverState.buzzerState.buzzerUnlocked = false;
-      serverState.buzzerState.buzzerWinner = null;
-    }
-    action.buzzerState = serverState.buzzerState;
-  } else if (type === 'player-buzz' && action.payload && action.payload.playerNum) {
-    if (serverState.buzzerState.buzzerUnlocked && !serverState.buzzerState.buzzerWinner) {
-      serverState.buzzerState.buzzerWinner = action.payload.playerNum;
-    }
-    action.buzzerState = serverState.buzzerState;
-  }
-
-  // Broadcast to all WebSocket and SSE clients
-  broadcastToClients(action, senderWs);
-}
-
-// Initialize WebSocket Server on /ws and root paths
-const wss = new WebSocketServer({ server, path: '/ws' });
-
-wss.on('connection', (ws, req) => {
-  ws.isAlive = true;
-  wsClients.add(ws);
-
-  const ip = req.socket.remoteAddress;
-  console.log(`⚡ [WebSocket] Client connected from ${ip}. Total WS clients: ${wsClients.size}`);
-
-  // Send immediate initial state sync to newly connected WebSocket client
-  try {
-    ws.send(JSON.stringify({
-      type: 'INITIAL_STATE_SYNC',
-      event: 'buzzer-state-sync',
-      roomCode: serverState.roomCode,
-      contestants: serverState.contestants,
-      gameData: serverState.gameData,
-      connectedClients: serverState.connectedClients,
-      playerAnswers: serverState.playerAnswers,
-      buzzerState: serverState.buzzerState,
-      latestAction: serverState.latestAction,
-      timestamp: Date.now()
-    }));
-  } catch (err) {
-    console.warn('[WebSocket] Initial sync send error:', err);
-  }
-
-  // Heartbeat pong listener
-  ws.on('pong', () => {
-    ws.isAlive = true;
-  });
-
-  // Handle incoming messages from HTML client
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message.toString());
-      if (data && data.type === 'PING') {
-        ws.send(JSON.stringify({ type: 'PONG', timestamp: Date.now() }));
-        return;
-      }
-      handleIncomingAction(data, ws);
-    } catch (err) {
-      console.error('[WebSocket] Message parse error:', err);
-    }
-  });
-
-  ws.on('close', () => {
-    wsClients.delete(ws);
-    console.log(`🔌 [WebSocket] Client disconnected. Remaining WS clients: ${wsClients.size}`);
-  });
-
-  ws.on('error', (err) => {
-    console.warn('[WebSocket] Client error:', err.message);
-    wsClients.delete(ws);
-  });
-});
-
-// Periodic WebSocket and SSE ping heartbeat
-const wsHeartbeatInterval = setInterval(() => {
-  // Check WebSocket connections
-  for (const ws of wsClients) {
-    if (ws.isAlive === false) {
-      wsClients.delete(ws);
-      try { ws.terminate(); } catch(e) {}
-      continue;
-    }
-    ws.isAlive = false;
-    try {
-      ws.ping();
-    } catch (e) {
-      wsClients.delete(ws);
-    }
-  }
-
-  // Check client timeouts
-  const now = Date.now();
-  let clientChanged = false;
-  Object.keys(serverState.connectedClients).forEach(role => {
-    const client = serverState.connectedClients[role];
-    if (client && client.connected && (now - client.lastSeen > 12000)) {
-      client.connected = false;
-      clientChanged = true;
-    }
-  });
-
-  if (clientChanged) {
-    broadcastToClients({
-      type: 'CLIENT_STATUS_UPDATE',
-      connectedClients: serverState.connectedClients
-    });
-  }
-
-  // SSE ping
-  for (const client of sseClients) {
-    try {
-      client.write('data: {"type":"PING","event":"ping"}\n\n');
-    } catch (err) {
-      sseClients.delete(client);
-    }
-  }
-}, 10000);
-
-// Function to collect all Local Area Network (LAN) IPv4 addresses of the host machine
-function getLocalNetworkAddresses() {
-  const interfaces = os.networkInterfaces();
-  const addresses = [];
-  for (const name of Object.keys(interfaces)) {
-    for (const net of interfaces[name] || []) {
-      if (net.family === 'IPv4' && !net.internal) {
-        addresses.push({
-          interface: name,
-          ip: net.address,
-          url: `http://${net.address}:${PORT}`
-        });
-      }
-    }
-  }
-  return addresses;
-}
-
-// GET /api/network-info
-app.get('/api/network-info', (req, res) => {
-  const lanAddresses = getLocalNetworkAddresses();
-  const hostHeader = req.headers.host || `localhost:${PORT}`;
-  const protocol = req.protocol || 'http';
-  const currentUrl = `${protocol}://${hostHeader}`;
-
+app.get('/api/state', (req, res) => {
   res.json({
-    status: 'online',
-    port: PORT,
-    currentUrl: currentUrl,
-    lanAddresses: lanAddresses,
-    links: {
-      controller: `${currentUrl}/controller`,
-      projector: `${currentUrl}/projector`,
-      host: `${currentUrl}/host`,
-      player: `${currentUrl}/player`,
-      graphic: `${currentUrl}/graphic`,
-      scoreboard: `${currentUrl}/scoreboard`,
-      player1: `${currentUrl}/player1`,
-      player2: `${currentUrl}/player2`,
-      player3: `${currentUrl}/player3`,
-      player4: `${currentUrl}/player4`
-    },
-    roomCode: serverState.roomCode,
-    connectedWsClients: wsClients.size,
-    connectedReceivers: sseClients.size + wsClients.size
+    ...currentServerState,
+    latestAction
   });
 });
 
-// GET /api/events & /events - Real-time Server-Sent Events (SSE) endpoint fallback
-const handleSseConnection = (req, res) => {
+app.get('/api/events', (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
+    'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+    'Content-Encoding': 'none',
     'Access-Control-Allow-Origin': '*'
   });
 
-  res.write(`data: ${JSON.stringify({
-    type: 'INITIAL_STATE_SYNC',
-    event: 'buzzer-state-sync',
-    roomCode: serverState.roomCode,
-    contestants: serverState.contestants,
-    gameData: serverState.gameData,
-    connectedClients: serverState.connectedClients,
-    playerAnswers: serverState.playerAnswers,
-    buzzerState: serverState.buzzerState,
-    latestAction: serverState.latestAction,
-    timestamp: Date.now()
-  })}\n\n`);
+  const clientId = Date.now() + Math.random().toString(36).substring(2, 7);
+  const newClient = { id: clientId, res };
+  sseClients.push(newClient);
 
-  sseClients.add(res);
+  res.write('retry: 1000\n\n');
+
+  // Always send full initial state sync on connection
+  const fullSyncPayload = {
+    type: 'FULL_STATE_SYNC',
+    ...currentServerState,
+    latestAction
+  };
+  res.write(`data: ${JSON.stringify(fullSyncPayload)}\n\n`);
+
+  if (latestAction) {
+    res.write(`data: ${JSON.stringify(latestAction)}\n\n`);
+  }
 
   req.on('close', () => {
-    sseClients.delete(res);
+    sseClients = sseClients.filter(c => c.id !== clientId);
   });
-};
-app.get('/api/events', handleSseConnection);
-app.get('/events', handleSseConnection);
-
-// GET /api/state & /state - Retrieve current authoritative game state
-const handleGetState = (req, res) => {
-  res.json({
-    roomCode: serverState.roomCode,
-    contestants: serverState.contestants,
-    gameData: serverState.gameData,
-    connectedClients: serverState.connectedClients,
-    playerAnswers: serverState.playerAnswers,
-    buzzerState: serverState.buzzerState,
-    latestAction: serverState.latestAction,
-    lastUpdated: serverState.lastUpdated,
-    connectedWsClients: wsClients.size,
-    connectedReceivers: sseClients.size + wsClients.size
-  });
-};
-app.get('/api/state', handleGetState);
-app.get('/state', handleGetState);
-
-// POST /api/state & /state - Update game state
-const handlePostState = (req, res) => {
-  const body = req.body || {};
-  if (body.contestants) {
-    serverState.contestants = body.contestants;
-    if (serverState.gameData) serverState.gameData.contestants = body.contestants;
-  }
-  if (body.gameData) {
-    serverState.gameData = Object.assign(serverState.gameData, body.gameData);
-  }
-  if (body.roomCode) {
-    serverState.roomCode = body.roomCode.trim().toUpperCase();
-  }
-  serverState.lastUpdated = Date.now();
-
-  const updateMsg = {
-    type: 'STATE_UPDATED',
-    contestants: serverState.contestants,
-    gameData: serverState.gameData,
-    roomCode: serverState.roomCode,
-    timestamp: serverState.lastUpdated
-  };
-
-  broadcastToClients(updateMsg);
-
-  res.json({ success: true, state: serverState });
-};
-app.post('/api/state', handlePostState);
-app.post('/state', handlePostState);
-
-// POST /api/action & /action - Handle game commands, answer submissions, client heartbeats & buzzer events
-const handlePostAction = (req, res) => {
-  const action = req.body || {};
-  handleIncomingAction(action);
-  res.json({ success: true, receivedAt: Date.now(), wsReceivers: wsClients.size, sseReceivers: sseClients.size });
-};
-app.post('/api/action', handlePostAction);
-app.post('/action', handlePostAction);
-
-// GET /api/buzzer-state & /buzzer-state - Fetch current buzzer lock status
-const handleGetBuzzerState = (req, res) => {
-  res.json(serverState.buzzerState);
-};
-app.get('/api/buzzer-state', handleGetBuzzerState);
-app.get('/buzzer-state', handleGetBuzzerState);
-
-// POST /api/broadcast - General broadcast API endpoint
-app.post('/api/broadcast', (req, res) => {
-  const { event, payload, ts, id } = req.body || {};
-  const msgObj = {
-    event,
-    payload,
-    ts: ts || Date.now(),
-    id
-  };
-  handleIncomingAction(msgObj);
-  res.json({ ok: true, wsReceivers: wsClients.size, buzzerState: serverState.buzzerState });
 });
 
-// Robust Case-Insensitive Sound Route & Fallback
-app.get('/sounds/:filename', (req, res, next) => {
-  const reqName = req.params.filename;
-  const soundsDir = path.join(__dirname, 'sounds');
-  const exactPath = path.join(soundsDir, reqName);
-  
-  if (fs.existsSync(exactPath)) {
-    return res.sendFile(exactPath);
-  }
-  
-  try {
-    const files = fs.readdirSync(soundsDir);
-    const match = files.find(f => f.toLowerCase() === reqName.toLowerCase());
-    if (match) {
-      return res.sendFile(path.join(soundsDir, match));
+app.post('/api/action', (req, res) => {
+  const actionData = req.body;
+  if (actionData && typeof actionData === 'object' && actionData.type) {
+    // Room Code Verification
+    if (actionData.type === 'VERIFY_ROOM_CODE') {
+      const isMatch = (actionData.roomCode || '').toUpperCase() === (currentServerState.roomCode || '').toUpperCase();
+      return res.json({
+        success: isMatch,
+        roomCode: currentServerState.roomCode,
+        message: isMatch ? 'Đã xác thực mã phòng!' : 'Mã phòng không chính xác!'
+      });
     }
-    
-    if (reqName.toLowerCase().includes('60s')) {
-      const fallbackFile = path.join(soundsDir, '25sV1.mp3');
-      if (fs.existsSync(fallbackFile)) {
-        return res.sendFile(fallbackFile);
+
+    if (actionData.type === 'SET_ROOM_CODE') {
+      if (actionData.roomCode) {
+        currentServerState.roomCode = actionData.roomCode.toUpperCase();
+        broadcastAction({
+          type: 'ROOM_CODE_UPDATED',
+          roomCode: currentServerState.roomCode,
+          timestamp: Date.now()
+        });
       }
+      return res.json({ success: true, roomCode: currentServerState.roomCode });
     }
-  } catch (e) {
-    console.warn('[Sound Route] Warning:', e);
+
+    // Client connection / heartbeat registration
+    if (actionData.type === 'CLIENT_JOIN' || actionData.type === 'CLIENT_HEARTBEAT') {
+      const clientRoom = (actionData.roomCode || '').toUpperCase();
+      const serverRoom = (currentServerState.roomCode || '').toUpperCase();
+
+      if (clientRoom !== serverRoom) {
+        return res.json({
+          success: false,
+          error: 'Mã phòng không chính xác!',
+          roomCode: currentServerState.roomCode
+        });
+      }
+
+      const roleKey = actionData.role || (actionData.contestantId ? `ts${actionData.contestantId}` : null);
+      if (roleKey && currentServerState.connectedClients[roleKey]) {
+        currentServerState.connectedClients[roleKey] = {
+          connected: true,
+          name: actionData.name || currentServerState.connectedClients[roleKey].name,
+          lastSeen: Date.now()
+        };
+
+        // Notify controller of client status change
+        broadcastAction({
+          type: 'CLIENT_STATUS_UPDATE',
+          connectedClients: currentServerState.connectedClients,
+          role: roleKey,
+          status: currentServerState.connectedClients[roleKey],
+          timestamp: Date.now()
+        });
+      }
+
+      return res.json({
+        success: true,
+        roomCode: currentServerState.roomCode,
+        connectedClients: currentServerState.connectedClients
+      });
+    }
+
+    // Update state fields
+    if (actionData.questionText) currentServerState.questionText = actionData.questionText;
+    if (actionData.questionIndex !== undefined) currentServerState.questionIndex = actionData.questionIndex;
+    if (actionData.score !== undefined) currentServerState.score = actionData.score;
+    if (actionData.row !== undefined) currentServerState.row = actionData.row;
+    if (actionData.subject) currentServerState.subject = actionData.subject;
+    if (actionData.pack) currentServerState.pack = actionData.pack;
+    if (actionData.contestants && Array.isArray(actionData.contestants)) {
+      currentServerState.contestants = actionData.contestants;
+      // Also update names in connectedClients for ts1..4
+      actionData.contestants.forEach((c, idx) => {
+        if (c && c.name && currentServerState.connectedClients[`ts${idx+1}`]) {
+          currentServerState.connectedClients[`ts${idx+1}`].name = c.name;
+        }
+      });
+    }
+    if (actionData.gameData) currentServerState.gameData = actionData.gameData;
+
+    // Automatically clear cached player answers on specific round milestones / question changes / resets
+    if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
+    if (actionData.type === 'RA_KHOI_SHOW_QUESTION' || actionData.type === 'RA_KHOI_RESET') {
+      Object.keys(currentServerState.playerAnswers).forEach(key => {
+        if (key.endsWith('_RK')) delete currentServerState.playerAnswers[key];
+      });
+    } else if (actionData.type === 'VUOT_SONG_SELECT_ROW' || actionData.type === 'VUOT_SONG_RESET') {
+      Object.keys(currentServerState.playerAnswers).forEach(key => {
+        if (key.endsWith('_VS')) delete currentServerState.playerAnswers[key];
+      });
+    } else if (actionData.type === 'VINH_QUANG_SELECT_PACK' || actionData.type === 'VINH_QUANG_RESET') {
+      Object.keys(currentServerState.playerAnswers).forEach(key => {
+        if (key.endsWith('_VQ')) delete currentServerState.playerAnswers[key];
+      });
+    } else if (actionData.type === 'RESET_ALL_DATA') {
+      currentServerState.playerAnswers = {};
+    }
+
+    if (actionData.type === 'PLAYER_SUBMIT_ANSWER') {
+      const tsIdx = actionData.contestantId || 1;
+      const round = actionData.round || 'RK';
+      if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
+      currentServerState.playerAnswers[`ts${tsIdx}_${round}`] = {
+        contestantId: tsIdx,
+        round: round,
+        answer: actionData.answer || '',
+        time: actionData.time || '',
+        isVongThi: !!actionData.isVongThi,
+        timestamp: Date.now()
+      };
+    }
+
+    if (actionData.type.startsWith('XUAT_PHAT_')) currentServerState.activeRound = 'XUAT_PHAT';
+    else if (actionData.type.startsWith('RA_KHOI_')) currentServerState.activeRound = 'RA_KHOI';
+    else if (actionData.type.startsWith('VUOT_SONG_')) currentServerState.activeRound = 'VUOT_SONG';
+    else if (actionData.type.startsWith('VINH_QUANG_')) currentServerState.activeRound = 'VINH_QUANG';
+
+    // Do not overwrite latestAction with heartbeats
+    if (actionData.type !== 'PROJECTOR_READY' && actionData.type !== 'PROJECTOR_PONG' && actionData.type !== 'PING' && actionData.type !== 'CLIENT_HEARTBEAT') {
+      latestAction = actionData;
+    }
+
+    currentServerState.timestamp = Date.now();
+
+    broadcastAction(actionData);
   }
+  res.json({ success: true, timestamp: Date.now() });
+});
+
+app.post('/api/state', (req, res) => {
+  const newState = req.body;
+  if (newState && typeof newState === 'object') {
+    currentServerState = {
+      ...currentServerState,
+      ...newState,
+      timestamp: Date.now()
+    };
+    const payload = `data: ${JSON.stringify({ type: 'UPDATE_STATE', ...currentServerState })}\n\n`;
+    sseClients.forEach(client => {
+      try {
+        client.res.write(payload);
+      } catch (e) {}
+    });
+  }
+  res.json({ success: true, timestamp: Date.now() });
+});
+
+// Periodic heartbeat to keep connections alive on mobile networks/proxies
+setInterval(() => {
+  const now = Date.now();
+  let changed = false;
+
+  // Check client connection timeouts (> 8000ms)
+  if (currentServerState.connectedClients) {
+    Object.keys(currentServerState.connectedClients).forEach(key => {
+      const client = currentServerState.connectedClients[key];
+      if (client.connected && now - client.lastSeen > 8000) {
+        client.connected = false;
+        changed = true;
+      }
+    });
+  }
+
+  if (changed) {
+    broadcastAction({
+      type: 'CLIENT_STATUS_UPDATE',
+      connectedClients: currentServerState.connectedClients,
+      timestamp: now
+    });
+  }
+
+  const pingPayload = `data: ${JSON.stringify({ type: 'PING', timestamp: now })}\n\n`;
+  sseClients.forEach(client => {
+    try {
+      client.res.write(pingPayload);
+    } catch (e) {}
+  });
+}, 5000);
+
+// Root route: Serve index.html or controller.html
+app.get('/', (req, res) => {
+  if (fs.existsSync(path.join(__dirname, 'controller.html'))) {
+    res.sendFile(path.join(__dirname, 'controller.html'));
+  } else if (fs.existsSync(path.join(__dirname, 'index.html'))) {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  }
+});
+
+// Explicit routes for all HTML files (accessible with or without .html, uppercase or lowercase)
+app.get(['/controller', '/controller.html', '/index', '/index.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'controller.html'));
+});
+
+app.get(['/projector', '/projector.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'projector.html'));
+});
+
+app.get(['/graphic', '/graphic.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'graphic.html'));
+});
+
+app.get(['/host', '/host.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'host.html'));
+});
+
+app.get(['/player', '/player.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player.html'));
+});
+
+app.get(['/player1', '/player1.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player1.html'));
+});
+
+app.get(['/player2', '/player2.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player2.html'));
+});
+
+app.get(['/player3', '/player3.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player3.html'));
+});
+
+app.get(['/player4', '/player4.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player4.html'));
+});
+
+app.get(['/player_scene1', '/player_scene1.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player_scene1.html'));
+});
+
+app.get(['/player_scene2', '/player_scene2.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player_scene2.html'));
+});
+
+app.get(['/player_scene3', '/player_scene3.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'player_scene3.html'));
+});
+
+app.get(['/scoreboard', '/scoreboard.html', '/Scoreboard', '/Scoreboard.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'Scoreboard.html'));
+});
+
+app.get(['/scoreboard1', '/scoreboard1.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard1.html'));
+});
+
+app.get(['/scoreboard2', '/scoreboard2.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard2.html'));
+});
+
+app.get(['/scoreboard3', '/scoreboard3.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard3.html'));
+});
+
+app.get(['/scoreboard4', '/scoreboard4.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'scoreboard4.html'));
+});
+
+// Generic dynamic handler: Allows accessing any https://ddvq.onrender.com/<tên file HTML> or <tên file>
+app.get('/:filename', (req, res, next) => {
+  const rawParam = decodeURIComponent(req.params.filename || '');
+  if (!rawParam || rawParam.startsWith('api')) return next();
+
+  const cleanName = rawParam.toLowerCase().replace(/\.html$/, '');
+  try {
+    const files = fs.readdirSync(__dirname);
+    const matched = files.find(f => {
+      const fLower = f.toLowerCase();
+      return fLower === rawParam.toLowerCase() ||
+             fLower === `${cleanName}.html` ||
+             fLower === cleanName;
+    });
+
+    if (matched && (matched.toLowerCase().endsWith('.html') || matched.toLowerCase().endsWith('.htm'))) {
+      return res.sendFile(path.join(__dirname, matched));
+    }
+  } catch (e) {}
+
   next();
 });
 
-// Serve all static assets from the current directory
-app.use(express.static(__dirname));
-
-// Route shortcuts
-app.get('/control', (req, res) => { res.sendFile(path.join(__dirname, 'control.html')); });
-app.get('/player1', (req, res) => { res.sendFile(path.join(__dirname, 'player1.html')); });
-app.get('/player2', (req, res) => { res.sendFile(path.join(__dirname, 'player2.html')); });
-app.get('/player3', (req, res) => { res.sendFile(path.join(__dirname, 'player3.html')); });
-app.get('/player4', (req, res) => { res.sendFile(path.join(__dirname, 'player4.html')); });
-app.get('/player', (req, res) => { res.sendFile(path.join(__dirname, 'player.html')); });
-app.get('/host', (req, res) => { res.sendFile(path.join(__dirname, 'host.html')); });
-app.get('/controller', (req, res) => { res.sendFile(path.join(__dirname, 'controller.html')); });
-app.get('/projector', (req, res) => { res.sendFile(path.join(__dirname, 'projector.html')); });
-app.get('/graphic', (req, res) => { res.sendFile(path.join(__dirname, 'graphic.html')); });
-app.get('/scoreboard', (req, res) => { res.sendFile(path.join(__dirname, 'Scoreboard.html')); });
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-
-// Start HTTP + WebSocket server
-server.listen(PORT, '0.0.0.0', () => {
-  const lanAddresses = getLocalNetworkAddresses();
-  console.log('================================================================');
-  console.log('  🎮 ĐƯỜNG ĐẾN VINH QUANG - MÁY CHỦ WEBSOCKET SẴN SÀNG HOẠT ĐỘNG');
-  console.log('================================================================');
-  console.log(`  🏠 Cục bộ (Localhost) : http://localhost:${PORT}`);
-  console.log(`  ⚡ WebSocket URL     : ws://localhost:${PORT}/ws`);
-  if (lanAddresses.length > 0) {
-    console.log('  🌐 Mạng LAN (Điện thoại / Laptop cùng Wi-Fi):');
-    lanAddresses.forEach(net => {
-      console.log(`     👉 [${net.interface}] : ${net.url} (WS: ${net.url.replace('http', 'ws')}/ws)`);
-    });
-  } else {
-    console.log(`  🌐 Mạng LAN/Internet  : http://0.0.0.0:${PORT}`);
-  }
-  console.log('----------------------------------------------------------------');
-  console.log(`  📱 Điều khiển (Controller): http://localhost:${PORT}/controller`);
-  console.log(`  🖥️  Máy chiếu (Projector) : http://localhost:${PORT}/projector`);
-  console.log(`  🎤 Màn hình MC (Host)    : http://localhost:${PORT}/host`);
-  console.log(`  ⚡ Thí sinh 1..4 (Player) : http://localhost:${PORT}/player`);
-  console.log(`  📊 Bảng điểm (Scoreboard) : http://localhost:${PORT}/scoreboard`);
-  console.log('================================================================');
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

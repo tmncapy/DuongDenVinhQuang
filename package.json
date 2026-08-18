@@ -1,16 +1,14 @@
 {
   "name": "duong-den-vinh-quang",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "echo 'Build ready'",
     "start": "node server.js",
-    "lint": "echo 'No lint errors'"
+    "build": "echo 'No build required for static server'",
+    "lint": "echo 'No lint required'"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "ws": "^8.21.3"
+    "express": "^5.2.1"
   }
 }

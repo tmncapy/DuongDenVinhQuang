@@ -2,11 +2,27 @@ let contestantId = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID)
 let currentRoomCode = localStorage.getItem('ddvq_room_code') || '';
 let playerContestants = [];
 
+const ONRENDER_BASE_URL_PLAYER = 'https://ddvq.onrender.com';
+
 function getApiUrl(path) {
-    if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + path;
+    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
+        return window.getApiUrl(path);
     }
-    return path;
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+    try {
+        const customUrl = localStorage.getItem('ddvq_server_url');
+        if (customUrl && customUrl.trim()) {
+            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
+        }
+    } catch(e) {}
+
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return ONRENDER_BASE_URL_PLAYER + cleanPath;
+    }
+    return cleanPath;
 }
 
 function onLoginPlayerSelectChange() {
@@ -63,60 +79,43 @@ function onClickJoinRoom() {
 
     const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
 
-    const joinPayload = {
-        type: 'CLIENT_JOIN',
-        role: `ts${contestantId}`,
-        contestantId: contestantId,
-        roomCode: roomCode,
-        name: myName
-    };
-
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(joinPayload);
-    }
-
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(joinPayload)
+    fetch(getApiUrl('/api/action'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type: 'CLIENT_JOIN',
+            role: `ts${contestantId}`,
+            contestantId: contestantId,
+            roomCode: roomCode,
+            name: myName
         })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                currentRoomCode = roomCode;
-                localStorage.setItem('ddvq_room_code', roomCode);
-                localStorage.setItem('contestant_id', contestantId);
-                const modal = document.getElementById('room_code_modal');
-                if (modal) modal.style.display = 'none';
-                if (errorBox) errorBox.style.display = 'none';
-                showToast(`Vào phòng thi thành công! (Mã phòng: ${roomCode})`);
-                startHeartbeat();
-            } else {
-                if (errorBox) {
-                    errorBox.innerText = data.error || 'Mã phòng không chính xác!';
-                    errorBox.style.display = 'block';
-                }
-            }
-        })
-        .catch(() => {
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
             currentRoomCode = roomCode;
             localStorage.setItem('ddvq_room_code', roomCode);
             localStorage.setItem('contestant_id', contestantId);
             const modal = document.getElementById('room_code_modal');
             if (modal) modal.style.display = 'none';
-            showToast(`Đã tham gia phòng (Mã: ${roomCode})`);
+            if (errorBox) errorBox.style.display = 'none';
+            showToast(`Vào phòng thi thành công! (Mã phòng: ${roomCode})`);
             startHeartbeat();
-        });
-    } else {
+        } else {
+            if (errorBox) {
+                errorBox.innerText = data.error || 'Mã phòng không chính xác!';
+                errorBox.style.display = 'block';
+            }
+        }
+    })
+    .catch(() => {
         currentRoomCode = roomCode;
         localStorage.setItem('ddvq_room_code', roomCode);
-        localStorage.setItem('contestant_id', contestantId);
         const modal = document.getElementById('room_code_modal');
         if (modal) modal.style.display = 'none';
         showToast(`Đã tham gia phòng (Mã: ${roomCode})`);
         startHeartbeat();
-    }
+    });
 }
 
 let heartbeatInterval = null;
@@ -131,42 +130,43 @@ function sendHeartbeat() {
     const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
     const roleKey = `ts${contestantId}`;
 
-    const hbPayload = {
-        type: 'CLIENT_HEARTBEAT',
-        role: roleKey,
-        contestantId: contestantId,
-        roomCode: currentRoomCode,
-        name: myName,
-        timestamp: Date.now()
-    };
-
-    // 0. Supabase & MQTT Realtime sync
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(hbPayload);
-    }
-
-    // 1. API POST (if server backend is present)
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(hbPayload)
-            }).catch(() => {});
-        } catch(e) {}
-    }
+    // 1. API POST
+    fetch(getApiUrl('/api/action'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type: 'CLIENT_HEARTBEAT',
+            role: roleKey,
+            contestantId: contestantId,
+            roomCode: currentRoomCode,
+            name: myName
+        })
+    }).catch(() => {});
 
     // 2. BroadcastChannel
     try {
         if (typeof BroadcastChannel !== 'undefined') {
             const bc = new BroadcastChannel('ddvq_game_channel');
-            bc.postMessage(hbPayload);
+            bc.postMessage({
+                type: 'CLIENT_HEARTBEAT',
+                role: roleKey,
+                contestantId: contestantId,
+                roomCode: currentRoomCode,
+                name: myName,
+                timestamp: Date.now()
+            });
         }
     } catch(e) {}
 
     // 3. LocalStorage
     try {
-        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify(hbPayload));
+        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify({
+            role: roleKey,
+            contestantId: contestantId,
+            roomCode: currentRoomCode,
+            name: myName,
+            timestamp: Date.now()
+        }));
     } catch(e) {}
 }
 
@@ -619,9 +619,6 @@ function submitScene2Answer() {
     };
 
     // Instant local broadcast to controller and projector
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(submitPayload);
-    }
     if (playerChannel) {
         try {
             playerChannel.postMessage(submitPayload);
@@ -638,15 +635,26 @@ function submitScene2Answer() {
         localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload));
     } catch(e) {}
 
-    showToast(`Đã gửi đáp án TS${contestantId}: "${ans}" (${timeStr})`);
-
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(submitPayload)
-        }).catch(() => {});
+    if (window.location.protocol === 'file:') {
+        showToast(`Đã gửi đáp án cục bộ (Offline) TS${contestantId}: "${ans}" (${timeStr})`);
+        return;
     }
+
+    const actionUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/action') : '/api/action';
+    fetch(actionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submitPayload)
+    }).then(() => {
+        showToast(`Đã gửi đáp án TS${contestantId}: "${ans}" (${timeStr})`);
+    }).catch(e => {
+        console.error(e);
+        showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+        if (badge) {
+            badge.innerText = '❌ GỬI THẤT BẠI';
+            badge.style.background = '#dc2626';
+        }
+    });
 }
 
 function submitScene3Answer(isVongThi = false) {
@@ -692,9 +700,6 @@ function submitScene3Answer(isVongThi = false) {
         };
 
         // Instant local broadcast
-        if (typeof sendSupabaseAction === 'function') {
-            sendSupabaseAction(submitPayload);
-        }
         if (playerChannel) {
             try { playerChannel.postMessage(submitPayload); } catch(e) {}
         }
@@ -705,15 +710,26 @@ function submitScene3Answer(isVongThi = false) {
         } catch(e) {}
         try { localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload)); } catch(e) {}
 
-        showToast(`Đã gửi đáp án Hàng ngang TS${contestantId}: "${ans}" (${timeStr})`);
-
-        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(submitPayload)
-            }).catch(() => {});
+        if (window.location.protocol === 'file:') {
+            showToast(`Đã gửi đáp án Hàng ngang cục bộ (Offline) TS${contestantId}: "${ans}" (${timeStr})`);
+            return;
         }
+
+        const actionUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/action') : '/api/action';
+        fetch(actionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submitPayload)
+        }).then(() => {
+            showToast(`Đã gửi đáp án Hàng ngang TS${contestantId}: "${ans}" (${timeStr})`);
+        }).catch(e => {
+            console.error(e);
+            showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+            if (badge) {
+                badge.innerText = '❌ GỬI THẤT BẠI';
+                badge.style.background = '#dc2626';
+            }
+        });
     } else {
         // Vòng thi (Chướng ngại vật) answer: always allowed, calculate elapsed time since round started
         const ans = s3Input ? s3Input.value.trim() : "";
@@ -750,9 +766,6 @@ function submitScene3Answer(isVongThi = false) {
         };
 
         // Instant local broadcast
-        if (typeof sendSupabaseAction === 'function') {
-            sendSupabaseAction(submitPayload);
-        }
         if (playerChannel) {
             try { playerChannel.postMessage(submitPayload); } catch(e) {}
         }
@@ -763,15 +776,26 @@ function submitScene3Answer(isVongThi = false) {
         } catch(e) {}
         try { localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload)); } catch(e) {}
 
-        showToast(`Đã gửi đáp án Vòng thi TS${contestantId}: "${finalAnswer}" (${timeStr})`);
-
-        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(submitPayload)
-            }).catch(() => {});
+        if (window.location.protocol === 'file:') {
+            showToast(`Đã gửi đáp án Vòng thi cục bộ (Offline) TS${contestantId}: "${finalAnswer}" (${timeStr})`);
+            return;
         }
+
+        const actionUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/action') : '/api/action';
+        fetch(actionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submitPayload)
+        }).then(() => {
+            showToast(`Đã gửi đáp án Vòng thi TS${contestantId}: "${finalAnswer}" (${timeStr})`);
+        }).catch(e => {
+            console.error(e);
+            showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+            if (badge) {
+                badge.innerText = '❌ GỬI THẤT BẠI';
+                badge.style.background = '#dc2626';
+            }
+        });
     }
 }
 
@@ -864,9 +888,6 @@ function submitScene4Answer() {
     };
 
     // Instant local broadcast to controller and projector
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(submitPayload);
-    }
     if (playerChannel) {
         try {
             playerChannel.postMessage(submitPayload);
@@ -883,15 +904,26 @@ function submitScene4Answer() {
         localStorage.setItem('ddvq_latest_action', JSON.stringify(submitPayload));
     } catch(e) {}
 
-    showToast(`Đã gửi đáp án TS${contestantId}: "${ans}" (${timeStr})`);
-
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(submitPayload)
-        }).catch(() => {});
+    if (window.location.protocol === 'file:') {
+        showToast(`Đã gửi đáp án cục bộ (Offline) TS${contestantId}: "${ans}" (${timeStr})`);
+        return;
     }
+
+    const actionUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/action') : '/api/action';
+    fetch(actionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submitPayload)
+    }).then(() => {
+        showToast(`Đã gửi đáp án TS${contestantId}: "${ans}" (${timeStr})`);
+    }).catch(e => {
+        console.error(e);
+        showToast('Không gửi được câu trả lời. Vui lòng thử lại!');
+        if (badge) {
+            badge.innerText = '❌ GỬI THẤT BẠI';
+            badge.style.background = '#dc2626';
+        }
+    });
 }
 
 function startS4Timer(sec) {
@@ -1254,21 +1286,19 @@ function handlePlayerMessage(data) {
 // Initial render of Vượt Sóng grid
 renderPlayerVSGrid();
 
-// 1. SSE Real-time Connection fallback (if syncChannel is not present)
-if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-    try {
-        const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
-        const sse = new EventSource(ssePath);
-        sse.onmessage = function(e) {
-            try {
-                const data = JSON.parse(e.data);
-                handlePlayerMessage(data);
-            } catch(err) {}
-        };
-        sse.onerror = function() {
-            fetchCurrentState();
-        };
-    } catch(e) {}
+// 1. SSE Real-time Connection
+if (typeof EventSource !== 'undefined') {
+    const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+    const sse = new EventSource(ssePath);
+    sse.onmessage = function(e) {
+        try {
+            const data = JSON.parse(e.data);
+            handlePlayerMessage(data);
+        } catch(err) {}
+    };
+    sse.onerror = function() {
+        fetchCurrentState();
+    };
 }
 
 // 2. BroadcastChannel
@@ -1289,9 +1319,8 @@ window.addEventListener('storage', function(e) {
     }
 });
 
-// 4. Initial & Interval State Polling Fallback (if server backend is present)
+// 4. Initial & Interval State Polling Fallback
 function fetchCurrentState() {
-    if (typeof hasLocalServerBackend === 'function' && !hasLocalServerBackend()) return;
     const apiPath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
     fetch(apiPath)
         .then(res => res.json())
@@ -1315,9 +1344,6 @@ function triggerRandomDeFromPlayer() {
         timestamp: Date.now()
     };
 
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(payload);
-    }
     if (playerChannel) {
         try { playerChannel.postMessage(payload); } catch(e) {}
     }
@@ -1330,13 +1356,13 @@ function triggerRandomDeFromPlayer() {
         localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
     } catch(e) {}
 
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+    try {
         fetch(getApiUrl('/api/action'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).catch(() => {});
-    }
+    } catch(e) {}
 
     showToast(`🎲 Đã chọn ngẫu nhiên: Bộ đề ${chosenSet}`);
 }

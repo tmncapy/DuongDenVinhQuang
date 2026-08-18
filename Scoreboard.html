@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <!-- Disable DevTools -->
+    <script src="disable-devtools.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScoreBoard Full Window</title>
     <style>
         * {
             box-sizing: border-box;
+            font-weight: bold !important;
         }
 
         body, html {
@@ -61,46 +65,177 @@
 <body>
 
     <div class="scoreboard-container">
-        <div class="score" id="sb_score">0</div>
-        <div class="name" id="sb_name">THÍ SINH</div>
+        <div id="orange_flash_overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 165, 0, 0.7); pointer-events: none; z-index: 999; opacity: 0; transition: opacity 0.1s ease;"></div>
+        <div class="score" id="contestant_score">0</div>
+        <div class="name" id="contestant_name">THÍ SINH 1</div>
     </div>
 
     <script src="network_sync.js"></script>
-    <script src="supabase-sync.js"></script>
     <script>
+        // Allow URL query parameter ?id=1..4 or default to 1
         const urlParams = new URLSearchParams(window.location.search);
-        let playerIdx = parseInt(urlParams.get('player') || urlParams.get('ts') || '1') - 1;
-        if (playerIdx < 0 || playerIdx > 3) playerIdx = 0;
+        const CONTESTANT_ID = parseInt(urlParams.get('id')) || 1;
+        const scoreEl = document.getElementById('contestant_score');
+        const nameEl = document.getElementById('contestant_name');
 
-        function updateScoreboardView(contestants) {
-            if (!Array.isArray(contestants) || !contestants[playerIdx]) return;
-            const c = contestants[playerIdx];
-            const scoreEl = document.getElementById('sb_score');
-            const nameEl = document.getElementById('sb_name');
-            if (scoreEl) scoreEl.innerText = c.score !== undefined ? c.score : 0;
-            if (nameEl) nameEl.innerText = (c.name || `THÍ SINH ${playerIdx + 1}`).toUpperCase();
+        function updateScoreboard(name, score) {
+            if (score !== undefined && score !== null && !isNaN(score)) {
+                scoreEl.innerText = score;
+            }
+            if (name !== undefined && name !== null && name.toString().trim() !== '') {
+                nameEl.innerText = name.toString().toUpperCase();
+            }
         }
 
-        window.handleBroadcastMessage = function(data) {
+        function loadInitialData() {
+            try {
+                const saved = localStorage.getItem('ddvq_contestants');
+                if (saved) {
+                    const list = JSON.parse(saved);
+                    if (list && list[CONTESTANT_ID - 1]) {
+                        updateScoreboard(list[CONTESTANT_ID - 1].name, list[CONTESTANT_ID - 1].score);
+                    }
+                }
+            } catch(e) {}
+
+            try {
+                const gDataStr = localStorage.getItem('duong_den_vinh_quang_data');
+                if (gDataStr) {
+                    const gData = JSON.parse(gDataStr);
+                    if (gData && gData.contestants && gData.contestants[CONTESTANT_ID - 1]) {
+                        updateScoreboard(gData.contestants[CONTESTANT_ID - 1].name, gData.contestants[CONTESTANT_ID - 1].score);
+                    }
+                }
+            } catch(e) {}
+
+            const stateUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
+            fetch(stateUrl)
+                .then(res => res.json())
+                .then(data => handleData(data))
+                .catch(() => {});
+        }
+
+        let flashInterval = null;
+        function triggerOrangeFlash() {
+            const overlay = document.getElementById('orange_flash_overlay');
+            if (!overlay) return;
+            if (flashInterval) clearInterval(flashInterval);
+
+            let count = 0;
+            const maxFlashes = 20;
+            let isOn = false;
+
+            flashInterval = setInterval(() => {
+                isOn = !isOn;
+                overlay.style.opacity = isOn ? '1' : '0';
+                if (isOn) {
+                    count++;
+                    if (count >= maxFlashes) {
+                        setTimeout(() => {
+                            clearInterval(flashInterval);
+                            overlay.style.opacity = '0';
+                        }, 250);
+                    }
+                }
+            }, 250);
+
+            isOn = true;
+            overlay.style.opacity = '1';
+            count = 1;
+        }
+
+        function handleData(data) {
             if (!data) return;
-            if (data.contestants) {
-                updateScoreboardView(data.contestants);
-            }
-            if (data.type === 'INITIAL_STATE_SYNC' && data.contestants) {
-                updateScoreboardView(data.contestants);
-            }
-            if (data.type === 'UPDATE_SCORES' && data.contestants) {
-                updateScoreboardView(data.contestants);
-            }
-            if (data.type === 'UPDATE_CONTESTANTS' && data.contestants) {
-                updateScoreboardView(data.contestants);
-            }
-        };
 
-        // Fallback fetch
-        if (typeof fetchCurrentState === 'function') {
-            fetchCurrentState();
+            if ((data.type === 'PLAYER_SUBMIT_ANSWER' && (data.isVongThi || data.round === 'VS')) || data.type === 'S3_FLASH_SCOREBOARD') {
+                if (!data.contestantId || data.contestantId === CONTESTANT_ID) {
+                    triggerOrangeFlash();
+                }
+            }
+
+            if (data.contestants && Array.isArray(data.contestants)) {
+                const myData = data.contestants[CONTESTANT_ID - 1];
+                if (myData) {
+                    updateScoreboard(myData.name, myData.score);
+                }
+            }
+
+            if (data.gameData && data.gameData.contestants && Array.isArray(data.gameData.contestants)) {
+                const myData = data.gameData.contestants[CONTESTANT_ID - 1];
+                if (myData) {
+                    updateScoreboard(myData.name, myData.score);
+                }
+            }
+
+            if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT' && data.turnIndex === CONTESTANT_ID) {
+                updateScoreboard(data.name, data.score);
+            }
+
+            if (data.latestAction && typeof data.latestAction === 'object') {
+                handleData(data.latestAction);
+            }
         }
+
+        // BroadcastChannel
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                const channel = new BroadcastChannel('ddvq_game_channel');
+                channel.onmessage = function(e) {
+                    handleData(e.data);
+                };
+            }
+        } catch(e) {}
+
+        // Server-Sent Events (SSE)
+        if (typeof EventSource !== 'undefined') {
+            try {
+                const sseUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+                const sse = new EventSource(sseUrl);
+                sse.onmessage = function(e) {
+                    try {
+                        const data = JSON.parse(e.data);
+                        handleData(data);
+                    } catch(err) {}
+                };
+            } catch(e) {}
+        }
+
+        // Window storage listener
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'ddvq_latest_action' && e.newValue) {
+                try {
+                    handleData(JSON.parse(e.newValue));
+                } catch(err) {}
+            } else if (e.key === 'ddvq_contestants' && e.newValue) {
+                try {
+                    const list = JSON.parse(e.newValue);
+                    if (list && list[CONTESTANT_ID - 1]) {
+                        updateScoreboard(list[CONTESTANT_ID - 1].name, list[CONTESTANT_ID - 1].score);
+                    }
+                } catch(err) {}
+            } else if (e.key === 'duong_den_vinh_quang_data' && e.newValue) {
+                try {
+                    const gData = JSON.parse(e.newValue);
+                    if (gData && gData.contestants && gData.contestants[CONTESTANT_ID - 1]) {
+                        updateScoreboard(gData.contestants[CONTESTANT_ID - 1].name, gData.contestants[CONTESTANT_ID - 1].score);
+                    }
+                } catch(err) {}
+            }
+        });
+
+        // Window postMessage listener
+        window.addEventListener('message', function(e) {
+            if (e.data) handleData(e.data);
+        });
+
+        // Initial fetch
+        loadInitialData();
+
+        // Polling fallback
+        setInterval(() => {
+            loadInitialData();
+        }, 1500);
     </script>
+
 </body>
 </html>

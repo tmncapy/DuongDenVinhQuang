@@ -713,9 +713,6 @@ loadInitialProjectorState();
 
 function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(msg);
-    }
     if (projectorChannel) {
         try { projectorChannel.postMessage(msg); } catch(e) {}
     }
@@ -727,9 +724,9 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
-    if (window.location.protocol === 'file:') return;
     try {
-        fetch('/api/action', {
+        const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : (typeof getApiUrlProj === 'function' ? getApiUrlProj('/api/action') : '/api/action');
+        fetch(actionUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(msg)
@@ -1510,11 +1507,27 @@ function handleRKShowContestantAnswers(data) {
     }
 }
 
+const ONRENDER_BASE_URL_GRAPHIC = 'https://ddvq.onrender.com';
+
 function getApiUrlProj(path) {
-    if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + path;
+    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function') {
+        return window.getApiUrl(path);
     }
-    return path;
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+    try {
+        const customUrl = localStorage.getItem('ddvq_server_url');
+        if (customUrl && customUrl.trim()) {
+            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
+        }
+    } catch(e) {}
+
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return ONRENDER_BASE_URL_GRAPHIC + cleanPath;
+    }
+    return cleanPath;
 }
 
 function sendProjectorHeartbeat() {
@@ -1527,10 +1540,6 @@ function sendProjectorHeartbeat() {
         name: 'Máy Chiếu (Graphic)',
         timestamp: Date.now()
     };
-
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(hbData);
-    }
 
     fetch(getApiUrlProj('/api/action'), {
         method: 'POST',

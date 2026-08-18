@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <!-- Disable DevTools -->
+    <script src="disable-devtools.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giao diện Câu hỏi - Xuất Phát (Scene 1)</title>
@@ -9,6 +12,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-weight: bold !important;
         }
 
         body {
@@ -185,6 +189,7 @@
         </div>
     </div>
 
+    <script src="network_sync.js"></script>
     <script>
         let contestantId = parseInt(localStorage.getItem('contestant_id')) || 1;
         document.getElementById('ts_select').value = contestantId;
@@ -216,56 +221,92 @@
             }
         }
 
-        if (typeof EventSource !== 'undefined') {
-            const sse = new EventSource('/api/events');
-            sse.onmessage = function(e) {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (!data || !data.type) return;
+        function handleScene1Action(data) {
+            if (!data || !data.type) return;
 
-                    if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
-                        if (data.score !== undefined) {
-                            document.getElementById('score_box').innerText = data.score;
-                        }
-                    } else if (data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI') {
-                        if (data.score !== undefined) {
-                            document.getElementById('score_box').innerText = data.score;
-                        }
-                    } else if (data.type === 'XUAT_PHAT_START_TIMER') {
-                        if (data.questionText) {
-                            document.getElementById('question_text').innerText = data.questionText;
-                        }
-                        setQuestionIndex(0);
-                    } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
-                        if (data.questionIndex !== undefined) {
-                            setQuestionIndex(data.questionIndex);
-                        } else {
-                            setQuestionIndex(currentQIndex + 1);
-                        }
-                        if (data.questionText) {
-                            document.getElementById('question_text').innerText = data.questionText;
-                        }
-                    } else if (data.type === 'XUAT_PHAT_RIGHT') {
-                        const activeBtn = document.getElementById(`btn_q_${currentQIndex + 1}`);
-                        if (activeBtn) activeBtn.classList.add('correct');
-                        if (data.score !== undefined) {
-                            document.getElementById('score_box').innerText = data.score;
-                        }
-                    } else if (data.type === 'XUAT_PHAT_WRONG') {
-                        const activeBtn = document.getElementById(`btn_q_${currentQIndex + 1}`);
-                        if (activeBtn) activeBtn.classList.add('wrong');
-                        if (data.score !== undefined) {
-                            document.getElementById('score_box').innerText = data.score;
-                        }
-                    } else if (data.type === 'XUAT_PHAT_RESET') {
-                        document.getElementById('question_text').innerText = "Đang chờ lượt thi Xuất Phát...";
-                        for (let i = 1; i <= 10; i++) {
-                            const btn = document.getElementById(`btn_q_${i}`);
-                            if (btn) btn.className = 'page-btn';
-                        }
-                    }
+            if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
+                if (data.score !== undefined) {
+                    document.getElementById('score_box').innerText = data.score;
+                }
+            } else if (data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI') {
+                if (data.score !== undefined) {
+                    document.getElementById('score_box').innerText = data.score;
+                }
+            } else if (data.type === 'XUAT_PHAT_START_TIMER') {
+                if (data.questionText) {
+                    document.getElementById('question_text').innerText = data.questionText;
+                }
+                setQuestionIndex(0);
+            } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
+                if (data.questionIndex !== undefined) {
+                    setQuestionIndex(data.questionIndex);
+                } else {
+                    setQuestionIndex(currentQIndex + 1);
+                }
+                if (data.questionText) {
+                    document.getElementById('question_text').innerText = data.questionText;
+                }
+            } else if (data.type === 'XUAT_PHAT_RIGHT') {
+                const activeBtn = document.getElementById(`btn_q_${currentQIndex + 1}`);
+                if (activeBtn) activeBtn.classList.add('correct');
+                if (data.score !== undefined) {
+                    document.getElementById('score_box').innerText = data.score;
+                }
+            } else if (data.type === 'XUAT_PHAT_WRONG') {
+                const activeBtn = document.getElementById(`btn_q_${currentQIndex + 1}`);
+                if (activeBtn) activeBtn.classList.add('wrong');
+                if (data.score !== undefined) {
+                    document.getElementById('score_box').innerText = data.score;
+                }
+            } else if (data.type === 'XUAT_PHAT_RESET') {
+                document.getElementById('question_text').innerText = "Đang chờ lượt thi Xuất Phát...";
+                for (let i = 1; i <= 10; i++) {
+                    const btn = document.getElementById(`btn_q_${i}`);
+                    if (btn) btn.className = 'page-btn';
+                }
+            }
+
+            if (data.latestAction && typeof data.latestAction === 'object') {
+                handleScene1Action(data.latestAction);
+            }
+        }
+
+        // BroadcastChannel
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                const channel = new BroadcastChannel('ddvq_game_channel');
+                channel.onmessage = function(e) {
+                    handleScene1Action(e.data);
+                };
+            }
+        } catch(e) {}
+
+        // Window storage listener
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'ddvq_latest_action' && e.newValue) {
+                try {
+                    handleScene1Action(JSON.parse(e.newValue));
                 } catch(err) {}
-            };
+            }
+        });
+
+        // Window postMessage listener
+        window.addEventListener('message', function(e) {
+            if (e.data) handleScene1Action(e.data);
+        });
+
+        // SSE Connection
+        if (typeof EventSource !== 'undefined') {
+            try {
+                const sseUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+                const sse = new EventSource(sseUrl);
+                sse.onmessage = function(e) {
+                    try {
+                        const data = JSON.parse(e.data);
+                        handleScene1Action(data);
+                    } catch(err) {}
+                };
+            } catch(e) {}
         }
     </script>
 
