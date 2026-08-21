@@ -775,38 +775,6 @@
 
     </div>
 
-    <!-- ROOM CODE LOGIN MODAL OVERLAY -->
-    <div id="room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-        <div style="background: #1e293b; border: 2px solid #3b82f6; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); text-align: center; color: #f8fafc;">
-            <div style="font-size: 36px; margin-bottom: 8px;">🏆</div>
-            <h2 style="font-size: 20px; font-weight: 800; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">ĐĂNG NHẬP THÍ SINH 2</h2>
-            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Nhập Mã Phòng từ Ban Tổ Chức (Controller) để tham gia thi đấu</p>
-
-            <div style="text-align: left; margin-bottom: 16px;">
-                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">1. VỊ TRÍ THÍ SINH (ĐÃ CỐ ĐỊNH):</label>
-                <div style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #2563eb; border-radius: 8px; color: #60a5fa; font-size: 15px; font-weight: 800; text-align: center;">
-                    🔒 THÍ SINH 2
-                </div>
-                <select id="login_player_select" style="display: none;" disabled>
-                    <option value="2" selected>Thí sinh 2</option>
-                </select>
-            </div>
-
-            <div style="text-align: left; margin-bottom: 24px;">
-                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">2. NHẬP MÃ PHÒNG (ROOM CODE):</label>
-                <input type="password" id="login_room_code_input" placeholder="Nhập mã phòng..." style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; outline: none;" onkeyup="if(event.key==='Enter') onClickJoinRoom()">
-            </div>
-
-            <div id="login_error_msg" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 16px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                Mã phòng không chính xác!
-            </div>
-
-            <button onclick="onClickJoinRoom()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: all 0.2s;">
-                VÀO PHÒNG THI
-            </button>
-        </div>
-    </div>
-
     <!-- TOAST NOTIFICATION -->
     <div id="toast_box"></div>
 

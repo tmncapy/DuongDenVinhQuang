@@ -75,6 +75,7 @@
         // Allow URL query parameter ?id=1..4 or default to 1
         const urlParams = new URLSearchParams(window.location.search);
         const CONTESTANT_ID = parseInt(urlParams.get('id')) || 1;
+        const roomCode = (urlParams.get('roomid') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
         const scoreEl = document.getElementById('contestant_score');
         const nameEl = document.getElementById('contestant_name');
 
@@ -108,7 +109,7 @@
                 }
             } catch(e) {}
 
-            const stateUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
+            const stateUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl(`/api/state?roomid=${encodeURIComponent(roomCode)}`) : `/api/state?roomid=${encodeURIComponent(roomCode)}`;
             fetch(stateUrl)
                 .then(res => res.json())
                 .then(data => handleData(data))
@@ -146,6 +147,7 @@
 
         function handleData(data) {
             if (!data) return;
+            if (data.roomCode && data.roomCode.toUpperCase() !== roomCode) return;
 
             if ((data.type === 'PLAYER_SUBMIT_ANSWER' && (data.isVongThi || data.round === 'VS')) || data.type === 'S3_FLASH_SCOREBOARD') {
                 if (!data.contestantId || data.contestantId === CONTESTANT_ID) {
@@ -179,17 +181,17 @@
         // BroadcastChannel
         try {
             if (typeof BroadcastChannel !== 'undefined') {
-                const channel = new BroadcastChannel('ddvq_game_channel');
-                channel.onmessage = function(e) {
-                    handleData(e.data);
-                };
+                const channel1 = new BroadcastChannel(`ddvq_game_channel_${roomCode.toLowerCase()}`);
+                channel1.onmessage = function(e) { handleData(e.data); };
+                const channel2 = new BroadcastChannel('ddvq_game_channel');
+                channel2.onmessage = function(e) { handleData(e.data); };
             }
         } catch(e) {}
 
         // Server-Sent Events (SSE)
         if (typeof EventSource !== 'undefined') {
             try {
-                const sseUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
+                const sseUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl(`/api/events?roomid=${encodeURIComponent(roomCode)}`) : `/api/events?roomid=${encodeURIComponent(roomCode)}`;
                 const sse = new EventSource(sseUrl);
                 sse.onmessage = function(e) {
                     try {

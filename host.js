@@ -1,4 +1,4 @@
-let hostRoomCode = localStorage.getItem('ddvq_room_code') || '';
+let hostRoomCode = (new URLSearchParams(window.location.search).get('roomid') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
 let hostAutoSync = true;
 let hostActiveScene = 1;
 let currentHostState = {};
@@ -182,9 +182,12 @@ window.addEventListener('DOMContentLoaded', () => {
 let hostChannel = null;
 try {
     if (typeof BroadcastChannel !== 'undefined') {
-        hostChannel = new BroadcastChannel('ddvq_game_channel');
+        hostChannel = new BroadcastChannel(`ddvq_game_channel_${hostRoomCode.toLowerCase()}`);
         hostChannel.onmessage = function(e) {
-            if (e.data) processHostAction(e.data);
+            if (e.data) {
+                if (e.data.roomCode && e.data.roomCode.toUpperCase() !== hostRoomCode) return;
+                processHostAction(e.data);
+            }
         };
     }
 } catch(e) {}
@@ -192,10 +195,11 @@ try {
 // SSE EventSource
 if (typeof EventSource !== 'undefined') {
     try {
-        const sse = new EventSource(getApiUrl('/api/events'));
+        const sse = new EventSource(getApiUrl(`/api/events?roomid=${encodeURIComponent(hostRoomCode)}`));
         sse.onmessage = function(e) {
             try {
                 const data = JSON.parse(e.data);
+                if (data.roomCode && data.roomCode.toUpperCase() !== hostRoomCode) return;
                 processHostAction(data);
             } catch(err) {}
         };
@@ -205,14 +209,21 @@ if (typeof EventSource !== 'undefined') {
 // Window storage listener
 window.addEventListener('storage', function(e) {
     if (e.key === 'ddvq_latest_action' && e.newValue) {
-        try { processHostAction(JSON.parse(e.newValue)); } catch(err) {}
+        try {
+            const parsed = JSON.parse(e.newValue);
+            if (parsed.roomCode && parsed.roomCode.toUpperCase() !== hostRoomCode) return;
+            processHostAction(parsed);
+        } catch(err) {}
     }
 });
 
 function fetchHostState() {
-    fetch(getApiUrl('/api/state'))
+    fetch(getApiUrl(`/api/state?roomid=${encodeURIComponent(hostRoomCode)}`))
         .then(r => r.json())
-        .then(data => processHostAction(data))
+        .then(data => {
+            if (data.roomCode && data.roomCode.toUpperCase() !== hostRoomCode) return;
+            processHostAction(data);
+        })
         .catch(() => {});
 }
 

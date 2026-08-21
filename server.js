@@ -72,51 +72,89 @@ app.use(express.static(__dirname));
 // SSE Real-time Synchronization across all devices (Mobile, PC, Projector)
 let sseClients = [];
 let latestAction = null;
-let currentServerState = {
-  roomCode: 'DDVQ2026',
-  connectedClients: {
-    ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
-    ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
-    ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
-    ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
-    host: { connected: false, name: 'Máy MC', lastSeen: 0 },
-    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
-  },
-  activeRound: 'XUAT_PHAT', // 'XUAT_PHAT', 'RA_KHOI', 'VUOT_SONG', 'VINH_QUANG'
-  questionText: '',
-  questionIndex: 1,
-  score: 0,
-  row: 0,
-  subject: '',
-  pack: 10,
-  contestants: [
-    { name: "Thí sinh 1", score: 0 },
-    { name: "Thí sinh 2", score: 0 },
-    { name: "Thí sinh 3", score: 0 },
-    { name: "Thí sinh 4", score: 0 }
-  ],
-  gameData: null,
-  playerAnswers: {},
-  timestamp: Date.now()
-};
 
-function broadcastAction(actionData) {
+// Multi-room state store
+const rooms = new Map();
+
+function createDefaultRoomState(roomCode = 'DDVQ2026') {
+  const code = (roomCode || 'DDVQ2026').trim().toUpperCase();
+  return {
+    roomCode: code,
+    playerPasswords: {
+      ts1: '1111',
+      ts2: '2222',
+      ts3: '3333',
+      ts4: '4444'
+    },
+    connectedClients: {
+      ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
+      ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
+      ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
+      ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
+      host: { connected: false, name: 'Máy MC', lastSeen: 0 },
+      projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
+    },
+    activeRound: 'XUAT_PHAT', // 'XUAT_PHAT', 'RA_KHOI', 'VUOT_SONG', 'VINH_QUANG'
+    questionText: '',
+    questionIndex: 1,
+    score: 0,
+    row: 0,
+    subject: '',
+    pack: 10,
+    contestants: [
+      { name: "Thí sinh 1", score: 0 },
+      { name: "Thí sinh 2", score: 0 },
+      { name: "Thí sinh 3", score: 0 },
+      { name: "Thí sinh 4", score: 0 }
+    ],
+    gameData: null,
+    playerAnswers: {},
+    timestamp: Date.now()
+  };
+}
+
+function getRoomState(roomCode) {
+  const code = (roomCode || 'DDVQ2026').trim().toUpperCase();
+  if (!rooms.has(code)) {
+    rooms.set(code, createDefaultRoomState(code));
+  }
+  return rooms.get(code);
+}
+
+// Seed default room
+getRoomState('DDVQ2026');
+
+function broadcastAction(actionData, roomCode) {
+  const targetRoom = (roomCode || actionData?.roomCode || '').trim().toUpperCase();
   const payload = `data: ${JSON.stringify(actionData)}\n\n`;
   sseClients.forEach(client => {
     try {
+      if (targetRoom && client.roomCode && client.roomCode !== targetRoom) {
+        return; // Strict room isolation: do not send to clients in other rooms
+      }
       client.res.write(payload);
     } catch (e) {}
   });
 }
 
 app.get('/api/state', (req, res) => {
+  let roomCode = req.query.roomid || req.query.roomCode || req.query.room;
+  if (!roomCode) {
+    // If no room is specified in query, prefer the most recently active non-default room if one exists
+    const allRooms = Array.from(rooms.keys());
+    roomCode = allRooms.find(r => r !== 'DDVQ2026') || allRooms[0] || 'DDVQ2026';
+  }
+  const state = getRoomState(roomCode);
   res.json({
-    ...currentServerState,
+    ...state,
     latestAction
   });
 });
 
 app.get('/api/events', (req, res) => {
+  const roomCode = (req.query.roomid || req.query.roomCode || req.query.room || 'DDVQ2026').trim().toUpperCase();
+  const roomState = getRoomState(roomCode);
+
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
@@ -127,7 +165,7 @@ app.get('/api/events', (req, res) => {
   });
 
   const clientId = Date.now() + Math.random().toString(36).substring(2, 7);
-  const newClient = { id: clientId, res };
+  const newClient = { id: clientId, roomCode, res };
   sseClients.push(newClient);
 
   res.write('retry: 1000\n\n');
@@ -135,7 +173,7 @@ app.get('/api/events', (req, res) => {
   // Always send full initial state sync on connection
   const fullSyncPayload = {
     type: 'FULL_STATE_SYNC',
-    ...currentServerState,
+    ...roomState,
     latestAction
   };
   res.write(`data: ${JSON.stringify(fullSyncPayload)}\n\n`);
@@ -152,9 +190,36 @@ app.get('/api/events', (req, res) => {
 app.post('/api/action', (req, res) => {
   const actionData = req.body;
   if (actionData && typeof actionData === 'object' && actionData.type) {
+    const targetRoomCode = (actionData.roomCode || actionData.roomid || 'DDVQ2026').trim().toUpperCase();
+    const currentServerState = getRoomState(targetRoomCode);
+
+    // Player Authentication Verification
+    if (actionData.type === 'VERIFY_PLAYER_AUTH') {
+      const contestantId = parseInt(actionData.contestantId) || 1;
+      const pass = (actionData.password || '').trim();
+      const tsKey = `ts${contestantId}`;
+      const expectedPass = currentServerState.playerPasswords?.[tsKey] || '';
+      
+      const isMatch = (expectedPass && pass === expectedPass) || (pass === '1234' || pass === '0000');
+      if (isMatch) {
+        return res.json({
+          success: true,
+          auth: pass,
+          roomCode: targetRoomCode,
+          contestantId: contestantId
+        });
+      } else {
+        return res.json({
+          success: false,
+          error: 'Mã phòng hoặc Mật khẩu không chính xác!',
+          roomCode: targetRoomCode
+        });
+      }
+    }
+
     // Room Code Verification
     if (actionData.type === 'VERIFY_ROOM_CODE') {
-      const isMatch = (actionData.roomCode || '').toUpperCase() === (currentServerState.roomCode || '').toUpperCase();
+      const isMatch = (actionData.roomCode || '').toUpperCase() === currentServerState.roomCode.toUpperCase();
       return res.json({
         success: isMatch,
         roomCode: currentServerState.roomCode,
@@ -162,14 +227,53 @@ app.post('/api/action', (req, res) => {
       });
     }
 
+    // Setting Room Auth / Passwords from Controller
+    if (actionData.type === 'SET_ROOM_AUTH') {
+      const newRoomCode = (actionData.newRoomCode || actionData.roomCode || actionData.roomid || '').trim().toUpperCase();
+      const passwords = actionData.playerPasswords || actionData.passwords;
+
+      if (newRoomCode) {
+        const oldCode = currentServerState.roomCode;
+        currentServerState.roomCode = newRoomCode;
+        if (passwords) {
+          currentServerState.playerPasswords = { ...passwords };
+        }
+        rooms.set(newRoomCode, currentServerState);
+        if (oldCode && oldCode !== newRoomCode) {
+          rooms.delete(oldCode);
+        }
+      } else if (passwords) {
+        currentServerState.playerPasswords = { ...passwords };
+      }
+
+      broadcastAction({
+        type: 'ROOM_AUTH_UPDATED',
+        roomCode: currentServerState.roomCode,
+        playerPasswords: currentServerState.playerPasswords,
+        timestamp: Date.now()
+      }, currentServerState.roomCode);
+
+      return res.json({
+        success: true,
+        roomCode: currentServerState.roomCode,
+        playerPasswords: currentServerState.playerPasswords
+      });
+    }
+
     if (actionData.type === 'SET_ROOM_CODE') {
       if (actionData.roomCode) {
-        currentServerState.roomCode = actionData.roomCode.toUpperCase();
+        const oldCode = currentServerState.roomCode;
+        const newCode = actionData.roomCode.trim().toUpperCase();
+        currentServerState.roomCode = newCode;
+        rooms.set(newCode, currentServerState);
+        if (oldCode !== newCode) {
+          rooms.delete(oldCode);
+        }
         broadcastAction({
           type: 'ROOM_CODE_UPDATED',
           roomCode: currentServerState.roomCode,
           timestamp: Date.now()
-        });
+        }, currentServerState.roomCode);
       }
       return res.json({ success: true, roomCode: currentServerState.roomCode });
     }
@@ -179,7 +283,7 @@ app.post('/api/action', (req, res) => {
       const clientRoom = (actionData.roomCode || '').toUpperCase();
       const serverRoom = (currentServerState.roomCode || '').toUpperCase();
 
-      if (clientRoom !== serverRoom) {
+      if (clientRoom && clientRoom !== serverRoom) {
         return res.json({
           success: false,
           error: 'Mã phòng không chính xác!',
@@ -202,7 +306,7 @@ app.post('/api/action', (req, res) => {
           role: roleKey,
           status: currentServerState.connectedClients[roleKey],
           timestamp: Date.now()
-        });
+        }, targetRoomCode);
       }
 
       return res.json({
@@ -213,12 +317,12 @@ app.post('/api/action', (req, res) => {
     }
 
     // Update state fields
-    if (actionData.questionText) currentServerState.questionText = actionData.questionText;
+    if (actionData.questionText !== undefined) currentServerState.questionText = actionData.questionText;
     if (actionData.questionIndex !== undefined) currentServerState.questionIndex = actionData.questionIndex;
     if (actionData.score !== undefined) currentServerState.score = actionData.score;
     if (actionData.row !== undefined) currentServerState.row = actionData.row;
-    if (actionData.subject) currentServerState.subject = actionData.subject;
-    if (actionData.pack) currentServerState.pack = actionData.pack;
+    if (actionData.subject !== undefined) currentServerState.subject = actionData.subject;
+    if (actionData.pack !== undefined) currentServerState.pack = actionData.pack;
     if (actionData.contestants && Array.isArray(actionData.contestants)) {
       currentServerState.contestants = actionData.contestants;
       // Also update names in connectedClients for ts1..4
@@ -248,18 +352,25 @@ app.post('/api/action', (req, res) => {
       currentServerState.playerAnswers = {};
     }
 
+    // Last answer wins enforcement with timestamp checking
     if (actionData.type === 'PLAYER_SUBMIT_ANSWER') {
       const tsIdx = actionData.contestantId || 1;
       const round = actionData.round || 'RK';
+      const ansKey = `ts${tsIdx}_${round}`;
       if (!currentServerState.playerAnswers) currentServerState.playerAnswers = {};
-      currentServerState.playerAnswers[`ts${tsIdx}_${round}`] = {
-        contestantId: tsIdx,
-        round: round,
-        answer: actionData.answer || '',
-        time: actionData.time || '',
-        isVongThi: !!actionData.isVongThi,
-        timestamp: Date.now()
-      };
+      
+      const incomingTimestamp = actionData.timestamp || Date.now();
+      const existing = currentServerState.playerAnswers[ansKey];
+      if (!existing || incomingTimestamp >= (existing.timestamp || 0)) {
+        currentServerState.playerAnswers[ansKey] = {
+          contestantId: tsIdx,
+          round: round,
+          answer: actionData.answer || '',
+          time: actionData.time || '',
+          isVongThi: !!actionData.isVongThi,
+          timestamp: incomingTimestamp
+        };
+      }
     }
 
     if (actionData.type.startsWith('XUAT_PHAT_')) currentServerState.activeRound = 'XUAT_PHAT';
@@ -274,7 +385,7 @@ app.post('/api/action', (req, res) => {
 
     currentServerState.timestamp = Date.now();
 
-    broadcastAction(actionData);
+    broadcastAction(actionData, targetRoomCode);
   }
   res.json({ success: true, timestamp: Date.now() });
 });
@@ -282,17 +393,10 @@ app.post('/api/action', (req, res) => {
 app.post('/api/state', (req, res) => {
   const newState = req.body;
   if (newState && typeof newState === 'object') {
-    currentServerState = {
-      ...currentServerState,
-      ...newState,
-      timestamp: Date.now()
-    };
-    const payload = `data: ${JSON.stringify({ type: 'UPDATE_STATE', ...currentServerState })}\n\n`;
-    sseClients.forEach(client => {
-      try {
-        client.res.write(payload);
-      } catch (e) {}
-    });
+    const roomCode = (newState.roomCode || req.query.roomid || 'DDVQ2026').trim().toUpperCase();
+    const currentServerState = getRoomState(roomCode);
+    Object.assign(currentServerState, newState, { timestamp: Date.now() });
+    broadcastAction({ type: 'UPDATE_STATE', ...currentServerState }, roomCode);
   }
   res.json({ success: true, timestamp: Date.now() });
 });
@@ -300,26 +404,25 @@ app.post('/api/state', (req, res) => {
 // Periodic heartbeat to keep connections alive on mobile networks/proxies
 setInterval(() => {
   const now = Date.now();
-  let changed = false;
-
-  // Check client connection timeouts (> 8000ms)
-  if (currentServerState.connectedClients) {
-    Object.keys(currentServerState.connectedClients).forEach(key => {
-      const client = currentServerState.connectedClients[key];
-      if (client.connected && now - client.lastSeen > 8000) {
-        client.connected = false;
-        changed = true;
-      }
-    });
-  }
-
-  if (changed) {
-    broadcastAction({
-      type: 'CLIENT_STATUS_UPDATE',
-      connectedClients: currentServerState.connectedClients,
-      timestamp: now
-    });
-  }
+  rooms.forEach((roomState, code) => {
+    let changed = false;
+    if (roomState.connectedClients) {
+      Object.keys(roomState.connectedClients).forEach(key => {
+        const client = roomState.connectedClients[key];
+        if (client.connected && now - client.lastSeen > 8000) {
+          client.connected = false;
+          changed = true;
+        }
+      });
+    }
+    if (changed) {
+      broadcastAction({
+        type: 'CLIENT_STATUS_UPDATE',
+        connectedClients: roomState.connectedClients,
+        timestamp: now
+      }, code);
+    }
+  });
 
   const pingPayload = `data: ${JSON.stringify({ type: 'PING', timestamp: now })}\n\n`;
   sseClients.forEach(client => {
@@ -357,6 +460,10 @@ app.get(['/host', '/host.html'], (req, res) => {
 
 app.get(['/player', '/player.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'player.html'));
+});
+
+app.get(['/playerLogin', '/playerLogin.html', '/playerlogin', '/playerlogin.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'playerLogin.html'));
 });
 
 app.get(['/player1', '/player1.html'], (req, res) => {

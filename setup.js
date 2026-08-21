@@ -71,14 +71,19 @@ function switchTab(index) {
         }
     });
 
-    if (index === 1 && typeof updateTab1Preview === 'function') {
-        updateTab1Preview();
-    }
-    if (index === 2 && typeof selectRKQuestion === 'function') {
-        selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
-    }
-    if (index === 3) {
+    syncContestantsUI();
+
+    if (index === 1) {
+        if (typeof updateTab1Preview === 'function') updateTab1Preview();
+        sendToProjector('SWITCH_ROUND', { activeRound: 'XUAT_PHAT', round: 'XUAT_PHAT', viewNum: 1, contestants: gameData.contestants });
+    } else if (index === 2) {
+        if (typeof selectRKQuestion === 'function') selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
+        sendToProjector('SWITCH_ROUND', { activeRound: 'RA_KHOI', round: 'RA_KHOI', viewNum: 2, contestants: gameData.contestants });
+    } else if (index === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
+        sendToProjector('SWITCH_ROUND', { activeRound: 'VUOT_SONG', round: 'VUOT_SONG', viewNum: 3, contestants: gameData.contestants });
+    } else if (index === 4) {
+        sendToProjector('SWITCH_ROUND', { activeRound: 'VINH_QUANG', round: 'VINH_QUANG', viewNum: 6, contestants: gameData.contestants });
     }
 }
 
@@ -722,29 +727,54 @@ function saveAllData(notify = false) {
 
 function syncContestantsUI() {
     if (gameData.contestants && Array.isArray(gameData.contestants)) {
+        const activeEl = document.activeElement;
         gameData.contestants.forEach((c, i) => {
             const idx = i + 1;
-            const tab0Input = document.getElementById(`ts_name_${idx}`);
-            if (tab0Input) tab0Input.value = c.name || `Thí sinh ${idx}`;
-            const tab1Input = document.getElementById(`ts${idx}_name`);
-            if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
-            const tab2Input = document.getElementById(`ts${idx}_name_rk`);
-            if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
-            const tab3Input = document.getElementById(`ts${idx}_name_vs`);
-            if (tab3Input) tab3Input.value = c.name || `Thí sinh ${idx}`;
-            const tab4Input = document.getElementById(`ts${idx}_name_vq`);
-            if (tab4Input) tab4Input.value = c.name || `Thí sinh ${idx}`;
-            
-            const disp = document.getElementById(`ts${idx}_score_disp`);
-            if (disp) disp.innerText = c.score || 0;
-            const dispRK = document.getElementById(`ts${idx}_score_disp_rk`);
-            if (dispRK) dispRK.innerText = c.score || 0;
-            const dispVS = document.getElementById(`ts${idx}_score_disp_vs`);
-            if (dispVS) dispVS.innerText = c.score || 0;
-            const dispVQ = document.getElementById(`ts${idx}_score_disp_vq`);
-            if (dispVQ) dispVQ.innerText = c.score || 0;
+            const scoreVal = c.score !== undefined ? c.score : 0;
+            const nameVal = c.name || `Thí sinh ${idx}`;
+
+            const nameInputs = [
+                document.getElementById(`ts_name_${idx}`),
+                document.getElementById(`ts${idx}_name`),
+                document.getElementById(`ts${idx}_name_rk`),
+                document.getElementById(`ts${idx}_name_vs`),
+                document.getElementById(`ts${idx}_name_vq`)
+            ];
+            nameInputs.forEach(inp => {
+                if (inp && inp !== activeEl && inp.value !== nameVal) {
+                    inp.value = nameVal;
+                }
+            });
+
+            const scoreDisps = [
+                document.getElementById(`ts${idx}_score_disp`),
+                document.getElementById(`ts${idx}_score_disp_rk`),
+                document.getElementById(`ts${idx}_score_disp_vs`),
+                document.getElementById(`ts${idx}_score_disp_vq`),
+                document.getElementById(`vq_ts${idx}_score_disp`)
+            ];
+            scoreDisps.forEach(disp => {
+                if (disp) disp.innerText = scoreVal;
+            });
         });
-        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
+
+        if (typeof updateTab1Preview === 'function') {
+            updateTab1Preview();
+        }
+
+        const payload = {
+            type: 'UPDATE_SCORES',
+            contestants: gameData.contestants,
+            gameData: gameData,
+            timestamp: Date.now()
+        };
+
+        sendToProjector('UPDATE_SCORES', payload);
+
+        try {
+            localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
+            localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
+        } catch(e) {}
     }
 }
 
@@ -1108,31 +1138,136 @@ function updateClientStatusBadges(connectedClients) {
     }
 }
 
-function updateRoomCodeFromController() {
-    const input = document.getElementById('room_code_input');
-    if (!input) return;
-    const newCode = input.value.trim().toUpperCase() || 'DDVQ2026';
-    input.value = newCode;
+// ROOM CODE & CONTESTANT PASSWORD GENERATOR & MANAGER
+function generateRandomRoomCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function generateRandom4DigitPass() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+function randomizeRoomCodeAndPasswords() {
+    const newRoomCode = generateRandomRoomCode();
+    const p1 = generateRandom4DigitPass();
+    const p2 = generateRandom4DigitPass();
+    const p3 = generateRandom4DigitPass();
+    const p4 = generateRandom4DigitPass();
+
+    const roomInput = document.getElementById('room_code_input');
+    const p1Input = document.getElementById('pass_ts1_input');
+    const p2Input = document.getElementById('pass_ts2_input');
+    const p3Input = document.getElementById('pass_ts3_input');
+    const p4Input = document.getElementById('pass_ts4_input');
+
+    if (roomInput) roomInput.value = newRoomCode;
+    if (p1Input) p1Input.value = p1;
+    if (p2Input) p2Input.value = p2;
+    if (p3Input) p3Input.value = p3;
+    if (p4Input) p4Input.value = p4;
+
+    saveAndApplyRoomAuth();
+}
+
+function saveAndApplyRoomAuth() {
+    const roomInput = document.getElementById('room_code_input');
+    const p1Input = document.getElementById('pass_ts1_input');
+    const p2Input = document.getElementById('pass_ts2_input');
+    const p3Input = document.getElementById('pass_ts3_input');
+    const p4Input = document.getElementById('pass_ts4_input');
+
+    const roomCode = (roomInput ? roomInput.value.trim() : '') || localStorage.getItem('ddvq_room_code') || generateRandomRoomCode();
+    const pass1 = (p1Input ? p1Input.value.trim() : '') || '1111';
+    const pass2 = (p2Input ? p2Input.value.trim() : '') || '2222';
+    const pass3 = (p3Input ? p3Input.value.trim() : '') || '3333';
+    const pass4 = (p4Input ? p4Input.value.trim() : '') || '4444';
+
+    const passwords = { ts1: pass1, ts2: pass2, ts3: pass3, ts4: pass4 };
+
+    localStorage.setItem('ddvq_room_code', roomCode);
+    localStorage.setItem('ddvq_player_passwords', JSON.stringify(passwords));
+
+    const badge = document.getElementById('room_code_badge');
+    if (badge) badge.innerText = `Đang hoạt động: ${roomCode}`;
 
     fetch(getApiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            type: 'SET_ROOM_CODE',
-            roomCode: newCode
+            type: 'SET_ROOM_AUTH',
+            roomCode: roomCode,
+            newRoomCode: roomCode,
+            passwords: passwords,
+            playerPasswords: passwords
         })
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            const badge = document.getElementById('room_code_badge');
-            if (badge) badge.innerText = `Đang hoạt động: ${newCode}`;
-            if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng mới: ${newCode}`);
+            showToast(`✅ Đã thiết lập phòng: ${roomCode}\nMật khẩu: TS1(${pass1}), TS2(${pass2}), TS3(${pass3}), TS4(${pass4})`);
         }
     })
     .catch(err => {
-        console.error("Room code update error:", err);
+        console.warn("Error setting room auth on server:", err);
+        showToast(`Đã lưu cục bộ phòng: ${roomCode}`);
     });
+}
+
+function renderRoomAuthUI() {
+    const connTop = document.querySelector('.conn-top');
+    if (!connTop) return;
+
+    let savedRoom = localStorage.getItem('ddvq_room_code') || generateRandomRoomCode();
+    let savedPass = { ts1: '1111', ts2: '2222', ts3: '3333', ts4: '4444' };
+    try {
+        const p = localStorage.getItem('ddvq_player_passwords');
+        if (p) savedPass = { ...savedPass, ...JSON.parse(p) };
+    } catch(e) {}
+
+    connTop.style.cssText = 'display: flex; flex-direction: column; gap: 10px; background: #eef2ff; padding: 12px; border-radius: 8px; border: 1.5px solid #a5b4fc; margin-bottom: 12px;';
+    connTop.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid #c7d2fe; padding-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-weight: bold; color: #1e3a8a; font-size: 13px;">🔑 TẠO MÃ PHÒNG (6 CHỮ SỐ):</span>
+                <input type="text" id="room_code_input" maxlength="6" value="${savedRoom}" style="padding: 6px 10px; border: 2px solid #3b82f6; border-radius: 6px; font-weight: bold; font-size: 16px; width: 110px; text-align: center; color: #1e3a8a; letter-spacing: 2px; background: #fff;" placeholder="6 số">
+                <button type="button" class="btn" onclick="randomizeRoomCodeAndPasswords()" style="background: #f59e0b; color: #fff; border: 1px solid #d97706; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer;">🎲 Tạo ngẫu nhiên</button>
+                <button type="button" class="btn btn-primary" onclick="saveAndApplyRoomAuth()" style="padding: 6px 14px; font-weight: bold; background: #2563eb; border-radius: 6px;">🔒 Lưu & Cập nhật</button>
+            </div>
+            <span id="room_code_badge" style="background: #10b981; color: white; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 13px;">Đang hoạt động: ${savedRoom}</span>
+        </div>
+
+        <div>
+            <div style="font-size: 12px; font-weight: bold; color: #374151; margin-bottom: 6px;">🔐 MẬT KHẨU ĐĂNG NHẬP 4 THÍ SINH (4 CHỮ SỐ):</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS1:</span>
+                    <input type="text" id="pass_ts1_input" maxlength="4" value="${savedPass.ts1 || '1111'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS2:</span>
+                    <input type="text" id="pass_ts2_input" maxlength="4" value="${savedPass.ts2 || '2222'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS3:</span>
+                    <input type="text" id="pass_ts3_input" maxlength="4" value="${savedPass.ts3 || '3333'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS4:</span>
+                    <input type="text" id="pass_ts4_input" maxlength="4" value="${savedPass.ts4 || '4444'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderRoomAuthUI);
+} else {
+    renderRoomAuthUI();
+}
+
+function updateRoomCodeFromController() {
+    saveAndApplyRoomAuth();
 }
 
 let currentControllerAudio = null;
@@ -1167,9 +1302,11 @@ function stopSoundController() {
     if (typeof showToast === 'function') showToast('Đã dừng âm thanh!');
 }
 
+let currentRoom = (localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
+
 try {
     if (typeof BroadcastChannel !== 'undefined') {
-        controllerChannel = new BroadcastChannel('ddvq_game_channel');
+        controllerChannel = new BroadcastChannel(`ddvq_game_channel_${currentRoom.toLowerCase()}`);
         controllerChannel.onmessage = function(event) {
             if (!event.data) return;
             if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
@@ -1197,7 +1334,8 @@ try {
 // Server-Sent Events (SSE) for cross-device real-time sync (Mobile, PC, Projector)
 if (typeof EventSource !== 'undefined') {
     try {
-        const sseSource = new EventSource(getApiUrl('/api/events'));
+        const sseUrl = getApiUrl('/api/events' + (currentRoom ? `?roomid=${encodeURIComponent(currentRoom)}` : ''));
+        const sseSource = new EventSource(sseUrl);
         sseSource.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
@@ -1266,18 +1404,21 @@ setInterval(() => {
         updateProjectorStatus(false);
     }
 
+    const currentRoom = localStorage.getItem('ddvq_room_code') || '';
+    const stateUrl = currentRoom ? `/api/state?roomid=${encodeURIComponent(currentRoom)}` : '/api/state';
+
     // Always attempt fetching state from server
-    fetch(getApiUrl('/api/state'))
+    fetch(getApiUrl(stateUrl))
         .then(res => res.json())
         .then(data => {
             if (data) {
                 if (data.playerAnswers) handleIncomingPlayerAnswer(data);
                 if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
-                if (data.roomCode) {
+                if (data.roomCode && !currentRoom) {
                     localStorage.setItem('ddvq_room_code', data.roomCode);
                     const input = document.getElementById('room_code_input');
                     const badge = document.getElementById('room_code_badge');
-                    if (input && !input.matches(':focus')) input.value = data.roomCode;
+                    if (input && !input.matches(':focus') && !input.value) input.value = data.roomCode;
                     if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
                 }
             }
@@ -1306,7 +1447,8 @@ function updateProjectorStatus(isConnected) {
 }
 
 function sendToProjector(type, payload = {}) {
-    const message = { type, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
+    const roomCode = (localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
+    const message = { type, roomCode, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
     if (controllerChannel) {
         try {
             controllerChannel.postMessage(message);
@@ -1315,6 +1457,7 @@ function sendToProjector(type, payload = {}) {
         }
     }
     try {
+        localStorage.setItem(`ddvq_latest_action_${roomCode}`, JSON.stringify(message));
         localStorage.setItem('ddvq_latest_action', JSON.stringify(message));
     } catch(e) {}
     try {
@@ -1325,7 +1468,7 @@ function sendToProjector(type, payload = {}) {
         }
     } catch(e) {}
     try {
-        fetch('/api/action', {
+        fetch(getApiUrl('/api/action'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(message)
@@ -1334,10 +1477,13 @@ function sendToProjector(type, payload = {}) {
 }
 
 function updateContestantName(idx, val) {
-    val = (val || `Thí sinh ${idx}`).trim();
+    const rawVal = val !== undefined ? val : '';
     if (!gameData.contestants) gameData.contestants = [];
-    if (!gameData.contestants[idx - 1]) gameData.contestants[idx - 1] = { name: val, score: 0 };
-    else gameData.contestants[idx - 1].name = val;
+    if (!gameData.contestants[idx - 1]) {
+        gameData.contestants[idx - 1] = { name: rawVal, score: 0 };
+    } else {
+        gameData.contestants[idx - 1].name = rawVal;
+    }
 
     const inputs = [
         document.getElementById(`ts_name_${idx}`),
@@ -1346,7 +1492,11 @@ function updateContestantName(idx, val) {
         document.getElementById(`ts${idx}_name_vs`),
         document.getElementById(`ts${idx}_name_vq`)
     ];
-    inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
+    inputs.forEach(inp => {
+        if (inp && inp !== document.activeElement && inp.value !== rawVal) {
+            inp.value = rawVal;
+        }
+    });
     saveAllData();
     if (typeof currentXuatPhatTurn !== 'undefined' && currentXuatPhatTurn === idx) {
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
@@ -1362,24 +1512,146 @@ function updateContestantName(idx, val) {
 }
 
 function promptScore(idx) {
-    if (!gameData.contestants || !gameData.contestants[idx - 1]) return;
-    const current = gameData.contestants[idx - 1]?.score || 0;
-    // Provide quick modal-free score adjuster: increment by 10
-    const newScore = current + 10;
-    gameData.contestants[idx - 1].score = newScore;
-    const disps = [
-        document.getElementById(`ts${idx}_score_disp`),
-        document.getElementById(`ts${idx}_score_disp_rk`),
-        document.getElementById(`ts${idx}_score_disp_vq`)
-    ];
-    disps.forEach(disp => { if (disp) disp.innerText = gameData.contestants[idx - 1].score; });
-    saveAllData();
-    if (typeof updateTab1Preview === 'function') updateTab1Preview();
-    sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
-        name: gameData.contestants[idx - 1].name,
-        score: gameData.contestants[idx - 1].score
+    if (!gameData.contestants) gameData.contestants = [];
+    while (gameData.contestants.length < idx) {
+        gameData.contestants.push({ name: `Thí sinh ${gameData.contestants.length + 1}`, score: 0 });
+    }
+    const contestant = gameData.contestants[idx - 1];
+    const currentScore = contestant && contestant.score !== undefined ? contestant.score : 0;
+    const contestantName = (contestant && contestant.name) ? contestant.name : `Thí sinh ${idx}`;
+
+    const existing = document.getElementById('custom_score_edit_modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'custom_score_edit_modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100000;';
+
+    modal.innerHTML = `
+        <div style="background: #ffffff; border-radius: 12px; width: 90%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); border: 2px solid #3b82f6; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <div style="background: linear-gradient(135deg, #1e40af, #2563eb); color: white; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                    <span>✏️</span>
+                    <span>CHỈNH SỬA ĐIỂM</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 13px; font-weight: bold;">
+                    ${contestantName}
+                </div>
+            </div>
+            
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 14px; font-size: 14px; color: #475569;">
+                    Điểm số hiện tại: <strong style="color: #dc2626; font-size: 18px;">${currentScore}</strong>
+                </div>
+
+                <label style="display: block; font-size: 13px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">
+                    Nhập điểm số mới (phải chia hết cho 5):
+                </label>
+                <div style="position: relative; margin-bottom: 8px;">
+                    <input type="number" id="custom_score_input_val" step="5" value="${currentScore}" style="width: 100%; padding: 10px 14px; font-size: 22px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; outline: none; text-align: center;">
+                </div>
+
+                <div id="custom_score_error_msg" style="display: none; background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 12px;"></div>
+
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; justify-content: center;">
+                    <button type="button" class="quick-score-btn" data-delta="-20" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">-20</button>
+                    <button type="button" class="quick-score-btn" data-delta="-10" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">-10</button>
+                    <button type="button" class="quick-score-btn" data-delta="-5" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">-5</button>
+                    <button type="button" class="quick-score-btn" data-delta="5" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">+5</button>
+                    <button type="button" class="quick-score-btn" data-delta="10" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">+10</button>
+                    <button type="button" class="quick-score-btn" data-delta="20" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">+20</button>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button id="custom_score_cancel_btn" type="button" style="padding: 9px 20px; background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;">Đóng</button>
+                    <button id="custom_score_save_btn" type="button" style="padding: 9px 24px; background: #16a34a; color: white; border: 1px solid #15803d; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);">Lưu</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const inputEl = document.getElementById('custom_score_input_val');
+    const errorEl = document.getElementById('custom_score_error_msg');
+    const saveBtn = document.getElementById('custom_score_save_btn');
+    const cancelBtn = document.getElementById('custom_score_cancel_btn');
+
+    if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+    }
+
+    modal.querySelectorAll('.quick-score-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (inputEl) {
+                const cur = parseInt(inputEl.value, 10) || 0;
+                const delta = parseInt(btn.getAttribute('data-delta'), 10) || 0;
+                inputEl.value = Math.max(0, cur + delta);
+                if (errorEl) errorEl.style.display = 'none';
+            }
+        });
     });
-    showToast(`Đã tăng điểm Thí sinh ${idx} lên: ${newScore}`);
+
+    function doSave() {
+        const valStr = inputEl ? inputEl.value.trim() : '';
+        if (valStr === '') {
+            if (errorEl) {
+                errorEl.innerText = 'Vui lòng nhập số điểm!';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+        const val = parseInt(valStr, 10);
+        if (isNaN(val)) {
+            if (errorEl) {
+                errorEl.innerText = 'Điểm phải là một số nguyên hợp lệ!';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+        if (val % 5 !== 0) {
+            if (errorEl) {
+                errorEl.innerText = `Số điểm (${val}) phải chia hết cho 5! (Ví dụ: 0, 5, 10, 15, 20...)`;
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+
+        gameData.contestants[idx - 1].score = val;
+
+        syncContestantsUI();
+        saveAllData();
+
+        sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
+            name: gameData.contestants[idx - 1].name,
+            score: val
+        });
+
+        showToast(`Đã lưu điểm cho ${contestantName}: ${val}`);
+        modal.remove();
+    }
+
+    if (saveBtn) saveBtn.addEventListener('click', doSave);
+    if (cancelBtn) cancelBtn.addEventListener('click', () => modal.remove());
+
+    if (inputEl) {
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                doSave();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                modal.remove();
+            }
+        });
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
 function triggerFilePicker(targetInputId, acceptType) {
@@ -1424,17 +1696,8 @@ window.adjustScore = function(idx, delta) {
     const newScore = current + delta;
     gameData.contestants[idx - 1].score = newScore;
     
-    const disps = [
-        document.getElementById(`ts${idx}_score_disp`),
-        document.getElementById(`ts${idx}_score_disp_rk`),
-        document.getElementById(`ts${idx}_score_disp_vs`),
-        document.getElementById(`ts${idx}_score_disp_vq`)
-    ];
-    disps.forEach(disp => { if (disp) disp.innerText = newScore; });
-    
+    syncContestantsUI();
     saveAllData();
-    if (typeof updateTab1Preview === 'function') updateTab1Preview();
-    sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     
     if (typeof showToast === 'function') {
         const contestantName = gameData.contestants[idx - 1].name || `Thí sinh ${idx}`;

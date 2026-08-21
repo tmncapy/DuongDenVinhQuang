@@ -120,13 +120,13 @@ window.getApiUrl = getApiUrl;
 
     class GameSyncChannel {
         constructor(channelName) {
-            // Read optional custom channel/room from URL query string, e.g. ?room=mygame
+            // Read optional custom channel/room from URL query string, e.g. ?roomid=123456
             const urlParams = new URLSearchParams(window.location.search);
-            const customRoom = urlParams.get('room') || urlParams.get('channel') || localStorage.getItem('ddvq_room_code');
+            const customRoom = (urlParams.get('roomid') || urlParams.get('roomCode') || urlParams.get('room') || urlParams.get('channel') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim();
             
-            this.baseChannelName = 'ddvq_game_channel';
+            this.baseChannelName = `ddvq_game_channel_${customRoom.toLowerCase()}`;
             // All pages in the app MUST connect to the same topic to communicate!
-            this.topicName = customRoom ? `duong_den_vinh_quang_${customRoom.toLowerCase()}` : `duong_den_vinh_quang_main_channel_v2`;
+            this.topicName = `duong_den_vinh_quang_${customRoom.toLowerCase()}`;
             
             this.localChannel = new BroadcastChannel(this.baseChannelName);
             this.onmessageHandler = null;
