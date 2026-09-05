@@ -127,7 +127,7 @@
 
         .viewport-container {
             position: absolute;
-            top: 48px;
+            top: 0;
             left: 0;
             right: 0;
             bottom: 0;
@@ -874,33 +874,19 @@
 </head>
 <body>
 
-    <!-- TOP CONTROL BAR -->
-    <div class="master-top-bar">
-        <div class="left-controls">
-            <label>THÍ SINH:</label>
-            <select id="contestant_select" onchange="onSelectContestant(this.value)">
-                <option value="1">Thí sinh 1</option>
-                <option value="2">Thí sinh 2</option>
-                <option value="3">Thí sinh 3</option>
-                <option value="4">Thí sinh 4</option>
-            </select>
+    <!-- HIDDEN BACKEND SYNC CONTROLS -->
+    <div style="display: none;" aria-hidden="true">
+        <select id="contestant_select" onchange="onSelectContestant(this.value)">
+            <option value="1">Thí sinh 1</option>
+            <option value="2">Thí sinh 2</option>
+            <option value="3">Thí sinh 3</option>
+            <option value="4">Thí sinh 4</option>
+        </select>
+        <div id="player_master_timer_box">
+            <span id="player_remaining_seconds">--</span>
         </div>
-
-        <!-- Center Remaining Timer Display -->
-        <div id="player_master_timer_box" style="display: flex; align-items: center; gap: 8px; background: #1e293b; border: 1.5px solid #eab308; padding: 4px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; color: #facc15; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);">
-            <span>⏳ THỜI GIAN CÒN LẠI:</span>
-            <span id="player_remaining_seconds" style="font-size: 18px; color: #ffffff; min-width: 34px; text-align: center;">--</span>
-        </div>
-
-        <div class="status-area">
-            <button id="btn_reopen_slot" onclick="reopenSlotSelection()" style="background: #1e293b; border: 1.5px solid #475569; color: #f8fafc; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Nhấp vào đây nếu muốn chọn lại vị trí thí sinh (hoặc bấm F5)">
-                🔄 Đổi vị trí (F5)
-            </button>
-            <div class="status-badge" id="player_connection_badge" style="display: flex; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 12px;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
-                <span id="player_room_badge_text">Phòng: DDVQ2026</span>
-            </div>
-        </div>
+        <button id="btn_reopen_slot" onclick="reopenSlotSelection()"></button>
+        <span id="player_room_badge_text">Phòng: DDVQ2026</span>
     </div>
 
     <!-- MAIN VIEWPORT CONTAINER -->
