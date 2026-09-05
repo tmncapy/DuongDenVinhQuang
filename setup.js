@@ -71,67 +71,21 @@ function switchTab(index) {
         }
     });
 
-    syncContestantsUI();
-
-    if (index === 1) {
-        if (typeof updateTab1Preview === 'function') updateTab1Preview();
-        sendToProjector('SWITCH_ROUND', { activeRound: 'XUAT_PHAT', round: 'XUAT_PHAT', viewNum: 1, contestants: gameData.contestants });
-    } else if (index === 2) {
-        if (typeof selectRKQuestion === 'function') selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
-        sendToProjector('SWITCH_ROUND', { activeRound: 'RA_KHOI', round: 'RA_KHOI', viewNum: 2, contestants: gameData.contestants });
-    } else if (index === 3) {
+    if (index === 1 && typeof updateTab1Preview === 'function') {
+        updateTab1Preview();
+    }
+    if (index === 2 && typeof selectRKQuestion === 'function') {
+        selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
+    }
+    if (index === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
-        sendToProjector('SWITCH_ROUND', { activeRound: 'VUOT_SONG', round: 'VUOT_SONG', viewNum: 3, contestants: gameData.contestants });
-    } else if (index === 4) {
-        sendToProjector('SWITCH_ROUND', { activeRound: 'VINH_QUANG', round: 'VINH_QUANG', viewNum: 6, contestants: gameData.contestants });
     }
 }
 
 // Show Toast Notification
-function showToast(msg, duration = 3000) {
-    if (!msg) return;
-    console.log("[Toast]:", msg);
-    if (typeof document === 'undefined') return;
-
-    let toast = document.getElementById('ddvq_floating_toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'ddvq_floating_toast';
-        toast.style.position = 'fixed';
-        toast.style.bottom = '25px';
-        toast.style.right = '25px';
-        toast.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
-        toast.style.color = '#ffffff';
-        toast.style.padding = '12px 22px';
-        toast.style.borderRadius = '8px';
-        toast.style.fontSize = '14px';
-        toast.style.fontWeight = 'bold';
-        toast.style.boxShadow = '0 10px 25px rgba(0,0,0,0.4)';
-        toast.style.zIndex = '999999';
-        toast.style.transition = 'all 0.3s ease';
-        toast.style.pointerEvents = 'none';
-        toast.style.border = '1px solid rgba(255,255,255,0.2)';
-        toast.style.maxWidth = '80vw';
-        toast.style.lineHeight = '1.4';
-        toast.style.whiteSpace = 'pre-wrap';
-        document.body.appendChild(toast);
-    }
-
-    toast.innerText = msg;
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
-    toast.style.display = 'block';
-
-    if (window._toastTimeout) clearTimeout(window._toastTimeout);
-    window._toastTimeout = setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => {
-            if (toast.style.opacity === '0') {
-                toast.style.display = 'none';
-            }
-        }, 300);
-    }, duration);
+function showToast(msg) {
+    console.log("[Controller Toast]:", msg);
+    // Disabled UI toast on controller to prevent lag and button obstruction as requested.
 }
 
 function escapeHtml(text) {
@@ -436,7 +390,7 @@ function handleExcelUpload(event) {
             saveAllData(true);
         } catch (err) {
             console.error("Excel parse error:", err);
-            showToast("Lỗi khi đọc file Excel. Vui lòng kiểm tra đúng định dạng mẫu đề!", 4000);
+            alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra đúng định dạng mẫu đề!");
         }
     };
     reader.readAsArrayBuffer(file);
@@ -469,7 +423,6 @@ function parseExcelWorkbook(workbook) {
     renderVinhQuangPackUI(currentVinhQuangPack);
     fillCauHoiPhuInputs();
     updateVuotSongState();
-    if (typeof updateTab1Preview === 'function') updateTab1Preview();
 }
 
 function parseXuatPhatSheet(rows) {
@@ -480,18 +433,15 @@ function parseXuatPhatSheet(rows) {
         const row = rows[r];
         if (!row || row.length < 2) continue;
 
-        const sttDeRaw = row[0] !== undefined && row[0] !== "" ? row[0].toString().trim() : "";
+        const sttDe = row[0] !== undefined && row[0] !== "" ? parseInt(row[0]) : null;
         const questionText = (row[1] || "").toString().trim();
         const answerText = (row[2] || "").toString().trim();
 
         if (!questionText && !answerText) continue;
 
-        if (sttDeRaw) {
-            const parsedNum = parseInt(sttDeRaw);
-            if (!isNaN(parsedNum) && parsedNum >= 1 && parsedNum <= 12) {
-                currentTurn = parsedNum;
-                currentItemIndex = 0;
-            }
+        if (sttDe && !isNaN(sttDe)) {
+            currentTurn = sttDe;
+            currentItemIndex = 0;
         }
 
         if (!gameData.xuatPhat[currentTurn]) {
@@ -511,7 +461,7 @@ function parseXuatPhatSheet(rows) {
 
 function parseRaKhoiSheet(rows) {
     if (!Array.isArray(gameData.raKhoi)) {
-        gameData.raKhoi = [ {q:"",a:"",m:"",am:""}, {q:"",a:"",m:"",am:""}, {q:"",a:"",m:"",am:""}, {q:"",a:"",m:"",am:""} ];
+        gameData.raKhoi = [ {q:"",a:""}, {q:"",a:""}, {q:"",a:""}, {q:"",a:""} ];
     }
     let count = 0;
     for (let r = 2; r < rows.length && count < 4; r++) {
@@ -522,12 +472,7 @@ function parseRaKhoiSheet(rows) {
         const aText = (row[2] || "").toString().trim();
 
         if (qText || aText) {
-            gameData.raKhoi[count] = {
-                q: qText,
-                a: aText,
-                m: gameData.raKhoi[count]?.m || "",
-                am: gameData.raKhoi[count]?.am || ""
-            };
+            gameData.raKhoi[count] = { q: qText, a: aText, m: "...", am: "..." };
             count++;
         }
     }
@@ -537,7 +482,7 @@ function parseVuotSongSheet(rows) {
     if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
         gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
     }
-    let hangNgangIndex = 1;
+    let rowIndex = 1;
     for (let r = 2; r < rows.length; r++) {
         const row = rows[r];
         if (!row || row.length < 2) continue;
@@ -546,15 +491,17 @@ function parseVuotSongSheet(rows) {
         const qText = (row[1] || "").toString().trim();
         const aText = (row[2] || "").toString().trim();
 
-        if (!qText && !aText) continue;
+        if (colA.toUpperCase().includes("TRUNG TÂM") || colA.toUpperCase().includes("TỪ KHÓA") || r === 6) {
+            if (r === 6 && !colA.toUpperCase().includes("ĐÁP ÁN VÒNG THI")) {
+                gameData.vuotSong.center = { q: qText, a: aText };
+            }
+        } else if (rowIndex <= 4) {
+            gameData.vuotSong[`h${rowIndex}`] = { q: qText, a: aText };
+            rowIndex++;
+        }
 
-        const upperA = colA.toUpperCase();
-        if (upperA.includes("ĐÁP ÁN VÒNG THI") || upperA.includes("TỪ KHÓA") || upperA.includes("TRUNG TÂM") || upperA.includes("HÀNG DỌC") || upperA.includes("CHƯỚNG NGẠI VẬT") || r === 6) {
-            gameData.vuotSong.center = { q: qText, a: aText };
+        if (colA.toUpperCase().includes("TỪ KHÓA") || colA.toUpperCase().includes("ĐÁP ÁN VÒNG THI")) {
             gameData.vuotSong.keyword = aText || qText;
-        } else if (hangNgangIndex <= 4) {
-            gameData.vuotSong[`h${hangNgangIndex}`] = { q: qText, a: aText };
-            hangNgangIndex++;
         }
     }
 }
@@ -588,16 +535,13 @@ function parseVinhQuangSheet(rows) {
         if (m20 || q20 || a20) gameData.vinhQuang[20][questionIndex] = { m: m20, q: q20, a: a20 };
         if (m30 || q30 || a30) gameData.vinhQuang[30][questionIndex] = { m: m30, q: q30, a: a30 };
 
-        if (m10 || q10 || a10 || m20 || q20 || a20 || m30 || q30 || a30) {
-            questionIndex++;
-        }
+        questionIndex++;
     }
 }
 
 function parseCauHoiPhuSheet(rows) {
-    if (!Array.isArray(gameData.cauHoiPhu)) gameData.cauHoiPhu = [];
     let count = 0;
-    for (let r = 2; r < rows.length && count < 5; r++) {
+    for (let r = 2; r < rows.length && count < 3; r++) {
         const row = rows[r];
         if (!row || row.length < 2) continue;
 
@@ -727,54 +671,29 @@ function saveAllData(notify = false) {
 
 function syncContestantsUI() {
     if (gameData.contestants && Array.isArray(gameData.contestants)) {
-        const activeEl = document.activeElement;
         gameData.contestants.forEach((c, i) => {
             const idx = i + 1;
-            const scoreVal = c.score !== undefined ? c.score : 0;
-            const nameVal = c.name || `Thí sinh ${idx}`;
-
-            const nameInputs = [
-                document.getElementById(`ts_name_${idx}`),
-                document.getElementById(`ts${idx}_name`),
-                document.getElementById(`ts${idx}_name_rk`),
-                document.getElementById(`ts${idx}_name_vs`),
-                document.getElementById(`ts${idx}_name_vq`)
-            ];
-            nameInputs.forEach(inp => {
-                if (inp && inp !== activeEl && inp.value !== nameVal) {
-                    inp.value = nameVal;
-                }
-            });
-
-            const scoreDisps = [
-                document.getElementById(`ts${idx}_score_disp`),
-                document.getElementById(`ts${idx}_score_disp_rk`),
-                document.getElementById(`ts${idx}_score_disp_vs`),
-                document.getElementById(`ts${idx}_score_disp_vq`),
-                document.getElementById(`vq_ts${idx}_score_disp`)
-            ];
-            scoreDisps.forEach(disp => {
-                if (disp) disp.innerText = scoreVal;
-            });
+            const tab0Input = document.getElementById(`ts_name_${idx}`);
+            if (tab0Input) tab0Input.value = c.name || `Thí sinh ${idx}`;
+            const tab1Input = document.getElementById(`ts${idx}_name`);
+            if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
+            const tab2Input = document.getElementById(`ts${idx}_name_rk`);
+            if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
+            const tab3Input = document.getElementById(`ts${idx}_name_vs`);
+            if (tab3Input) tab3Input.value = c.name || `Thí sinh ${idx}`;
+            const tab4Input = document.getElementById(`ts${idx}_name_vq`);
+            if (tab4Input) tab4Input.value = c.name || `Thí sinh ${idx}`;
+            
+            const disp = document.getElementById(`ts${idx}_score_disp`);
+            if (disp) disp.innerText = c.score || 0;
+            const dispRK = document.getElementById(`ts${idx}_score_disp_rk`);
+            if (dispRK) dispRK.innerText = c.score || 0;
+            const dispVS = document.getElementById(`ts${idx}_score_disp_vs`);
+            if (dispVS) dispVS.innerText = c.score || 0;
+            const dispVQ = document.getElementById(`ts${idx}_score_disp_vq`);
+            if (dispVQ) dispVQ.innerText = c.score || 0;
         });
-
-        if (typeof updateTab1Preview === 'function') {
-            updateTab1Preview();
-        }
-
-        const payload = {
-            type: 'UPDATE_SCORES',
-            contestants: gameData.contestants,
-            gameData: gameData,
-            timestamp: Date.now()
-        };
-
-        sendToProjector('UPDATE_SCORES', payload);
-
-        try {
-            localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
-            localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
-        } catch(e) {}
+        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     }
 }
 
@@ -805,17 +724,16 @@ function loadSavedData() {
 }
 
 function resetAllData() {
-    if (gameData && gameData.contestants) {
-        gameData.contestants.forEach((c) => {
-            c.score = 0;
-        });
-    }
-    sendToProjector('RESET_ALL_DATA');
-    safeRemoveStorage('duong_den_vinh_quang_data');
-    showToast('Đã xóa và đặt lại toàn bộ dữ liệu hệ thống!', 3000);
-    setTimeout(() => {
+    if (confirm("Bạn có chắc chắn muốn xóa và thiết lập lại toàn bộ dữ liệu không?")) {
+        if (gameData && gameData.contestants) {
+            gameData.contestants.forEach((c, i) => {
+                c.score = 0;
+            });
+        }
+        sendToProjector('RESET_ALL_DATA');
+        safeRemoveStorage('duong_den_vinh_quang_data');
         location.reload();
-    }, 500);
+    }
 }
 
 function updateContestantName(i, val) {
@@ -872,20 +790,22 @@ function updateContestantName(i, val) {
     } catch(e) {}
 
     try {
-        fetch(getApiUrl('/api/state'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contestants: gameData.contestants,
-                gameData: gameData
-            })
-        }).catch(() => {});
+        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+            fetch(getApiUrl('/api/state'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestants: gameData.contestants,
+                    gameData: gameData
+                })
+            }).catch(() => {});
 
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(() => {});
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
     } catch(e) {}
 }
 
@@ -903,14 +823,16 @@ function syncDataToProjector() {
     updateContestantNames();
     sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants, gameData: gameData });
     try {
-        fetch('/api/state', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contestants: gameData.contestants,
-                gameData: gameData
-            })
-        }).catch(() => {});
+        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+            fetch(getApiUrl('/api/state'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contestants: gameData.contestants,
+                    gameData: gameData
+                })
+            }).catch(() => {});
+        }
     } catch(e) {}
     showToast('Đã đồng bộ toàn bộ dữ liệu sang Màn Hình Chiếu!');
 }
@@ -1066,25 +988,10 @@ function handleIncomingPlayerAnswer(data) {
 }
 
 function getApiUrl(path) {
-    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
-        return window.getApiUrl(path);
-    }
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
-
-    try {
-        const customUrl = localStorage.getItem('ddvq_server_url');
-        if (customUrl && customUrl.trim()) {
-            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
-        }
-    } catch(e) {}
-
-    const onrenderBase = (typeof window !== 'undefined' && window.ONRENDER_BASE_URL) || 'https://ddvq.onrender.com';
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return onrenderBase + cleanPath;
+        return 'http://localhost:3000' + path;
     }
-    return cleanPath;
+    return path;
 }
 
 let controllerConnectedClients = {
@@ -1138,136 +1045,85 @@ function updateClientStatusBadges(connectedClients) {
     }
 }
 
-// ROOM CODE & CONTESTANT PASSWORD GENERATOR & MANAGER
-function generateRandomRoomCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function generateRandom4DigitPass() {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-}
-
-function randomizeRoomCodeAndPasswords() {
-    const newRoomCode = generateRandomRoomCode();
-    const p1 = generateRandom4DigitPass();
-    const p2 = generateRandom4DigitPass();
-    const p3 = generateRandom4DigitPass();
-    const p4 = generateRandom4DigitPass();
-
-    const roomInput = document.getElementById('room_code_input');
-    const p1Input = document.getElementById('pass_ts1_input');
-    const p2Input = document.getElementById('pass_ts2_input');
-    const p3Input = document.getElementById('pass_ts3_input');
-    const p4Input = document.getElementById('pass_ts4_input');
-
-    if (roomInput) roomInput.value = newRoomCode;
-    if (p1Input) p1Input.value = p1;
-    if (p2Input) p2Input.value = p2;
-    if (p3Input) p3Input.value = p3;
-    if (p4Input) p4Input.value = p4;
-
-    saveAndApplyRoomAuth();
-}
-
-function saveAndApplyRoomAuth() {
-    const roomInput = document.getElementById('room_code_input');
-    const p1Input = document.getElementById('pass_ts1_input');
-    const p2Input = document.getElementById('pass_ts2_input');
-    const p3Input = document.getElementById('pass_ts3_input');
-    const p4Input = document.getElementById('pass_ts4_input');
-
-    const roomCode = (roomInput ? roomInput.value.trim() : '') || localStorage.getItem('ddvq_room_code') || generateRandomRoomCode();
-    const pass1 = (p1Input ? p1Input.value.trim() : '') || '1111';
-    const pass2 = (p2Input ? p2Input.value.trim() : '') || '2222';
-    const pass3 = (p3Input ? p3Input.value.trim() : '') || '3333';
-    const pass4 = (p4Input ? p4Input.value.trim() : '') || '4444';
-
-    const passwords = { ts1: pass1, ts2: pass2, ts3: pass3, ts4: pass4 };
-
-    localStorage.setItem('ddvq_room_code', roomCode);
-    localStorage.setItem('ddvq_player_passwords', JSON.stringify(passwords));
+function updateRoomCodeFromController() {
+    const input = document.getElementById('room_code_input');
+    const authInput = document.getElementById('room_auth_input');
+    if (!input) return;
+    const newCode = input.value.trim().toUpperCase() || 'DDVQ2026';
+    const newAuth = (authInput ? authInput.value.trim() : '') || '123456';
+    input.value = newCode;
+    if (authInput) authInput.value = newAuth;
+    localStorage.setItem('ddvq_room_code', newCode);
+    localStorage.setItem('ddvq_room_auth', newAuth);
 
     const badge = document.getElementById('room_code_badge');
-    if (badge) badge.innerText = `Đang hoạt động: ${roomCode}`;
+    if (badge) badge.innerText = `Đang hoạt động: ${newCode} | Pass: ${newAuth}`;
 
-    fetch(getApiUrl('/api/action'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            type: 'SET_ROOM_AUTH',
-            roomCode: roomCode,
-            newRoomCode: roomCode,
-            passwords: passwords,
-            playerPasswords: passwords
+    const linkPreview = document.getElementById('player_direct_link_preview');
+    if (linkPreview) {
+        linkPreview.innerText = getPlayerDirectLink();
+    }
+
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({
+            type: 'SET_ROOM_CODE',
+            roomCode: newCode,
+            roomAuth: newAuth,
+            auth: newAuth
+        });
+    }
+
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        fetch(getApiUrl('/api/action'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'SET_ROOM_CODE',
+                roomCode: newCode,
+                roomAuth: newAuth,
+                auth: newAuth
+            })
         })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`✅ Đã thiết lập phòng: ${roomCode}\nMật khẩu: TS1(${pass1}), TS2(${pass2}), TS3(${pass3}), TS4(${pass4})`);
-        }
-    })
-    .catch(err => {
-        console.warn("Error setting room auth on server:", err);
-        showToast(`Đã lưu cục bộ phòng: ${roomCode}`);
-    });
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng: ${newCode} (Pass: ${newAuth})`);
+            }
+        })
+        .catch(err => {
+            console.error("Room code update error:", err);
+        });
+    } else {
+        if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng: ${newCode} (Pass: ${newAuth})`);
+    }
 }
 
-function renderRoomAuthUI() {
-    const connTop = document.querySelector('.conn-top');
-    if (!connTop) return;
-
-    let savedRoom = localStorage.getItem('ddvq_room_code') || generateRandomRoomCode();
-    let savedPass = { ts1: '1111', ts2: '2222', ts3: '3333', ts4: '4444' };
-    try {
-        const p = localStorage.getItem('ddvq_player_passwords');
-        if (p) savedPass = { ...savedPass, ...JSON.parse(p) };
-    } catch(e) {}
-
-    connTop.style.cssText = 'display: flex; flex-direction: column; gap: 10px; background: #eef2ff; padding: 12px; border-radius: 8px; border: 1.5px solid #a5b4fc; margin-bottom: 12px;';
-    connTop.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid #c7d2fe; padding-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-weight: bold; color: #1e3a8a; font-size: 13px;">🔑 TẠO MÃ PHÒNG (6 CHỮ SỐ):</span>
-                <input type="text" id="room_code_input" maxlength="6" value="${savedRoom}" style="padding: 6px 10px; border: 2px solid #3b82f6; border-radius: 6px; font-weight: bold; font-size: 16px; width: 110px; text-align: center; color: #1e3a8a; letter-spacing: 2px; background: #fff;" placeholder="6 số">
-                <button type="button" class="btn" onclick="randomizeRoomCodeAndPasswords()" style="background: #f59e0b; color: #fff; border: 1px solid #d97706; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer;">🎲 Tạo ngẫu nhiên</button>
-                <button type="button" class="btn btn-primary" onclick="saveAndApplyRoomAuth()" style="padding: 6px 14px; font-weight: bold; background: #2563eb; border-radius: 6px;">🔒 Lưu & Cập nhật</button>
-            </div>
-            <span id="room_code_badge" style="background: #10b981; color: white; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 13px;">Đang hoạt động: ${savedRoom}</span>
-        </div>
-
-        <div>
-            <div style="font-size: 12px; font-weight: bold; color: #374151; margin-bottom: 6px;">🔐 MẬT KHẨU ĐĂNG NHẬP 4 THÍ SINH (4 CHỮ SỐ):</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS1:</span>
-                    <input type="text" id="pass_ts1_input" maxlength="4" value="${savedPass.ts1 || '1111'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
-                </div>
-                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS2:</span>
-                    <input type="text" id="pass_ts2_input" maxlength="4" value="${savedPass.ts2 || '2222'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
-                </div>
-                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS3:</span>
-                    <input type="text" id="pass_ts3_input" maxlength="4" value="${savedPass.ts3 || '3333'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
-                </div>
-                <div style="display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span style="font-size: 11px; font-weight: bold; color: #dc2626;">TS4:</span>
-                    <input type="text" id="pass_ts4_input" maxlength="4" value="${savedPass.ts4 || '4444'}" style="width: 100%; border: none; font-weight: bold; font-size: 14px; color: #1e3a8a; text-align: center; outline: none;" onchange="saveAndApplyRoomAuth()">
-                </div>
-            </div>
-        </div>
-    `;
+function getPlayerDirectLink() {
+    const roomInput = document.getElementById('room_code_input');
+    const authInput = document.getElementById('room_auth_input');
+    const code = (roomInput ? roomInput.value.trim().toUpperCase() : '') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
+    const auth = (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
+    const origin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://duongdenvinhquang.onrender.com';
+    return `${origin}/player.html?roomid=${encodeURIComponent(code)}&auth=${encodeURIComponent(auth)}`;
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderRoomAuthUI);
-} else {
-    renderRoomAuthUI();
+function copyPlayerDirectLink() {
+    const link = getPlayerDirectLink();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => {
+            if (typeof showToast === 'function') showToast(`✅ Đã sao chép link mời thí sinh:\n${link}`);
+            else alert(`Đã sao chép link:\n${link}`);
+        }).catch(() => {
+            prompt("Sao chép link mời thí sinh:", link);
+        });
+    } else {
+        prompt("Sao chép link mời thí sinh:", link);
+    }
 }
 
-function updateRoomCodeFromController() {
-    saveAndApplyRoomAuth();
+function openPlayerDirectLink() {
+    const link = getPlayerDirectLink();
+    window.open(link, '_blank');
 }
 
 let currentControllerAudio = null;
@@ -1302,11 +1158,9 @@ function stopSoundController() {
     if (typeof showToast === 'function') showToast('Đã dừng âm thanh!');
 }
 
-let currentRoom = (localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
-
 try {
     if (typeof BroadcastChannel !== 'undefined') {
-        controllerChannel = new BroadcastChannel(`ddvq_game_channel_${currentRoom.toLowerCase()}`);
+        controllerChannel = new BroadcastChannel('ddvq_game_channel');
         controllerChannel.onmessage = function(event) {
             if (!event.data) return;
             if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
@@ -1331,11 +1185,10 @@ try {
     console.warn("BroadcastChannel restricted:", e);
 }
 
-// Server-Sent Events (SSE) for cross-device real-time sync (Mobile, PC, Projector)
-if (typeof EventSource !== 'undefined') {
+// Server-Sent Events (SSE) fallback if supabase-sync.js has not initialized it
+if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
     try {
-        const sseUrl = getApiUrl('/api/events' + (currentRoom ? `?roomid=${encodeURIComponent(currentRoom)}` : ''));
-        const sseSource = new EventSource(sseUrl);
+        const sseSource = new EventSource(getApiUrl('/api/events'));
         sseSource.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
@@ -1350,10 +1203,15 @@ if (typeof EventSource !== 'undefined') {
                     updateClientStatusBadges(data.connectedClients);
                 } else if (data && data.roomCode) {
                     localStorage.setItem('ddvq_room_code', data.roomCode);
+                    if (data.roomAuth) localStorage.setItem('ddvq_room_auth', data.roomAuth);
                     const input = document.getElementById('room_code_input');
+                    const authInput = document.getElementById('room_auth_input');
                     const badge = document.getElementById('room_code_badge');
                     if (input && !input.matches(':focus')) input.value = data.roomCode;
-                    if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
+                    if (authInput && data.roomAuth && !authInput.matches(':focus')) authInput.value = data.roomAuth;
+                    if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode} | Pass: ${data.roomAuth || '123456'}`;
+                    const linkPreview = document.getElementById('player_direct_link_preview');
+                    if (linkPreview && typeof getPlayerDirectLink === 'function') linkPreview.innerText = getPlayerDirectLink();
                 }
             } catch(e) {}
         };
@@ -1404,26 +1262,30 @@ setInterval(() => {
         updateProjectorStatus(false);
     }
 
-    const currentRoom = localStorage.getItem('ddvq_room_code') || '';
-    const stateUrl = currentRoom ? `/api/state?roomid=${encodeURIComponent(currentRoom)}` : '/api/state';
-
-    // Always attempt fetching state from server
-    fetch(getApiUrl(stateUrl))
-        .then(res => res.json())
-        .then(data => {
-            if (data) {
-                if (data.playerAnswers) handleIncomingPlayerAnswer(data);
-                if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
-                if (data.roomCode && !currentRoom) {
-                    localStorage.setItem('ddvq_room_code', data.roomCode);
-                    const input = document.getElementById('room_code_input');
-                    const badge = document.getElementById('room_code_badge');
-                    if (input && !input.matches(':focus') && !input.value) input.value = data.roomCode;
-                    if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode}`;
+    // Attempt fetching state from server if backend is present
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        fetch(getApiUrl('/api/state'))
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    if (data.playerAnswers) handleIncomingPlayerAnswer(data);
+                    if (data.connectedClients) updateClientStatusBadges(data.connectedClients);
+                    if (data.roomCode) {
+                        localStorage.setItem('ddvq_room_code', data.roomCode);
+                        if (data.roomAuth) localStorage.setItem('ddvq_room_auth', data.roomAuth);
+                        const input = document.getElementById('room_code_input');
+                        const authInput = document.getElementById('room_auth_input');
+                        const badge = document.getElementById('room_code_badge');
+                        if (input && !input.matches(':focus')) input.value = data.roomCode;
+                        if (authInput && data.roomAuth && !authInput.matches(':focus')) authInput.value = data.roomAuth;
+                        if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode} | Pass: ${data.roomAuth || '123456'}`;
+                        const linkPreview = document.getElementById('player_direct_link_preview');
+                        if (linkPreview && typeof getPlayerDirectLink === 'function') linkPreview.innerText = getPlayerDirectLink();
+                    }
                 }
-            }
-        })
-        .catch(() => {});
+            })
+            .catch(() => {});
+    }
 
     // Refresh status badges with time-based check
     updateClientStatusBadges(controllerConnectedClients);
@@ -1447,8 +1309,10 @@ function updateProjectorStatus(isConnected) {
 }
 
 function sendToProjector(type, payload = {}) {
-    const roomCode = (localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
-    const message = { type, roomCode, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
+    const message = { type, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(message);
+    }
     if (controllerChannel) {
         try {
             controllerChannel.postMessage(message);
@@ -1457,7 +1321,6 @@ function sendToProjector(type, payload = {}) {
         }
     }
     try {
-        localStorage.setItem(`ddvq_latest_action_${roomCode}`, JSON.stringify(message));
         localStorage.setItem('ddvq_latest_action', JSON.stringify(message));
     } catch(e) {}
     try {
@@ -1467,23 +1330,22 @@ function sendToProjector(type, payload = {}) {
             window.opener.postMessage(message, '*');
         }
     } catch(e) {}
-    try {
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(message)
-        }).catch(() => {});
-    } catch(e) {}
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        try {
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(message)
+            }).catch(() => {});
+        } catch(e) {}
+    }
 }
 
 function updateContestantName(idx, val) {
-    const rawVal = val !== undefined ? val : '';
+    val = (val || `Thí sinh ${idx}`).trim();
     if (!gameData.contestants) gameData.contestants = [];
-    if (!gameData.contestants[idx - 1]) {
-        gameData.contestants[idx - 1] = { name: rawVal, score: 0 };
-    } else {
-        gameData.contestants[idx - 1].name = rawVal;
-    }
+    if (!gameData.contestants[idx - 1]) gameData.contestants[idx - 1] = { name: val, score: 0 };
+    else gameData.contestants[idx - 1].name = val;
 
     const inputs = [
         document.getElementById(`ts_name_${idx}`),
@@ -1492,11 +1354,7 @@ function updateContestantName(idx, val) {
         document.getElementById(`ts${idx}_name_vs`),
         document.getElementById(`ts${idx}_name_vq`)
     ];
-    inputs.forEach(inp => {
-        if (inp && inp !== document.activeElement && inp.value !== rawVal) {
-            inp.value = rawVal;
-        }
-    });
+    inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
     saveAllData();
     if (typeof currentXuatPhatTurn !== 'undefined' && currentXuatPhatTurn === idx) {
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
@@ -1512,146 +1370,24 @@ function updateContestantName(idx, val) {
 }
 
 function promptScore(idx) {
-    if (!gameData.contestants) gameData.contestants = [];
-    while (gameData.contestants.length < idx) {
-        gameData.contestants.push({ name: `Thí sinh ${gameData.contestants.length + 1}`, score: 0 });
-    }
-    const contestant = gameData.contestants[idx - 1];
-    const currentScore = contestant && contestant.score !== undefined ? contestant.score : 0;
-    const contestantName = (contestant && contestant.name) ? contestant.name : `Thí sinh ${idx}`;
-
-    const existing = document.getElementById('custom_score_edit_modal');
-    if (existing) existing.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'custom_score_edit_modal';
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100000;';
-
-    modal.innerHTML = `
-        <div style="background: #ffffff; border-radius: 12px; width: 90%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); border: 2px solid #3b82f6; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-            <div style="background: linear-gradient(135deg, #1e40af, #2563eb); color: white; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                    <span>✏️</span>
-                    <span>CHỈNH SỬA ĐIỂM</span>
-                </div>
-                <div style="background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 13px; font-weight: bold;">
-                    ${contestantName}
-                </div>
-            </div>
-            
-            <div style="padding: 20px;">
-                <div style="margin-bottom: 14px; font-size: 14px; color: #475569;">
-                    Điểm số hiện tại: <strong style="color: #dc2626; font-size: 18px;">${currentScore}</strong>
-                </div>
-
-                <label style="display: block; font-size: 13px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">
-                    Nhập điểm số mới (phải chia hết cho 5):
-                </label>
-                <div style="position: relative; margin-bottom: 8px;">
-                    <input type="number" id="custom_score_input_val" step="5" value="${currentScore}" style="width: 100%; padding: 10px 14px; font-size: 22px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; outline: none; text-align: center;">
-                </div>
-
-                <div id="custom_score_error_msg" style="display: none; background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 12px;"></div>
-
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; justify-content: center;">
-                    <button type="button" class="quick-score-btn" data-delta="-20" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">-20</button>
-                    <button type="button" class="quick-score-btn" data-delta="-10" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">-10</button>
-                    <button type="button" class="quick-score-btn" data-delta="-5" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">-5</button>
-                    <button type="button" class="quick-score-btn" data-delta="5" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">+5</button>
-                    <button type="button" class="quick-score-btn" data-delta="10" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">+10</button>
-                    <button type="button" class="quick-score-btn" data-delta="20" style="padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">+20</button>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button id="custom_score_cancel_btn" type="button" style="padding: 9px 20px; background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;">Đóng</button>
-                    <button id="custom_score_save_btn" type="button" style="padding: 9px 24px; background: #16a34a; color: white; border: 1px solid #15803d; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);">Lưu</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    const inputEl = document.getElementById('custom_score_input_val');
-    const errorEl = document.getElementById('custom_score_error_msg');
-    const saveBtn = document.getElementById('custom_score_save_btn');
-    const cancelBtn = document.getElementById('custom_score_cancel_btn');
-
-    if (inputEl) {
-        inputEl.focus();
-        inputEl.select();
-    }
-
-    modal.querySelectorAll('.quick-score-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (inputEl) {
-                const cur = parseInt(inputEl.value, 10) || 0;
-                const delta = parseInt(btn.getAttribute('data-delta'), 10) || 0;
-                inputEl.value = Math.max(0, cur + delta);
-                if (errorEl) errorEl.style.display = 'none';
-            }
-        });
-    });
-
-    function doSave() {
-        const valStr = inputEl ? inputEl.value.trim() : '';
-        if (valStr === '') {
-            if (errorEl) {
-                errorEl.innerText = 'Vui lòng nhập số điểm!';
-                errorEl.style.display = 'block';
-            }
-            return;
-        }
-        const val = parseInt(valStr, 10);
-        if (isNaN(val)) {
-            if (errorEl) {
-                errorEl.innerText = 'Điểm phải là một số nguyên hợp lệ!';
-                errorEl.style.display = 'block';
-            }
-            return;
-        }
-        if (val % 5 !== 0) {
-            if (errorEl) {
-                errorEl.innerText = `Số điểm (${val}) phải chia hết cho 5! (Ví dụ: 0, 5, 10, 15, 20...)`;
-                errorEl.style.display = 'block';
-            }
-            return;
-        }
-
-        gameData.contestants[idx - 1].score = val;
-
-        syncContestantsUI();
+    if (!gameData.contestants || !gameData.contestants[idx - 1]) return;
+    const current = gameData.contestants[idx - 1]?.score || 0;
+    const newScore = prompt(`Nhập điểm cho Thí sinh ${idx}:`, current);
+    if (newScore !== null && !isNaN(parseInt(newScore))) {
+        gameData.contestants[idx - 1].score = parseInt(newScore);
+        const disps = [
+            document.getElementById(`ts${idx}_score_disp`),
+            document.getElementById(`ts${idx}_score_disp_rk`),
+            document.getElementById(`ts${idx}_score_disp_vq`)
+        ];
+        disps.forEach(disp => { if (disp) disp.innerText = gameData.contestants[idx - 1].score; });
         saveAllData();
-
+        if (typeof updateTab1Preview === 'function') updateTab1Preview();
         sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
             name: gameData.contestants[idx - 1].name,
-            score: val
-        });
-
-        showToast(`Đã lưu điểm cho ${contestantName}: ${val}`);
-        modal.remove();
-    }
-
-    if (saveBtn) saveBtn.addEventListener('click', doSave);
-    if (cancelBtn) cancelBtn.addEventListener('click', () => modal.remove());
-
-    if (inputEl) {
-        inputEl.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                doSave();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                modal.remove();
-            }
+            score: gameData.contestants[idx - 1].score
         });
     }
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
 }
 
 function triggerFilePicker(targetInputId, acceptType) {
@@ -1696,8 +1432,17 @@ window.adjustScore = function(idx, delta) {
     const newScore = current + delta;
     gameData.contestants[idx - 1].score = newScore;
     
-    syncContestantsUI();
+    const disps = [
+        document.getElementById(`ts${idx}_score_disp`),
+        document.getElementById(`ts${idx}_score_disp_rk`),
+        document.getElementById(`ts${idx}_score_disp_vs`),
+        document.getElementById(`ts${idx}_score_disp_vq`)
+    ];
+    disps.forEach(disp => { if (disp) disp.innerText = newScore; });
+    
     saveAllData();
+    if (typeof updateTab1Preview === 'function') updateTab1Preview();
+    sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     
     if (typeof showToast === 'function') {
         const contestantName = gameData.contestants[idx - 1].name || `Thí sinh ${idx}`;
@@ -1734,6 +1479,13 @@ window.vqCorrectAnswer = function(idx) {
     let packVal = 20;
     if (typeof currentVQPack !== 'undefined' && currentVQPack) {
         packVal = currentVQPack;
+    } else {
+        const customVal = prompt("Nhập điểm của câu hỏi Vinh Quang hiện tại (10/20/30):", "20");
+        if (customVal !== null && !isNaN(parseInt(customVal))) {
+            packVal = parseInt(customVal);
+        } else {
+            return;
+        }
     }
     
     const isStarActive = window.vqStars[idx - 1];
@@ -1750,6 +1502,13 @@ window.vqIncorrectAnswer = function(idx) {
     let packVal = 20;
     if (typeof currentVQPack !== 'undefined' && currentVQPack) {
         packVal = currentVQPack;
+    } else {
+        const customVal = prompt("Nhập điểm của câu hỏi Vinh Quang hiện tại (10/20/30):", "20");
+        if (customVal !== null && !isNaN(parseInt(customVal))) {
+            packVal = parseInt(customVal);
+        } else {
+            return;
+        }
     }
     
     const isStarActive = window.vqStars[idx - 1];
@@ -1763,13 +1522,13 @@ window.vqIncorrectAnswer = function(idx) {
 }
 
 function onClickTongKet() {
-    let summary = "📊 TỔNG KẾT ĐIỂM SỐ CÁC THÍ SINH:\n";
+    let summary = "TỔNG KẾT ĐIỂM SỐ CÁC THÍ SINH:\n";
     if (gameData.contestants) {
         gameData.contestants.forEach((ts, idx) => {
-            summary += `• ${ts.name || 'Thí sinh ' + (idx+1)}: ${ts.score || 0} điểm\n`;
+            summary += `${ts.name || 'Thí sinh ' + (idx+1)}: ${ts.score || 0} điểm\n`;
         });
     }
-    showToast(summary, 5000);
+    alert(summary);
 }
 
 function onClickPlayIntroVideo(src) {

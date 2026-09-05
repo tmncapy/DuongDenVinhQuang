@@ -621,15 +621,12 @@ function startCountdown7(duration = 25) {
 
 /* CONTROLLER - GRAPHIC CONNECTION */
 let projectorChannel = null;
-const graphicRoomCode = (new URLSearchParams(window.location.search).get('roomid') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
-
 try {
     if (typeof BroadcastChannel !== 'undefined') {
-        projectorChannel = new BroadcastChannel(`ddvq_game_channel_${graphicRoomCode.toLowerCase()}`);
+        projectorChannel = new BroadcastChannel('ddvq_game_channel');
         projectorChannel.onmessage = function(event) {
             const data = event.data;
             if (!data || !data.type) return;
-            if (data.roomCode && data.roomCode.toUpperCase() !== graphicRoomCode) return;
             handleProjectorMessage(data);
         };
     }
@@ -640,14 +637,15 @@ try {
 // Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector/Graphic)
 if (typeof EventSource !== 'undefined') {
     try {
-        const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl(`/api/events?roomid=${encodeURIComponent(graphicRoomCode)}`) : `/api/events?roomid=${encodeURIComponent(graphicRoomCode)}`;
+        const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
         const projSse = new EventSource(ssePath);
         projSse.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
                 if (data) {
-                    if (data.roomCode && data.roomCode.toUpperCase() !== graphicRoomCode) {
-                        return; // Ignore messages from another room
+                    if (data.roomCode && data.roomCode !== localStorage.getItem('ddvq_room_code')) {
+                        console.log(`[Sync] Graphic room code auto-syncing to: ${data.roomCode}`);
+                        localStorage.setItem('ddvq_room_code', data.roomCode);
                     }
                     if (data.type && data.type !== 'PING' && data.type !== 'PROJECTOR_READY') {
                         if (data.id && data.id !== lastProcessedActionId) {
@@ -674,13 +672,6 @@ function updateProjectorContestants(contestants) {
         const ts = contestants[i - 1] || { name: `Thí sinh ${i}`, score: 0 };
         const name = ts.name || `Thí sinh ${i}`;
         const score = ts.score !== undefined ? ts.score : 0;
-
-        // View 1: Xuất Phát (active turn)
-        if (typeof currentXuatPhatTurn !== 'undefined' && i === currentXuatPhatTurn) {
-            score1 = score;
-            const score1El = document.getElementById('score1');
-            if (score1El) score1El.innerText = score;
-        }
 
         // View 2: Ra Khơi
         const rkName = document.getElementById(`ten_ts${i}`);
@@ -722,6 +713,9 @@ loadInitialProjectorState();
 
 function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(msg);
+    }
     if (projectorChannel) {
         try { projectorChannel.postMessage(msg); } catch(e) {}
     }
@@ -733,9 +727,9 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
+    if (window.location.protocol === 'file:') return;
     try {
-        const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : (typeof getApiUrlProj === 'function' ? getApiUrlProj('/api/action') : '/api/action');
-        fetch(actionUrl, {
+        fetch('/api/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(msg)
@@ -782,12 +776,6 @@ setInterval(() => {
 function handleProjectorMessage(data) {
     if (data.type === 'SWITCH_VIEW') {
         if (data.viewNum) switchView(data.viewNum);
-    } else if (data.type === 'SWITCH_ROUND') {
-        if (data.viewNum) switchView(data.viewNum);
-        else if (data.activeRound === 'XUAT_PHAT' || data.round === 'XUAT_PHAT') switchView(1);
-        else if (data.activeRound === 'RA_KHOI' || data.round === 'RA_KHOI') switchView(2);
-        else if (data.activeRound === 'VUOT_SONG' || data.round === 'VUOT_SONG') switchView(3);
-        else if (data.activeRound === 'VINH_QUANG' || data.round === 'VINH_QUANG') switchView(6);
     } else if (data.type === 'XUAT_PHAT_INTRO') {
         switchView(1);
         stopAllAudio1();
@@ -1522,25 +1510,16 @@ function handleRKShowContestantAnswers(data) {
     }
 }
 
-const ONRENDER_BASE_URL_GRAPHIC = 'https://ddvq.onrender.com';
-
 function getApiUrlProj(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function') {
         return window.getApiUrl(path);
     }
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
     const cleanPath = path.startsWith('/') ? path : '/' + path;
-
-    try {
-        const customUrl = localStorage.getItem('ddvq_server_url');
-        if (customUrl && customUrl.trim()) {
-            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
-        }
-    } catch(e) {}
-
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) return customHost.replace(/\/$/, '') + cleanPath;
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return ONRENDER_BASE_URL_GRAPHIC + cleanPath;
+        return 'http://localhost:3000' + cleanPath;
     }
     return cleanPath;
 }
@@ -1555,6 +1534,10 @@ function sendProjectorHeartbeat() {
         name: 'Máy Chiếu (Graphic)',
         timestamp: Date.now()
     };
+
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(hbData);
+    }
 
     fetch(getApiUrlProj('/api/action'), {
         method: 'POST',

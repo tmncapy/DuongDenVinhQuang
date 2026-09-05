@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <!-- Disable DevTools -->
-    <script src="disable-devtools.js"></script>
-
     <meta charset="UTF-8">
     <title>Giao diện Điều khiển Trò chơi - Đường Đến Vinh Quang</title>
     <!-- SheetJS for Excel Import/Export -->
@@ -15,7 +12,6 @@
             padding: 0;
             font-family: Arial, sans-serif;
             font-size: 13px;
-            font-weight: bold !important;
         }
         body {
             background-color: #f0f0f0;
@@ -550,11 +546,24 @@
         <div class="left-col">
             <!-- Khung Kết nối & Bảo mật Mã phòng -->
             <div class="panel">
-                <div class="conn-top" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #eef2ff; padding: 8px 12px; border-radius: 6px; border: 1px solid #c7d2fe; margin-bottom: 10px;">
-                    <span style="font-weight: bold; color: #1e40af; font-size: 13px;">🔑 MÃ PHÒNG THI:</span>
-                    <input type="text" id="room_code_input" value="DDVQ2026" style="padding: 5px 10px; border: 1.5px solid #3b82f6; border-radius: 4px; font-weight: bold; font-size: 14px; width: 130px; text-transform: uppercase; text-align: center; color: #1e3a8a;" onchange="updateRoomCodeFromController()">
-                    <button class="btn btn-primary" onclick="updateRoomCodeFromController()" style="padding: 5px 12px; font-weight: bold; background: #2563eb;">🔒 Cập nhật mã phòng</button>
-                    <span id="room_code_badge" style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px;">Đang hoạt động: DDVQ2026</span>
+                <div class="conn-top" style="display: flex; flex-direction: column; gap: 8px; background: #eef2ff; padding: 10px 14px; border-radius: 8px; border: 1px solid #c7d2fe; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="font-weight: bold; color: #1e40af; font-size: 13px;">🔑 MÃ PHÒNG:</span>
+                        <input type="text" id="room_code_input" value="DDVQ2026" style="padding: 5px 10px; border: 1.5px solid #3b82f6; border-radius: 4px; font-weight: bold; font-size: 14px; width: 120px; text-transform: uppercase; text-align: center; color: #1e3a8a;" onchange="updateRoomCodeFromController()">
+                        
+                        <span style="font-weight: bold; color: #1e40af; font-size: 13px; margin-left: 6px;">🔒 MẬT KHẨU:</span>
+                        <input type="text" id="room_auth_input" value="123456" style="padding: 5px 10px; border: 1.5px solid #3b82f6; border-radius: 4px; font-weight: bold; font-size: 14px; width: 100px; text-align: center; color: #1e3a8a;" onchange="updateRoomCodeFromController()">
+                        
+                        <button class="btn btn-primary" onclick="updateRoomCodeFromController()" style="padding: 5px 12px; font-weight: bold; background: #2563eb;">🔒 Cập nhật phòng</button>
+                        <span id="room_code_badge" style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px;">Đang hoạt động: DDVQ2026 | Pass: 123456</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px dashed #93c5fd;">
+                        <span style="font-size: 12px; font-weight: bold; color: #1d4ed8;">🔗 LINK MỜI THÍ SINH (Click là vào chọn tên):</span>
+                        <code id="player_direct_link_preview" style="font-size: 11px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #0f172a; flex: 1; min-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">...</code>
+                        <button class="btn" onclick="copyPlayerDirectLink()" style="background: #059669; color: white; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 4px;">📋 Sao chép Link</button>
+                        <button class="btn" onclick="openPlayerDirectLink()" style="background: #475569; color: white; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 4px;">🔗 Mở thử</button>
+                    </div>
                 </div>
 
                 <table class="conn-table">
@@ -1844,8 +1853,35 @@
         </div>
     </div>
 
+    <!-- SUPABASE CONFIGURATION MODAL -->
+    <div id="supabase_config_modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; width: 90%; max-width: 520px; padding: 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <h3 style="margin: 0; color: #1e3a8a; font-size: 16px;">⚙️ Cấu hình Supabase Realtime (GitHub Pages / Khác mạng)</h3>
+                <button onclick="closeSupabaseModal()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">✖</button>
+            </div>
+            <p style="font-size: 12px; color: #475569; line-height: 1.5; margin: 0;">
+                Khi sử dụng <b>GitHub Pages</b> hoặc khi <b>Điện thoại (Controller) và Laptop (Projector) không cùng mạng LAN</b>, vui lòng nhập Supabase URL và Anon Key bên dưới để kết nối dữ liệu thời gian thực giữa các thiết bị.
+            </p>
+            <div>
+                <label style="display: block; font-weight: bold; font-size: 12px; color: #334155; margin-bottom: 4px;">Supabase Project URL:</label>
+                <input type="text" id="supabase_url_input" placeholder="https://xxxx.supabase.co" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; font-size: 12px; color: #334155; margin-bottom: 4px;">Supabase Anon Key:</label>
+                <input type="password" id="supabase_key_input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+                <button onclick="closeSupabaseModal()" class="btn" style="padding: 6px 14px;">Hủy</button>
+                <button onclick="saveSupabaseConfigModal()" class="btn btn-primary" style="padding: 6px 16px; background: #2563eb; color: white; font-weight: bold; border: none; border-radius: 4px;">💾 Lưu & Kết nối</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Logic split into 6 modular files -->
     <script src="network_sync.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-sync.js"></script>
     <script src="setup.js"></script>
     <script src="controllerR1.js"></script>
     <script src="controllerR2.js"></script>

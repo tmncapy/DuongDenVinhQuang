@@ -1,61 +1,65 @@
-/* network_sync.js - Cross-Device Realtime Network Synchronization for Onrender & Web Hosting */
-
-// Production Onrender and Localhost Configuration
-window.ONRENDER_BASE_URL = window.ONRENDER_BASE_URL || 'https://ddvq.onrender.com';
-window.LOCAL_BASE_URL = window.LOCAL_BASE_URL || 'http://localhost:3000';
-
-/**
- * Smart URL resolver that guarantees the app functions seamlessly in both
- * Local (Node server / localhost:3000) and Online (Onrender / https://ddvq.onrender.com / file://) environments.
- */
-function getApiUrl(path) {
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path;
-    }
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
-
-    // 1. Custom server URL defined in localStorage (if any)
-    try {
-        const customUrl = localStorage.getItem('ddvq_server_url');
-        if (customUrl && customUrl.trim()) {
-            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
-        }
-    } catch (e) {}
-
-    const onrenderBase = window.ONRENDER_BASE_URL || 'https://ddvq.onrender.com';
-
-    // 2. Browser location detection
-    if (typeof window !== 'undefined' && window.location) {
-        // When running via file:// protocol or offline file without a local host
-        if (window.location.protocol === 'file:' || !window.location.host) {
-            return onrenderBase + cleanPath;
-        }
-
-        const hostname = window.location.hostname || '';
-        // If served from local server or dev environment, use relative path or local port
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-            return cleanPath;
-        }
-
-        // If hosted on Render (e.g. ddvq.onrender.com)
-        if (hostname.includes('onrender.com')) {
-            return cleanPath;
-        }
-
-        // If hosted on GitHub Pages or external static host
-        if (hostname.includes('github.io') || hostname.includes('surge.sh') || hostname.includes('vercel.app') || hostname.includes('netlify.app')) {
-            return onrenderBase + cleanPath;
-        }
-    }
-
-    // Default: relative path works natively on local Node server and Onrender deployed app
-    return cleanPath;
-}
-
-window.getApiUrl = getApiUrl;
+/* network_sync.js - Cross-Device Realtime Network Synchronization for GitHub Pages & Web Hosting */
 
 (function () {
+    // --- Global Network Utilities for LAN & WAN Support ---
+    function hasLocalServerBackend() {
+        if (typeof window === 'undefined') return false;
+        const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+            (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+        if (customHost) return true;
+
+        const protocol = window.location.protocol;
+        const hostname = (window.location.hostname || '').toLowerCase();
+
+        if (protocol === 'file:' || !hostname) {
+            return true;
+        }
+
+        if (
+            hostname.endsWith('github.io') ||
+            hostname.endsWith('gitlab.io') ||
+            hostname.endsWith('pages.dev') ||
+            hostname.endsWith('surge.sh')
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+    window.hasLocalServerBackend = hasLocalServerBackend;
+
+    function getApiUrl(path) {
+        if (typeof window === 'undefined') return path;
+        const cleanPath = path.startsWith('/') ? path : '/' + path;
+        
+        const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+            (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+        if (customHost) {
+            return customHost.replace(/\/$/, '') + cleanPath;
+        }
+
+        if (window.location.protocol === 'file:' || !window.location.host) {
+            return 'http://localhost:3000' + cleanPath;
+        }
+        return cleanPath;
+    }
+    window.getApiUrl = getApiUrl;
+
+    function getWsUrl() {
+        if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
+        const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+            (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+        if (customHost) {
+            return customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
+        }
+        if (window.location.protocol === 'file:' || !window.location.host) {
+            return 'ws://localhost:3000/ws';
+        }
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${proto}//${window.location.host}/ws`;
+    }
+    window.getWsUrl = getWsUrl;
+
     // Global IndexedDB Media Cache Helper for large media files (Videos / Images)
     const GameMediaCache = {
         dbName: 'GameshowMediaDB',
@@ -120,13 +124,13 @@ window.getApiUrl = getApiUrl;
 
     class GameSyncChannel {
         constructor(channelName) {
-            // Read optional custom channel/room from URL query string, e.g. ?roomid=123456
+            // Read optional custom channel/room from URL query string, e.g. ?room=mygame
             const urlParams = new URLSearchParams(window.location.search);
-            const customRoom = (urlParams.get('roomid') || urlParams.get('roomCode') || urlParams.get('room') || urlParams.get('channel') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim();
+            const customRoom = urlParams.get('room') || urlParams.get('channel') || localStorage.getItem('ddvq_room_code');
             
-            this.baseChannelName = `ddvq_game_channel_${customRoom.toLowerCase()}`;
+            this.baseChannelName = 'ddvq_game_channel';
             // All pages in the app MUST connect to the same topic to communicate!
-            this.topicName = `duong_den_vinh_quang_${customRoom.toLowerCase()}`;
+            this.topicName = customRoom ? `duong_den_vinh_quang_${customRoom.toLowerCase()}` : `duong_den_vinh_quang_main_channel_v2`;
             
             this.localChannel = new BroadcastChannel(this.baseChannelName);
             this.onmessageHandler = null;
@@ -135,6 +139,12 @@ window.getApiUrl = getApiUrl;
             this.isConnected = false;
             this.pendingQueue = [];
             this.processedMsgIds = new Map();
+
+            // Controlled MQTT Failover & Exponential Backoff state
+            this.currentBrokerIdx = 0;
+            this.mqttRetryCycle = 0;
+            this.mqttRetryTimer = null;
+            this.isMqttConnecting = false;
 
             // Helper to prevent duplicate handling from BroadcastChannel + MQTT
             this.isDuplicateAndRecord = (payload) => {
@@ -193,7 +203,8 @@ window.getApiUrl = getApiUrl;
                 }
             };
 
-            // 2. Load MQTT Library for Cross-Device WebSockets
+            // 2. Load Native WebSocket & MQTT Library for Cross-Device WebSockets
+            this.initWebSocket();
             this.initMqtt();
         }
 
@@ -205,11 +216,79 @@ window.getApiUrl = getApiUrl;
             this.onmessageHandler = handler;
         }
 
+        initWebSocket() {
+            if (typeof WebSocket === 'undefined' || !hasLocalServerBackend()) return;
+            try {
+                if (this.wsReconnectTimer) {
+                    clearTimeout(this.wsReconnectTimer);
+                    this.wsReconnectTimer = null;
+                }
+                const wsUrl = getWsUrl();
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    this.isWsConnected = true;
+                    this.notifyConnectionStatus(true);
+                    
+                    if (this.wsQueue && this.wsQueue.length > 0) {
+                        while (this.wsQueue.length > 0) {
+                            const msg = this.wsQueue.shift();
+                            try {
+                                this.ws.send(JSON.stringify(msg));
+                            } catch(e) {}
+                        }
+                    }
+                };
+
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (!data || data.type === 'PONG' || data.type === 'PING') return;
+
+                        if (data._senderId !== this.instanceId) {
+                            if (!this.isDuplicateAndRecord(data)) {
+                                this.handleRemoteReload(data);
+                                if (typeof this.onmessageHandler === 'function') {
+                                    this.onmessageHandler({ data });
+                                }
+                            }
+                        }
+                    } catch (err) {}
+                };
+
+                this.ws.onerror = () => {
+                    this.isWsConnected = false;
+                };
+
+                this.ws.onclose = () => {
+                    this.isWsConnected = false;
+                    if (!this.wsReconnectTimer) {
+                        this.wsReconnectTimer = setTimeout(() => {
+                            this.initWebSocket();
+                        }, 3000);
+                    }
+                };
+            } catch (e) {
+                this.isWsConnected = false;
+            }
+        }
+
         initMqtt() {
             if (typeof window.mqtt !== 'undefined') {
                 this.connectBrokers();
                 return;
             }
+
+            if (window.__MQTT_SCRIPT_LOADING__) {
+                const checkTimer = setInterval(() => {
+                    if (typeof window.mqtt !== 'undefined') {
+                        clearInterval(checkTimer);
+                        this.connectBrokers();
+                    }
+                }, 300);
+                return;
+            }
+            window.__MQTT_SCRIPT_LOADING__ = true;
 
             const cdns = [
                 'https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js',
@@ -220,13 +299,13 @@ window.getApiUrl = getApiUrl;
             let idx = 0;
             const loadScript = () => {
                 if (idx >= cdns.length) {
-                    console.warn('⚠️ MQTT CDN unavailable, using BroadcastChannel local only.');
+                    window.__MQTT_SCRIPT_LOADING__ = false;
                     return;
                 }
                 const s = document.createElement('script');
                 s.src = cdns[idx++];
                 s.onload = () => {
-                    console.log('✅ MQTT Library loaded successfully.');
+                    window.__MQTT_SCRIPT_LOADING__ = false;
                     this.connectBrokers();
                 };
                 s.onerror = () => loadScript();
@@ -236,39 +315,80 @@ window.getApiUrl = getApiUrl;
         }
 
         connectBrokers() {
-            if (!window.mqtt) return;
+            if (!window.mqtt || this.isConnected || this.isMqttConnecting) return;
 
             const brokers = [
                 'wss://broker.emqx.io:8084/mqtt',
-                'wss://broker.hivemq.com:8884/mqtt',
-                'wss://test.mosquitto.org:8081/mqtt'
+                'wss://broker.hivemq.com:8884/mqtt'
             ];
 
-            let currentBrokerIdx = 0;
+            if (this.mqttRetryTimer) {
+                clearTimeout(this.mqttRetryTimer);
+                this.mqttRetryTimer = null;
+            }
 
             const tryConnect = () => {
-                if (currentBrokerIdx >= brokers.length) return;
-                const brokerUrl = brokers[currentBrokerIdx];
-                console.log(`🌐 Connecting to MQTT broker: ${brokerUrl} (Topic: ${this.topicName})`);
+                if (this.isConnected) return;
+                if (this.currentBrokerIdx >= brokers.length) {
+                    this.currentBrokerIdx = 0;
+                    this.mqttRetryCycle++;
+                    const backoffDelay = Math.min(60000, Math.max(5000, 5000 * Math.pow(1.5, Math.min(this.mqttRetryCycle, 5))));
+                    this.isMqttConnecting = false;
+                    this.mqttRetryTimer = setTimeout(tryConnect, backoffDelay);
+                    return;
+                }
+
+                const brokerUrl = brokers[this.currentBrokerIdx];
+                this.isMqttConnecting = true;
+
+                if (this.mqttClient) {
+                    try {
+                        this.mqttClient.removeAllListeners();
+                        this.mqttClient.end(true);
+                    } catch (e) {}
+                    this.mqttClient = null;
+                }
+
+                let attemptFinished = false;
+
+                const handleAttemptFailure = (reason) => {
+                    if (attemptFinished) return;
+                    attemptFinished = true;
+                    this.isMqttConnecting = false;
+                    this.isConnected = false;
+
+                    if (this.mqttClient) {
+                        try {
+                            this.mqttClient.removeAllListeners();
+                            this.mqttClient.end(true);
+                        } catch (e) {}
+                        this.mqttClient = null;
+                    }
+
+                    this.currentBrokerIdx++;
+                    const delay = this.currentBrokerIdx < brokers.length ? 2500 : 5000;
+                    this.mqttRetryTimer = setTimeout(tryConnect, delay);
+                };
 
                 try {
                     this.mqttClient = window.mqtt.connect(brokerUrl, {
                         clientId: 'gs_' + this.instanceId,
                         keepalive: 30,
                         clean: true,
-                        reconnectPeriod: 4000,
-                        connectTimeout: 6000
+                        reconnectPeriod: 0,
+                        connectTimeout: 8000
                     });
 
                     this.mqttClient.on('connect', () => {
+                        attemptFinished = true;
                         this.isConnected = true;
-                        console.log(`🟢 [MQTT ONLINE] Connected to ${brokerUrl} on topic: ${this.topicName}`);
+                        this.isMqttConnecting = false;
+                        this.mqttRetryCycle = 0;
+                        this.notifyConnectionStatus(true);
                         
                         this.mqttClient.subscribe(this.topicName, { qos: 0 }, (err) => {
                             if (!err) {
                                 this.flushQueue();
-                                this.notifyConnectionStatus(true);
-                                // Trigger initial handshake broadcast upon connection
                                 if (typeof this.onmessageHandler === 'function') {
                                     this.onmessageHandler({ data: { action: 'mqtt_connected' } });
                                 }
@@ -283,7 +403,6 @@ window.getApiUrl = getApiUrl;
                                 if (!this.isDuplicateAndRecord(payload)) {
                                     this.handleRemoteReload(payload);
                                     
-                                    // Forward remote message to local BroadcastChannel with _fromNetwork flag
                                     try {
                                         payload._fromNetwork = true;
                                         this.localChannel.postMessage(payload);
@@ -300,18 +419,15 @@ window.getApiUrl = getApiUrl;
                     });
 
                     this.mqttClient.on('error', (err) => {
-                        console.warn(`⚠️ Broker error on ${brokerUrl}:`, err);
-                        this.isConnected = false;
-                        this.notifyConnectionStatus(false);
-                        try { this.mqttClient.end(true); } catch(e){}
-                        currentBrokerIdx++;
-                        setTimeout(tryConnect, 1000);
+                        handleAttemptFailure('error');
+                    });
+
+                    this.mqttClient.on('close', () => {
+                        handleAttemptFailure('close');
                     });
 
                 } catch (e) {
-                    console.warn(`⚠️ Broker init exception on ${brokerUrl}:`, e);
-                    currentBrokerIdx++;
-                    setTimeout(tryConnect, 1000);
+                    handleAttemptFailure('exception');
                 }
             };
 

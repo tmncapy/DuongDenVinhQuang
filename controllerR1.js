@@ -157,8 +157,10 @@ function onClickDung() {
     if (gameData.contestants[currentXuatPhatTurn - 1]) {
         gameData.contestants[currentXuatPhatTurn - 1].score += 10;
         const newScore = gameData.contestants[currentXuatPhatTurn - 1].score;
-        syncContestantsUI();
+        const disp = document.getElementById(`ts${currentXuatPhatTurn}_score_disp`);
+        if (disp) disp.innerText = newScore;
         saveAllData();
+        updateTab1Preview();
         sendToProjector('XUAT_PHAT_RIGHT', { score: newScore, answerText: currentQ.a || 'Đáp án' });
     } else {
         sendToProjector('XUAT_PHAT_RIGHT', { answerText: currentQ.a || 'Đáp án' });

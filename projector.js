@@ -65,7 +65,7 @@ let score1 = 0, timeLeft1 = 60, timerInterval1 = null, isRolling1 = false, curre
 let soundShowTitle1 = new Audio('sounds/ShowTitle.mp3');
 let soundRandomSet1 = new Audio('sounds/RandomSet.mp3');
 let soundBeginQues1 = new Audio('sounds/BeginQues.mp3');
-let sound60s1 = new Audio('sounds/60s.mp3');
+let sound60s1 = new Audio('sounds/25sV1.mp3');
 let soundTick1 = new Audio('sounds/Tick.mp3');
 let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
 let soundRight1 = new Audio('sounds/right.mp3');
@@ -77,61 +77,39 @@ let soundRightV3 = new Audio('sounds/RightV3.mp3');
 let soundActivate = new Audio('sounds/Activate.mp3');
 
 let isAudioUnlocked = false;
+let globalAudioCtx = null;
 
 function unlockAudio() {
     if (isAudioUnlocked) return;
     isAudioUnlocked = true;
-
-    const allAudios = [
-        soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, 
-        soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundRKTimer, soundChooseQues, soundRightV3,
-        soundActivate,
-        document.getElementById('vongThiAudio2'),
-        document.getElementById('soundRKAnswer2'),
-        document.getElementById('vongThiAudio4'),
-        document.getElementById('soundVSAnswer'),
-        document.getElementById('vongThiAudio7'),
-        document.getElementById('audioVQAnswer')
-    ];
-
-    allAudios.forEach(aud => {
-        if (aud) {
-            try {
-                aud.load();
-                let p = aud.play();
-                if (p && typeof p.then === 'function') {
-                    p.then(() => {
-                        aud.pause();
-                        aud.currentTime = 0;
-                    }).catch(() => {});
-                }
-            } catch(e) {}
+    try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtxClass) {
+            if (!globalAudioCtx) globalAudioCtx = new AudioCtxClass();
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume().catch(() => {});
+            }
         }
-    });
+    } catch(e) {}
 }
 
-['click', 'keydown', 'pointerdown', 'touchstart', 'mousemove', 'wheel'].forEach(evt => {
+['click', 'keydown', 'pointerdown', 'touchstart'].forEach(evt => {
     window.addEventListener(evt, unlockAudio, { once: true, capture: true });
 });
-window.addEventListener('DOMContentLoaded', unlockAudio);
 
 function safePlay(audio) {
     if (!audio) return;
     try {
+        unlockAudio();
         audio.currentTime = 0;
         let p = audio.play();
         if (p && typeof p.then === 'function') {
             p.catch(e => {
-                console.log("Audio play blocked, attempting silent unlock and retry:", e);
-                unlockAudio();
-                try {
-                    audio.currentTime = 0;
-                    audio.play().catch(err => console.log("Retry play failed:", err));
-                } catch(err) {}
+                console.log("[Audio] Play prevented until user interaction:", e.message || e);
             });
         }
     } catch(e) {
-        console.log("Audio exception:", e);
+        console.warn("[Audio] Play exception:", e);
     }
 }
 
@@ -621,15 +599,12 @@ function startCountdown7(duration = 25) {
 
 /* CONTROLLER - PROJECTOR CONNECTION */
 let projectorChannel = null;
-const projectorRoomCode = (new URLSearchParams(window.location.search).get('roomid') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
-
 try {
     if (typeof BroadcastChannel !== 'undefined') {
-        projectorChannel = new BroadcastChannel(`ddvq_game_channel_${projectorRoomCode.toLowerCase()}`);
+        projectorChannel = new BroadcastChannel('ddvq_game_channel');
         projectorChannel.onmessage = function(event) {
             const data = event.data;
             if (!data || !data.type) return;
-            if (data.roomCode && data.roomCode.toUpperCase() !== projectorRoomCode) return;
             handleProjectorMessage(data);
         };
     }
@@ -637,17 +612,18 @@ try {
     console.warn("BroadcastChannel restricted in projector:", e);
 }
 
-// Server-Sent Events (SSE) for cross-device synchronization (Mobile, PC, Projector)
-if (typeof EventSource !== 'undefined') {
+// Server-Sent Events (SSE) fallback only if supabase-sync.js has not initialized it
+if (typeof EventSource !== 'undefined' && !window.syncChannel) {
     try {
-        const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl(`/api/events?roomid=${encodeURIComponent(projectorRoomCode)}`) : `/api/events?roomid=${encodeURIComponent(projectorRoomCode)}`;
+        const ssePath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/events') : '/api/events';
         const projSse = new EventSource(ssePath);
         projSse.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
                 if (data) {
-                    if (data.roomCode && data.roomCode.toUpperCase() !== projectorRoomCode) {
-                        return; // Ignore messages intended for another room
+                    if (data.roomCode && data.roomCode !== localStorage.getItem('ddvq_room_code')) {
+                        console.log(`[Sync] Projector room code auto-syncing to: ${data.roomCode}`);
+                        localStorage.setItem('ddvq_room_code', data.roomCode);
                     }
                     if (data.type && data.type !== 'PING' && data.type !== 'PROJECTOR_READY') {
                         if (data.id && data.id !== lastProcessedActionId) {
@@ -674,13 +650,6 @@ function updateProjectorContestants(contestants) {
         const ts = contestants[i - 1] || { name: `Thí sinh ${i}`, score: 0 };
         const name = ts.name || `Thí sinh ${i}`;
         const score = ts.score !== undefined ? ts.score : 0;
-
-        // View 1: Xuất Phát (active turn)
-        if (typeof currentXuatPhatTurn !== 'undefined' && i === currentXuatPhatTurn) {
-            score1 = score;
-            const score1El = document.getElementById('score1');
-            if (score1El) score1El.innerText = score;
-        }
 
         // View 2: Ra Khơi
         const rkName = document.getElementById(`ten_ts${i}`);
@@ -722,6 +691,9 @@ loadInitialProjectorState();
 
 function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(msg);
+    }
     if (projectorChannel) {
         try { projectorChannel.postMessage(msg); } catch(e) {}
     }
@@ -733,14 +705,16 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
-    try {
-        const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : (typeof getApiUrlProj === 'function' ? getApiUrlProj('/api/action') : '/api/action');
-        fetch(actionUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(msg)
-        }).catch(() => {});
-    } catch(e) {}
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        try {
+            const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : '/api/action';
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msg)
+            }).catch(() => {});
+        } catch(e) {}
+    }
 }
 notifyControllerReady();
 setInterval(notifyControllerReady, 3000);
@@ -782,12 +756,6 @@ setInterval(() => {
 function handleProjectorMessage(data) {
     if (data.type === 'SWITCH_VIEW') {
         if (data.viewNum) switchView(data.viewNum);
-    } else if (data.type === 'SWITCH_ROUND') {
-        if (data.viewNum) switchView(data.viewNum);
-        else if (data.activeRound === 'XUAT_PHAT' || data.round === 'XUAT_PHAT') switchView(1);
-        else if (data.activeRound === 'RA_KHOI' || data.round === 'RA_KHOI') switchView(2);
-        else if (data.activeRound === 'VUOT_SONG' || data.round === 'VUOT_SONG') switchView(3);
-        else if (data.activeRound === 'VINH_QUANG' || data.round === 'VINH_QUANG') switchView(6);
     } else if (data.type === 'XUAT_PHAT_INTRO') {
         switchView(1);
         stopAllAudio1();
@@ -1556,25 +1524,16 @@ function handleRKShowContestantAnswers(data) {
     }
 }
 
-const ONRENDER_BASE_URL_PROJ = 'https://ddvq.onrender.com';
-
 function getApiUrlProj(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function') {
         return window.getApiUrl(path);
     }
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
     const cleanPath = path.startsWith('/') ? path : '/' + path;
-
-    try {
-        const customUrl = localStorage.getItem('ddvq_server_url');
-        if (customUrl && customUrl.trim()) {
-            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
-        }
-    } catch(e) {}
-
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) return customHost.replace(/\/$/, '') + cleanPath;
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return ONRENDER_BASE_URL_PROJ + cleanPath;
+        return 'http://localhost:3000' + cleanPath;
     }
     return cleanPath;
 }
@@ -1590,11 +1549,19 @@ function sendProjectorHeartbeat() {
         timestamp: Date.now()
     };
 
-    fetch(getApiUrlProj('/api/action'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hbData)
-    }).catch(() => {});
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(hbData);
+    }
+
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        try {
+            fetch(getApiUrlProj('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(hbData)
+            }).catch(() => {});
+        } catch(e) {}
+    }
 
     try {
         if (typeof BroadcastChannel !== 'undefined') {

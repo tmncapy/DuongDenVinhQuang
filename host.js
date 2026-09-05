@@ -1,27 +1,18 @@
-let hostRoomCode = (new URLSearchParams(window.location.search).get('roomid') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
+let hostRoomCode = localStorage.getItem('ddvq_room_code') || '';
 let hostAutoSync = true;
 let hostActiveScene = 1;
 let currentHostState = {};
-
-const ONRENDER_BASE_URL_HOST = 'https://ddvq.onrender.com';
 
 function getApiUrl(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
         return window.getApiUrl(path);
     }
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
     const cleanPath = path.startsWith('/') ? path : '/' + path;
-
-    try {
-        const customUrl = localStorage.getItem('ddvq_server_url');
-        if (customUrl && customUrl.trim()) {
-            return customUrl.trim().replace(/\/+$/, '') + cleanPath;
-        }
-    } catch(e) {}
-
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) return customHost.replace(/\/$/, '') + cleanPath;
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return ONRENDER_BASE_URL_HOST + cleanPath;
+        return 'http://localhost:3000' + cleanPath;
     }
     return cleanPath;
 }
@@ -137,6 +128,10 @@ function sendHostHeartbeat() {
         timestamp: Date.now()
     };
 
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(hbData);
+    }
+
     // 1. API POST
     fetch(getApiUrl('/api/action'), {
         method: 'POST',
@@ -182,12 +177,9 @@ window.addEventListener('DOMContentLoaded', () => {
 let hostChannel = null;
 try {
     if (typeof BroadcastChannel !== 'undefined') {
-        hostChannel = new BroadcastChannel(`ddvq_game_channel_${hostRoomCode.toLowerCase()}`);
+        hostChannel = new BroadcastChannel('ddvq_game_channel');
         hostChannel.onmessage = function(e) {
-            if (e.data) {
-                if (e.data.roomCode && e.data.roomCode.toUpperCase() !== hostRoomCode) return;
-                processHostAction(e.data);
-            }
+            if (e.data) processHostAction(e.data);
         };
     }
 } catch(e) {}
@@ -195,11 +187,10 @@ try {
 // SSE EventSource
 if (typeof EventSource !== 'undefined') {
     try {
-        const sse = new EventSource(getApiUrl(`/api/events?roomid=${encodeURIComponent(hostRoomCode)}`));
+        const sse = new EventSource(getApiUrl('/api/events'));
         sse.onmessage = function(e) {
             try {
                 const data = JSON.parse(e.data);
-                if (data.roomCode && data.roomCode.toUpperCase() !== hostRoomCode) return;
                 processHostAction(data);
             } catch(err) {}
         };
@@ -209,21 +200,14 @@ if (typeof EventSource !== 'undefined') {
 // Window storage listener
 window.addEventListener('storage', function(e) {
     if (e.key === 'ddvq_latest_action' && e.newValue) {
-        try {
-            const parsed = JSON.parse(e.newValue);
-            if (parsed.roomCode && parsed.roomCode.toUpperCase() !== hostRoomCode) return;
-            processHostAction(parsed);
-        } catch(err) {}
+        try { processHostAction(JSON.parse(e.newValue)); } catch(err) {}
     }
 });
 
 function fetchHostState() {
-    fetch(getApiUrl(`/api/state?roomid=${encodeURIComponent(hostRoomCode)}`))
+    fetch(getApiUrl('/api/state'))
         .then(r => r.json())
-        .then(data => {
-            if (data.roomCode && data.roomCode.toUpperCase() !== hostRoomCode) return;
-            processHostAction(data);
-        })
+        .then(data => processHostAction(data))
         .catch(() => {});
 }
 
