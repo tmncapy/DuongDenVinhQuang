@@ -1,5 +1,6 @@
 let contestantId = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) ? window.FIXED_CONTESTANT_ID : (parseInt(localStorage.getItem('contestant_id')) || 1);
-let currentRoomCode = localStorage.getItem('ddvq_room_code') || '';
+let currentRoomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
+let currentRoomAuth = localStorage.getItem('ddvq_room_auth') || '123456';
 let playerContestants = [];
 
 function getApiUrl(path) {
@@ -16,19 +17,58 @@ function getApiUrl(path) {
     return cleanPath;
 }
 
-function onLoginPlayerSelectChange() {
-    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
-        contestantId = window.FIXED_CONTESTANT_ID;
-        localStorage.setItem('contestant_id', contestantId);
-        return;
+function parsePlayerUrlParams() {
+    if (typeof window === 'undefined' || !window.location) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramRoom = (urlParams.get('roomid') || urlParams.get('roomId') || urlParams.get('room') || '').trim();
+    const paramAuth = (urlParams.get('auth') || urlParams.get('pass') || urlParams.get('password') || '').trim();
+
+    if (paramRoom) {
+        currentRoomCode = paramRoom.toUpperCase();
+        localStorage.setItem('ddvq_room_code', currentRoomCode);
     }
-    const sel = document.getElementById('login_player_select');
-    if (sel) {
-        contestantId = parseInt(sel.value) || 1;
-        const mainSel = document.getElementById('contestant_select');
-        if (mainSel) mainSel.value = contestantId;
-        localStorage.setItem('contestant_id', contestantId);
+    if (paramAuth) {
+        currentRoomAuth = paramAuth;
+        localStorage.setItem('ddvq_room_auth', currentRoomAuth);
     }
+
+    const roomInput = document.getElementById('login_room_code_input');
+    if (roomInput) roomInput.value = currentRoomCode;
+
+    const authInput = document.getElementById('login_room_auth_input');
+    if (authInput) authInput.value = currentRoomAuth;
+
+    const roomBadge = document.getElementById('modal_room_code_display');
+    if (roomBadge) roomBadge.innerText = currentRoomCode;
+
+    const topBadgeText = document.getElementById('player_room_badge_text');
+    if (topBadgeText) topBadgeText.innerText = `Phòng: ${currentRoomCode}`;
+
+    const paramSlot = parseInt(urlParams.get('slot') || urlParams.get('ts') || '0');
+    if (paramSlot >= 1 && paramSlot <= 4) {
+        setTimeout(() => {
+            chooseContestantSlot(paramSlot);
+        }, 120);
+    }
+}
+
+function onManualRoomSettingsChange() {
+    const roomInput = document.getElementById('login_room_code_input');
+    const authInput = document.getElementById('login_room_auth_input');
+    if (roomInput) {
+        currentRoomCode = roomInput.value.trim().toUpperCase() || 'DDVQ2026';
+        roomInput.value = currentRoomCode;
+        localStorage.setItem('ddvq_room_code', currentRoomCode);
+    }
+    if (authInput) {
+        currentRoomAuth = authInput.value.trim() || '123456';
+        localStorage.setItem('ddvq_room_auth', currentRoomAuth);
+    }
+    const roomBadge = document.getElementById('modal_room_code_display');
+    if (roomBadge) roomBadge.innerText = currentRoomCode;
+
+    const topBadgeText = document.getElementById('player_room_badge_text');
+    if (topBadgeText) topBadgeText.innerText = `Phòng: ${currentRoomCode}`;
 }
 
 function onSelectContestant(val) {
@@ -41,42 +81,46 @@ function onSelectContestant(val) {
     }
     contestantId = parseInt(val) || 1;
     localStorage.setItem('contestant_id', contestantId);
-    const loginSel = document.getElementById('login_player_select');
-    if (loginSel) loginSel.value = contestantId;
+    sessionStorage.setItem('ddvq_active_slot', contestantId);
+    highlightLastChosenSlot();
+
+    const myName = (playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`).toLocaleUpperCase('vi-VN');
+    if (document.getElementById('s1_badge_box')) document.getElementById('s1_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+    if (document.getElementById('s2_badge_box')) document.getElementById('s2_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+    if (document.getElementById('s3_badge_box')) document.getElementById('s3_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+    if (document.getElementById('s4_badge_box')) document.getElementById('s4_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+
     if (currentRoomCode) {
         startHeartbeat();
     }
 }
 
-function onClickJoinRoom() {
-    const sel = document.getElementById('login_player_select');
-    const input = document.getElementById('login_room_code_input');
-    const errorBox = document.getElementById('login_error_msg');
+function chooseContestantSlot(slotId) {
+    slotId = parseInt(slotId) || 1;
+    contestantId = slotId;
+    localStorage.setItem('contestant_id', slotId);
+    sessionStorage.setItem('ddvq_active_slot', slotId);
 
-    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
-        contestantId = window.FIXED_CONTESTANT_ID;
-    } else if (sel) {
-        contestantId = parseInt(sel.value) || 1;
-    }
-    const roomCode = (input ? input.value : '').trim().toUpperCase();
+    const sel = document.getElementById('contestant_select');
+    if (sel) sel.value = slotId;
 
-    if (!roomCode) {
-        if (errorBox) {
-            errorBox.innerText = 'Vui lòng nhập Mã Phòng!';
-            errorBox.style.display = 'block';
-        }
-        return;
-    }
-
-    const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
+    const myName = (playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`).toLocaleUpperCase('vi-VN');
+    if (document.getElementById('s1_badge_box')) document.getElementById('s1_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+    if (document.getElementById('s2_badge_box')) document.getElementById('s2_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+    if (document.getElementById('s3_badge_box')) document.getElementById('s3_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+    if (document.getElementById('s4_badge_box')) document.getElementById('s4_badge_box').innerText = `TS ${contestantId}: ${myName}`;
 
     const joinPayload = {
         type: 'CLIENT_JOIN',
         role: `ts${contestantId}`,
         contestantId: contestantId,
-        roomCode: roomCode,
+        roomCode: currentRoomCode,
+        auth: currentRoomAuth,
         name: myName
     };
+
+    const errorBox = document.getElementById('login_error_msg');
+    if (errorBox) errorBox.style.display = 'none';
 
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(joinPayload);
@@ -91,39 +135,57 @@ function onClickJoinRoom() {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                currentRoomCode = roomCode;
-                localStorage.setItem('ddvq_room_code', roomCode);
-                localStorage.setItem('contestant_id', contestantId);
                 const modal = document.getElementById('room_code_modal');
                 if (modal) modal.style.display = 'none';
-                if (errorBox) errorBox.style.display = 'none';
-                showToast(`Vào phòng thi thành công! (Mã phòng: ${roomCode})`);
+                showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
                 startHeartbeat();
             } else {
                 if (errorBox) {
-                    errorBox.innerText = data.error || 'Mã phòng không chính xác!';
+                    errorBox.innerText = data.error || 'Mã phòng hoặc mật khẩu không chính xác!';
                     errorBox.style.display = 'block';
                 }
             }
         })
         .catch(() => {
-            currentRoomCode = roomCode;
-            localStorage.setItem('ddvq_room_code', roomCode);
-            localStorage.setItem('contestant_id', contestantId);
             const modal = document.getElementById('room_code_modal');
             if (modal) modal.style.display = 'none';
-            showToast(`Đã tham gia phòng (Mã: ${roomCode})`);
+            showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
             startHeartbeat();
         });
     } else {
-        currentRoomCode = roomCode;
-        localStorage.setItem('ddvq_room_code', roomCode);
-        localStorage.setItem('contestant_id', contestantId);
         const modal = document.getElementById('room_code_modal');
         if (modal) modal.style.display = 'none';
-        showToast(`Đã tham gia phòng (Mã: ${roomCode})`);
+        showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
         startHeartbeat();
     }
+}
+
+function reopenSlotSelection() {
+    const modal = document.getElementById('room_code_modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        highlightLastChosenSlot();
+    }
+}
+
+function highlightLastChosenSlot() {
+    for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`slot_card_${i}`);
+        if (card) {
+            if (i === contestantId) {
+                card.style.borderColor = '#60a5fa';
+                card.style.boxShadow = '0 0 16px rgba(96, 165, 250, 0.6)';
+            } else {
+                card.style.borderColor = (i === 1 ? '#3b82f6' : i === 2 ? '#ef4444' : i === 3 ? '#10b981' : '#f59e0b');
+                card.style.boxShadow = 'none';
+            }
+        }
+    }
+}
+
+// Fallback legacy support
+function onClickJoinRoom() {
+    chooseContestantSlot(contestantId);
 }
 
 let heartbeatInterval = null;
@@ -143,6 +205,7 @@ function sendHeartbeat() {
         role: roleKey,
         contestantId: contestantId,
         roomCode: currentRoomCode,
+        auth: currentRoomAuth,
         name: myName,
         timestamp: Date.now()
     };
@@ -178,34 +241,47 @@ function sendHeartbeat() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    parsePlayerUrlParams();
+
+    // Fetch live state and contestant names immediately from server
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        fetch(getApiUrl('/api/state'))
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    if (data.contestants) updatePlayerContestants(data.contestants);
+                    if (data.roomCode && !new URLSearchParams(window.location.search).get('roomid')) {
+                        currentRoomCode = data.roomCode;
+                        const roomBadge = document.getElementById('modal_room_code_display');
+                        if (roomBadge) roomBadge.innerText = currentRoomCode;
+                        const topBadgeText = document.getElementById('player_room_badge_text');
+                        if (topBadgeText) topBadgeText.innerText = `Phòng: ${currentRoomCode}`;
+                    }
+                    if (data.roomAuth && !new URLSearchParams(window.location.search).get('auth')) {
+                        currentRoomAuth = data.roomAuth;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
     if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
-        contestantId = window.FIXED_CONTESTANT_ID;
-        localStorage.setItem('contestant_id', contestantId);
+        chooseContestantSlot(window.FIXED_CONTESTANT_ID);
         const sel = document.getElementById('contestant_select');
         if (sel) {
-            sel.value = contestantId;
+            sel.value = window.FIXED_CONTESTANT_ID;
             sel.disabled = true;
         }
-        const loginSel = document.getElementById('login_player_select');
-        if (loginSel) {
-            loginSel.value = contestantId;
-            loginSel.disabled = true;
-        }
+        const reopenBtn = document.getElementById('btn_reopen_slot');
+        if (reopenBtn) reopenBtn.style.display = 'none';
     } else {
-        const savedId = localStorage.getItem('contestant_id');
-        if (savedId) {
-            contestantId = parseInt(savedId);
-            const sel = document.getElementById('contestant_select');
-            if (sel) sel.value = contestantId;
-            const loginSel = document.getElementById('login_player_select');
-            if (loginSel) loginSel.value = contestantId;
+        // Show selection modal so the contestant can tap their name immediately.
+        // If they click the wrong name, F5 reloads and lets them select again seamlessly.
+        const modal = document.getElementById('room_code_modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            highlightLastChosenSlot();
         }
-    }
-    const savedRoom = localStorage.getItem('ddvq_room_code');
-    if (savedRoom) {
-        const input = document.getElementById('login_room_code_input');
-        if (input) input.value = savedRoom;
-        onClickJoinRoom();
     }
 });
 
@@ -215,6 +291,15 @@ function updatePlayerContestants(contestants) {
     try {
         localStorage.setItem('ddvq_contestants', JSON.stringify(contestants));
     } catch(e) {}
+
+    // Update modal 4 slot cards
+    for (let i = 1; i <= 4; i++) {
+        const cardName = document.getElementById(`slot_name_${i}`);
+        if (cardName) {
+            const name = (contestants[i - 1]?.name || `Thí sinh ${i}`).toLocaleUpperCase('vi-VN');
+            cardName.innerText = name;
+        }
+    }
 
     const selectEl = document.getElementById('contestant_select');
     if (selectEl) {

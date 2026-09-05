@@ -97,6 +97,15 @@
             color: #ffffff;
         }
 
+        .contestant-slot-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.2);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        .contestant-slot-btn:active {
+            transform: scale(0.98);
+        }
+
         .status-area {
             display: flex;
             align-items: center;
@@ -884,6 +893,13 @@
         </div>
 
         <div class="status-area">
+            <button id="btn_reopen_slot" onclick="reopenSlotSelection()" style="background: #1e293b; border: 1.5px solid #475569; color: #f8fafc; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Nhấp vào đây nếu muốn chọn lại vị trí thí sinh (hoặc bấm F5)">
+                🔄 Đổi vị trí (F5)
+            </button>
+            <div class="status-badge" id="player_connection_badge" style="display: flex; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 12px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                <span id="player_room_badge_text">Phòng: DDVQ2026</span>
+            </div>
         </div>
     </div>
 
@@ -1032,35 +1048,90 @@
 
     </div>
 
-    <!-- ROOM CODE LOGIN MODAL OVERLAY -->
-    <div id="room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-        <div style="background: #1e293b; border: 2px solid #3b82f6; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); text-align: center; color: #f8fafc;">
-            <div style="font-size: 36px; margin-bottom: 8px;">🏆</div>
-            <h2 style="font-size: 20px; font-weight: 800; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">ĐĂNG NHẬP THÍ SINH</h2>
-            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Nhập Mã Phòng từ Ban Tổ Chức (Controller) để tham gia thi đấu</p>
-
-            <div style="text-align: left; margin-bottom: 16px;">
-                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">1. CHỌN VỊ TRÍ THÍ SINH:</label>
-                <select id="login_player_select" style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 14px; font-weight: bold; outline: none;" onchange="onLoginPlayerSelectChange()">
-                    <option value="1">Thí sinh 1</option>
-                    <option value="2">Thí sinh 2</option>
-                    <option value="3">Thí sinh 3</option>
-                    <option value="4">Thí sinh 4</option>
-                </select>
+    <!-- ROOM CODE LOGIN & CONTESTANT SELECTION MODAL OVERLAY -->
+    <div id="room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+        <div style="background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); border: 2px solid #3b82f6; border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 580px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(59, 130, 246, 0.2); text-align: center; color: #f8fafc; position: relative;">
+            
+            <!-- Room Info & Header -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-size: 28px;">🏆</span>
+                <h1 style="font-size: 22px; font-weight: 900; color: #60a5fa; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; text-shadow: 0 0 12px rgba(96, 165, 250, 0.4);">ĐƯỜNG ĐẾN VINH QUANG</h1>
             </div>
 
-            <div style="text-align: left; margin-bottom: 24px;">
-                <label style="display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px;">2. NHẬP MÃ PHÒNG (ROOM CODE):</label>
-                <input type="password" id="login_room_code_input" placeholder="Nhập mã phòng..." style="width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; outline: none;" onkeyup="if(event.key==='Enter') onClickJoinRoom()">
+            <!-- Room Badge -->
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; color: #93c5fd; padding: 4px 14px; border-radius: 9999px; font-size: 13px; font-weight: bold; margin-bottom: 16px;">
+                <span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block;"></span>
+                <span>Phòng thi: <strong id="modal_room_code_display" style="color: #ffffff; text-transform: uppercase;">DDVQ2026</strong></span>
             </div>
 
-            <div id="login_error_msg" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 16px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                Mã phòng không chính xác!
+            <div style="margin-bottom: 18px;">
+                <h2 style="font-size: 17px; font-weight: 800; color: #f8fafc; margin: 0 0 4px 0; text-transform: uppercase;">👉 CHỌN VỊ TRÍ THI CỦA BẠN:</h2>
+                <p style="font-size: 13px; color: #94a3b8; margin: 0;">
+                    Nhấp trực tiếp vào <strong>Tên thí sinh</strong> bên dưới để vào vị trí thi.<br>
+                    <span style="color: #e2e8f0; font-size: 12px;">(Nếu bấm sai tên, bạn chỉ cần <strong>F5</strong> để chọn lại)</span>
+                </p>
             </div>
 
-            <button onclick="onClickJoinRoom()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: all 0.2s;">
-                VÀO PHÒNG THI
-            </button>
+            <!-- 4 CONTESTANT CARDS GRID -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                <!-- Thí sinh 1 -->
+                <button type="button" class="contestant-slot-btn" id="slot_card_1" onclick="chooseContestantSlot(1)" style="display: flex; align-items: center; gap: 12px; background: rgba(30, 58, 138, 0.25); border: 2px solid #3b82f6; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);">1</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 1</div>
+                        <div id="slot_name_1" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 1</div>
+                    </div>
+                </button>
+
+                <!-- Thí sinh 2 -->
+                <button type="button" class="contestant-slot-btn" id="slot_card_2" onclick="chooseContestantSlot(2)" style="display: flex; align-items: center; gap: 12px; background: rgba(153, 27, 27, 0.25); border: 2px solid #ef4444; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #dc2626; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);">2</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 11px; font-weight: 700; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 2</div>
+                        <div id="slot_name_2" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 2</div>
+                    </div>
+                </button>
+
+                <!-- Thí sinh 3 -->
+                <button type="button" class="contestant-slot-btn" id="slot_card_3" onclick="chooseContestantSlot(3)" style="display: flex; align-items: center; gap: 12px; background: rgba(20, 83, 45, 0.25); border: 2px solid #10b981; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #16a34a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(22, 163, 74, 0.5);">3</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 11px; font-weight: 700; color: #86efac; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 3</div>
+                        <div id="slot_name_3" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 3</div>
+                    </div>
+                </button>
+
+                <!-- Thí sinh 4 -->
+                <button type="button" class="contestant-slot-btn" id="slot_card_4" onclick="chooseContestantSlot(4)" style="display: flex; align-items: center; gap: 12px; background: rgba(120, 53, 15, 0.25); border: 2px solid #f59e0b; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #d97706; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(217, 119, 6, 0.5);">4</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 11px; font-weight: 700; color: #fde68a; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 4</div>
+                        <div id="slot_name_4" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 4</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Error message container if any -->
+            <div id="login_error_msg" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 14px; display: none; background: rgba(239, 68, 68, 0.15); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                Mã phòng hoặc mật khẩu không chính xác!
+            </div>
+
+            <!-- Optional Manual Setup Toggle (for non-link entry) -->
+            <div style="border-top: 1px solid #334155; padding-top: 14px; margin-top: 8px;">
+                <details id="manual_room_accordion" style="text-align: left; font-size: 12px; color: #94a3b8;">
+                    <summary style="cursor: pointer; font-weight: 600; color: #64748b; padding: 4px 0; user-select: none;">⚙️ Tùy chỉnh Mã phòng & Mật khẩu thủ công</summary>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+                        <div>
+                            <label style="display: block; font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 4px;">MÃ PHÒNG (ROOMID):</label>
+                            <input type="text" id="login_room_code_input" placeholder="Mã phòng..." value="DDVQ2026" style="width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 13px; font-weight: bold; text-transform: uppercase; outline: none;" onchange="onManualRoomSettingsChange()">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 4px;">MẬT KHẨU (AUTH):</label>
+                            <input type="text" id="login_room_auth_input" placeholder="Mật khẩu..." value="123456" style="width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 13px; font-weight: bold; outline: none;" onchange="onManualRoomSettingsChange()">
+                        </div>
+                    </div>
+                </details>
+            </div>
         </div>
     </div>
 

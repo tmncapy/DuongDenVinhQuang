@@ -1059,10 +1059,7 @@ function updateRoomCodeFromController() {
     const badge = document.getElementById('room_code_badge');
     if (badge) badge.innerText = `Đang hoạt động: ${newCode} | Pass: ${newAuth}`;
 
-    const linkPreview = document.getElementById('player_direct_link_preview');
-    if (linkPreview) {
-        linkPreview.innerText = getPlayerDirectLink();
-    }
+    updateAllLinkPreviews();
 
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction({
@@ -1098,32 +1095,122 @@ function updateRoomCodeFromController() {
     }
 }
 
-function getPlayerDirectLink() {
+function getPlayerBaseUrl() {
+    const sel = document.getElementById('link_domain_select');
+    const customInp = document.getElementById('custom_domain_input');
+    const val = sel ? sel.value : 'render';
+
+    if (val === 'render') {
+        return 'https://duongdenvinhquang.onrender.com';
+    } else if (val === 'current') {
+        if (typeof window !== 'undefined' && window.location && window.location.origin) {
+            return window.location.origin;
+        }
+        return 'https://duongdenvinhquang.onrender.com';
+    } else if (val === 'custom') {
+        let customVal = (customInp ? customInp.value.trim() : '');
+        if (!customVal) customVal = 'https://duongdenvinhquang.onrender.com';
+        if (!customVal.startsWith('http://') && !customVal.startsWith('https://')) {
+            customVal = 'http://' + customVal;
+        }
+        return customVal.replace(/\/+$/, '');
+    }
+    return 'https://duongdenvinhquang.onrender.com';
+}
+
+function onLinkDomainSelectChange() {
+    const sel = document.getElementById('link_domain_select');
+    const customInp = document.getElementById('custom_domain_input');
+    if (customInp) {
+        customInp.style.display = (sel && sel.value === 'custom') ? 'inline-block' : 'none';
+    }
+    updateRoomCodeFromController();
+}
+
+function generateRandomRoomCredentials() {
+    const randomCode = 'DDVQ' + Math.floor(1000 + Math.random() * 9000);
+    const randomAuth = '' + Math.floor(100000 + Math.random() * 900000);
+    
+    const roomInput = document.getElementById('room_code_input');
+    const authInput = document.getElementById('room_auth_input');
+    if (roomInput) roomInput.value = randomCode;
+    if (authInput) authInput.value = randomAuth;
+
+    updateRoomCodeFromController();
+    if (typeof showToast === 'function') showToast(`🎲 Đã tạo mã phòng ngẫu nhiên: ${randomCode} (Pass: ${randomAuth})`);
+}
+
+function getPlayerDirectLink(slot) {
     const roomInput = document.getElementById('room_code_input');
     const authInput = document.getElementById('room_auth_input');
     const code = (roomInput ? roomInput.value.trim().toUpperCase() : '') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
     const auth = (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
-    const origin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://duongdenvinhquang.onrender.com';
-    return `${origin}/player.html?roomid=${encodeURIComponent(code)}&auth=${encodeURIComponent(auth)}`;
+    const baseUrl = getPlayerBaseUrl();
+    
+    let url = `${baseUrl}/player.html?roomid=${encodeURIComponent(code)}&auth=${encodeURIComponent(auth)}`;
+    if (slot && parseInt(slot) >= 1 && parseInt(slot) <= 4) {
+        url += `&slot=${parseInt(slot)}`;
+    }
+    return url;
 }
 
-function copyPlayerDirectLink() {
-    const link = getPlayerDirectLink();
+function copyPlayerDirectLink(slot) {
+    const link = getPlayerDirectLink(slot);
+    const label = slot ? `Link Thí sinh ${slot}` : 'Link Mời Thí sinh';
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(link).then(() => {
-            if (typeof showToast === 'function') showToast(`✅ Đã sao chép link mời thí sinh:\n${link}`);
-            else alert(`Đã sao chép link:\n${link}`);
+            if (typeof showToast === 'function') showToast(`✅ Đã sao chép ${label}:\n${link}`);
+            else alert(`Đã sao chép ${label}:\n${link}`);
         }).catch(() => {
-            prompt("Sao chép link mời thí sinh:", link);
+            prompt(`Sao chép ${label}:`, link);
         });
     } else {
-        prompt("Sao chép link mời thí sinh:", link);
+        prompt(`Sao chép ${label}:`, link);
     }
 }
 
-function openPlayerDirectLink() {
-    const link = getPlayerDirectLink();
+function openPlayerDirectLink(slot) {
+    const link = getPlayerDirectLink(slot);
     window.open(link, '_blank');
+}
+
+function showPlayerQrModal(slot) {
+    const link = getPlayerDirectLink(slot);
+    const modal = document.getElementById('player_qr_modal');
+    const img = document.getElementById('player_qr_img');
+    const linkText = document.getElementById('player_qr_link_text');
+    const titleText = document.getElementById('player_qr_title');
+
+    if (titleText) {
+        titleText.innerText = slot ? `📱 MÃ QR CHO THÍ SINH ${slot}` : '📱 MÃ QR CHO THÍ SINH VÀO THI';
+    }
+    if (linkText) {
+        linkText.innerText = link;
+    }
+    if (img) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(link)}`;
+    }
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closePlayerQrModal() {
+    const modal = document.getElementById('player_qr_modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function updateAllLinkPreviews() {
+    const linkPreview = document.getElementById('player_direct_link_preview');
+    if (linkPreview) {
+        linkPreview.innerText = getPlayerDirectLink();
+    }
+    for (let i = 1; i <= 4; i++) {
+        const slotPreview = document.getElementById(`slot_link_preview_${i}`);
+        if (slotPreview) {
+            slotPreview.innerText = getPlayerDirectLink(i);
+        }
+    }
 }
 
 let currentControllerAudio = null;
@@ -1210,8 +1297,7 @@ if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocal
                     if (input && !input.matches(':focus')) input.value = data.roomCode;
                     if (authInput && data.roomAuth && !authInput.matches(':focus')) authInput.value = data.roomAuth;
                     if (badge) badge.innerText = `Đang hoạt động: ${data.roomCode} | Pass: ${data.roomAuth || '123456'}`;
-                    const linkPreview = document.getElementById('player_direct_link_preview');
-                    if (linkPreview && typeof getPlayerDirectLink === 'function') linkPreview.innerText = getPlayerDirectLink();
+                    updateAllLinkPreviews();
                 }
             } catch(e) {}
         };
