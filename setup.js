@@ -175,14 +175,24 @@ function scrollXuatPhatTabs(direction) {
     switchXuatPhatTurn(next);
 }
 
+// Debounced State Saving & Broadcasting to prevent input lag
+let debouncedSaveTimeout = null;
+function debouncedSaveAllData(delay = 250) {
+    if (debouncedSaveTimeout) clearTimeout(debouncedSaveTimeout);
+    debouncedSaveTimeout = setTimeout(() => {
+        saveAllData(false);
+    }, delay);
+}
+
 function updateXuatPhatItem(turn, index, field, value) {
     if (!gameData.xuatPhat[turn]) gameData.xuatPhat[turn] = [];
     if (!gameData.xuatPhat[turn][index]) gameData.xuatPhat[turn][index] = { q: '', a: '' };
     gameData.xuatPhat[turn][index][field] = value;
-    saveAllData();
+    debouncedSaveAllData(300);
 }
 
 // Vuot Song Crossword & character counter
+let vsSyncTimeout = null;
 function updateVuotSongState() {
     if (!gameData.vuotSong || Array.isArray(gameData.vuotSong)) {
         gameData.vuotSong = { h1: {q:"",a:""}, h2: {q:"",a:""}, h3: {q:"",a:""}, h4: {q:"",a:""}, center: {q:"",a:""}, keyword: "" };
@@ -245,8 +255,11 @@ function updateVuotSongState() {
         kwSpan.innerText = `${kwVal.replace(/\s+/g, '').length} kí tự`;
     }
 
-    saveAllData();
-    sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
+    if (vsSyncTimeout) clearTimeout(vsSyncTimeout);
+    vsSyncTimeout = setTimeout(() => {
+        debouncedSaveAllData(100);
+        sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
+    }, 200);
 }
 
 // Vinh Quang 3 packs (10, 20, 30 point tiers x 12 questions each)
@@ -362,7 +375,7 @@ function updateVinhQuangItem(pack, index, field, value) {
         gameData.vinhQuang[pack][index] = { m: '', q: '', a: '' };
     }
     gameData.vinhQuang[pack][index][field] = value;
-    saveAllData();
+    debouncedSaveAllData(300);
 }
 
 // Excel Upload Handler
@@ -736,6 +749,7 @@ function resetAllData() {
     }
 }
 
+let updateContestantNameTimeout = null;
 function updateContestantName(i, val) {
     if (!gameData.contestants) gameData.contestants = [];
     
@@ -764,49 +778,47 @@ function updateContestantName(i, val) {
         }
     });
 
-    saveAllData(false);
-
     if (typeof updateTab1Preview === 'function') updateTab1Preview();
 
-    const payload = {
-        type: 'UPDATE_CONTESTANTS',
-        contestants: gameData.contestants,
-        gameData: gameData,
-        timestamp: Date.now()
-    };
+    // Debounce disk save and network broadcast to prevent lag while typing
+    if (updateContestantNameTimeout) clearTimeout(updateContestantNameTimeout);
+    updateContestantNameTimeout = setTimeout(() => {
+        saveAllData(false);
 
-    sendToProjector('UPDATE_CONTESTANTS', payload);
-    sendToProjector('UPDATE_SCORES', payload);
+        const payload = {
+            type: 'UPDATE_CONTESTANTS',
+            contestants: gameData.contestants,
+            gameData: gameData,
+            timestamp: Date.now()
+        };
 
-    try {
-        if (typeof BroadcastChannel !== 'undefined' && controllerChannel) {
-            controllerChannel.postMessage(payload);
-        }
-    } catch(e) {}
+        sendToProjector('UPDATE_CONTESTANTS', payload);
+        sendToProjector('UPDATE_SCORES', payload);
 
-    try {
-        localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
-        localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
-    } catch(e) {}
+        try {
+            if (typeof BroadcastChannel !== 'undefined' && controllerChannel) {
+                controllerChannel.postMessage(payload);
+            }
+        } catch(e) {}
 
-    try {
-        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-            fetch(getApiUrl('/api/state'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contestants: gameData.contestants,
-                    gameData: gameData
-                })
-            }).catch(() => {});
+        try {
+            localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
+            localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
+        } catch(e) {}
 
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(() => {});
-        }
-    } catch(e) {}
+        try {
+            if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+                fetch(getApiUrl('/api/state'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contestants: gameData.contestants,
+                        gameData: gameData
+                    })
+                }).catch(() => {});
+            }
+        } catch(e) {}
+    }, 200);
 }
 
 function updateContestantNames() {
@@ -915,72 +927,79 @@ let controllerChannel = null;
 let projectorWindow = null;
 let lastProjectorPing = 0;
 
+const processedPlayerAnswersCache = new Map();
+
 function handleIncomingPlayerAnswer(data) {
     if (!data) return;
     if (data.type === 'PLAYER_SUBMIT_ANSWER') {
         const tsIdx = data.contestantId || 1;
-        const ans = data.answer || '';
-        const rawTime = data.time || '';
-        const cleanTime = rawTime.toString().replace(/s|giây/gi, '').trim();
+        const ans = (data.answer || '').toString().trim();
+        const rawTime = (data.time || '').toString();
+        const cleanTime = rawTime.replace(/s|giây/gi, '').trim();
+        const round = data.round || 'GEN';
+        const dedupeKey = `${tsIdx}_${round}_${ans}_${cleanTime}`;
+
+        const lastProcessed = processedPlayerAnswersCache.get(dedupeKey);
+        const now = Date.now();
+        if (lastProcessed && (now - lastProcessed < 2500)) {
+            return; // Duplicate submission from multi-channel delivery within 2.5s
+        }
+        processedPlayerAnswersCache.set(dedupeKey, now);
+        if (processedPlayerAnswersCache.size > 100) {
+            const oldestKey = processedPlayerAnswersCache.keys().next().value;
+            processedPlayerAnswersCache.delete(oldestKey);
+        }
 
         if (data.round === 'RK' || !data.round) {
             const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
-            if (inputAns) inputAns.value = ans;
+            if (inputAns && inputAns.value !== ans) inputAns.value = ans;
             const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
-            if (inputTime) inputTime.value = cleanTime || '00.00';
+            if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
         }
         if (data.round === 'VS' || !data.round) {
             const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
             const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
-            if (inputTime) inputTime.value = cleanTime || '00.00';
-            if (inputAns) {
-                inputAns.value = ans;
-            }
+            if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
+            if (inputAns && inputAns.value !== ans) inputAns.value = ans;
         }
         if (data.round === 'VQ' || !data.round) {
             const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);
-            if (inputExtra) inputExtra.value = cleanTime || '00.00';
+            if (inputExtra && inputExtra.value !== (cleanTime || '00.00')) inputExtra.value = cleanTime || '00.00';
             const inputAns = document.getElementById(`ts${tsIdx}_ans_vq`);
-            if (inputAns) inputAns.value = ans;
+            if (inputAns && inputAns.value !== ans) inputAns.value = ans;
         }
-        if (typeof showToast === 'function') {
-            if (data.isVongThi && !ans) {
-                showToast(`TS${tsIdx} bấm chuông Vượt Sóng (${cleanTime || '00.00'})`);
-            } else {
-                showToast(`TS${tsIdx} gửi: "${ans}" (${cleanTime || '00.00'})`);
-            }
+
+        // Forward to projector only once if not loop-forwarded
+        if (!data._forwarded && !data._fromNetwork) {
+            try {
+                sendToProjector('PLAYER_SUBMIT_ANSWER', { ...data, _forwarded: true });
+            } catch(e) {}
         }
-        // Forward to projector immediately (especially useful under file:/// protocol)
-        try {
-            sendToProjector('PLAYER_SUBMIT_ANSWER', data);
-        } catch(e) {}
     } else if (data.playerAnswers && typeof data.playerAnswers === 'object') {
         Object.values(data.playerAnswers).forEach(ansObj => {
             if (ansObj && ansObj.contestantId) {
                 const tsIdx = ansObj.contestantId;
-                const ans = ansObj.answer || '';
-                const rawTime = ansObj.time || '';
-                const cleanTime = rawTime.toString().replace(/s|giây/gi, '').trim();
+                const ans = (ansObj.answer || '').toString().trim();
+                const rawTime = (ansObj.time || '').toString();
+                const cleanTime = rawTime.replace(/s|giây/gi, '').trim();
 
                 if (ansObj.round === 'RK' || !ansObj.round) {
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_rk`);
-                    if (inputAns) inputAns.value = ans;
+                    if (inputAns && inputAns.value !== ans) inputAns.value = ans;
                     const inputTime = document.getElementById(`ts${tsIdx}_extra_rk`);
-                    if (inputTime) inputTime.value = cleanTime || '00.00';
+                    if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
                 }
                 if (ansObj.round === 'VS' || !ansObj.round) {
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
                     const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
-                    if (inputTime) inputTime.value = cleanTime || '00.00';
-                    if (inputAns) {
-                        inputAns.value = ans;
-                    }
+                    if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
+                    if (inputAns && inputAns.value !== ans) inputAns.value = ans;
                 }
                 if (ansObj.round === 'VQ' || !ansObj.round) {
                     const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);
-                    if (inputExtra) inputExtra.value = cleanTime || '00.00';
+                    if (inputExtra && inputExtra.value !== (cleanTime || '00.00')) inputExtra.value = cleanTime || '00.00';
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_vq`);
-                    if (inputAns) inputAns.value = ans;
+                    if (inputAns && inputAns.value !== ans) inputAns.value = ans;
                 }
             }
         });
@@ -1487,34 +1506,6 @@ function sendToProjector(type, payload = {}) {
             }).catch(() => {});
         } catch(e) {}
     }
-}
-
-function updateContestantName(idx, val) {
-    val = (val || `Thí sinh ${idx}`).trim();
-    if (!gameData.contestants) gameData.contestants = [];
-    if (!gameData.contestants[idx - 1]) gameData.contestants[idx - 1] = { name: val, score: 0 };
-    else gameData.contestants[idx - 1].name = val;
-
-    const inputs = [
-        document.getElementById(`ts_name_${idx}`),
-        document.getElementById(`ts${idx}_name`),
-        document.getElementById(`ts${idx}_name_rk`),
-        document.getElementById(`ts${idx}_name_vs`),
-        document.getElementById(`ts${idx}_name_vq`)
-    ];
-    inputs.forEach(inp => { if (inp && inp.value !== val) inp.value = val; });
-    saveAllData();
-    if (typeof currentXuatPhatTurn !== 'undefined' && currentXuatPhatTurn === idx) {
-        if (typeof updateTab1Preview === 'function') updateTab1Preview();
-    }
-
-    // Debounced or direct broadcast
-    const payload = {
-        type: 'UPDATE_CONTESTANTS',
-        contestants: gameData.contestants,
-        timestamp: Date.now()
-    };
-    sendToProjector('UPDATE_CONTESTANTS', payload);
 }
 
 function promptScore(idx) {

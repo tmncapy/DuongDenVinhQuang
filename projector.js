@@ -1177,35 +1177,27 @@ function handleProjectorMessage(data) {
     } else if (data.type === 'PLAY_INTRO_VIDEO') {
         const overlay = document.getElementById('intro_video_overlay');
         const player = document.getElementById('intro_video_player');
-        const clickOverlay = document.getElementById('intro_video_play_overlay');
         if (overlay && player) {
             overlay.style.display = 'flex';
             player.src = data.src;
             player.load();
-            if (clickOverlay) clickOverlay.style.display = 'none';
 
-            player.play().then(() => {
-                if (clickOverlay) clickOverlay.style.display = 'none';
-            }).catch(err => {
-                console.warn("Intro video play blocked or failed:", err);
-                if (clickOverlay) clickOverlay.style.display = 'flex';
+            player.play().catch(err => {
+                console.warn("Intro video play error:", err);
             });
 
             player.onended = () => {
                 overlay.style.display = 'none';
                 player.src = '';
-                if (clickOverlay) clickOverlay.style.display = 'none';
             };
         }
     } else if (data.type === 'STOP_INTRO_VIDEO') {
         const overlay = document.getElementById('intro_video_overlay');
         const player = document.getElementById('intro_video_player');
-        const clickOverlay = document.getElementById('intro_video_play_overlay');
         if (overlay && player) {
             player.pause();
             player.src = '';
             overlay.style.display = 'none';
-            if (clickOverlay) clickOverlay.style.display = 'none';
         }
     }
 }
@@ -1522,7 +1514,6 @@ function handleRKPlayClip(data) {
     const video = document.getElementById('rk_video_player');
     const placeholder = document.getElementById('rk_video_placeholder');
     const placeholderText = document.getElementById('rk_placeholder_text');
-    const overlay = document.getElementById('rk_video_play_overlay');
 
     if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
     if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
@@ -1535,18 +1526,14 @@ function handleRKPlayClip(data) {
             video.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
 
-            video.play().then(() => {
-                if (overlay) overlay.style.display = 'none';
-            }).catch(err => {
-                console.warn("Video autoplay blocked or error:", err);
-                if (overlay) overlay.style.display = 'flex';
+            video.play().catch(err => {
+                console.warn("Video play error:", err);
             });
 
             video.ontimeupdate = null;
         }
     } else {
         if (video) video.style.display = 'none';
-        if (overlay) overlay.style.display = 'none';
         if (placeholder) placeholder.style.display = 'flex';
         if (placeholderText) placeholderText.innerText = `Đang phát đoạn băng câu ${data.questionIndex || 1}...`;
     }

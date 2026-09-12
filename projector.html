@@ -272,14 +272,7 @@
 
     <!-- Intro Video Player Overlay -->
     <div id="intro_video_overlay" style="position: fixed; inset: 0; width: 100vw; height: 100vh; background: #000; z-index: 99999; display: none; align-items: center; justify-content: center; pointer-events: auto;">
-        <video id="intro_video_player" style="width: 100%; height: 100%; object-fit: contain;" playsinline></video>
-        
-        <!-- Click overlay to resume in case of browser autoplay block -->
-        <div id="intro_video_play_overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100000; cursor: pointer;" onclick="playIntroVideoExplicitly()">
-            <div style="background: #2563eb; color: #fff; padding: 16px 36px; border-radius: 40px; font-size: 28px; font-weight: bold; box-shadow: 0 0 25px rgba(37,99,235,0.8); display: flex; align-items: center; gap: 12px;">
-                <span>▶</span> Bấm để phát video
-            </div>
-        </div>
+        <video id="intro_video_player" style="width: 100%; height: 100%; object-fit: contain;" playsinline autoplay></video>
     </div>
 
     <div class="stage-wrapper">
@@ -351,13 +344,6 @@
                     <!-- VIDEO CONTAINER -->
                     <div style="width: 100%; height: 100%; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                         <video id="rk_video_player" style="width: 100%; height: 100%; object-fit: contain; display: none;" playsinline controls autoplay></video>
-                        
-                        <!-- PLAY BUTTON OVERLAY IF AUTOPLAY IS BLOCKED -->
-                        <div id="rk_video_play_overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 20; cursor: pointer;" onclick="playRKVideoExplicitly()">
-                            <div style="background: #3b82f6; color: #fff; padding: 16px 36px; border-radius: 40px; font-size: 28px; font-weight: bold; box-shadow: 0 0 25px rgba(59,130,246,0.8); display: flex; align-items: center; gap: 12px;">
-                                <span>▶</span> Bấm để phát video
-                            </div>
-                        </div>
 
                         <!-- SIMULATED/PLACEHOLDER MEDIA SCREEN IF NO REAL MP4 LOADED -->
                         <div id="rk_video_placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #94a3b8; text-align: center;">

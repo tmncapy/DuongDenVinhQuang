@@ -1477,7 +1477,6 @@ function handleRKPlayClip(data) {
     const video = document.getElementById('rk_video_player');
     const placeholder = document.getElementById('rk_video_placeholder');
     const placeholderText = document.getElementById('rk_placeholder_text');
-    const overlay = document.getElementById('rk_video_play_overlay');
 
     if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
     if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
@@ -1490,18 +1489,14 @@ function handleRKPlayClip(data) {
             video.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
 
-            video.play().then(() => {
-                if (overlay) overlay.style.display = 'none';
-            }).catch(err => {
-                console.warn("Video autoplay blocked or error:", err);
-                if (overlay) overlay.style.display = 'flex';
+            video.play().catch(err => {
+                console.warn("Video play error in graphic screen:", err);
             });
 
             video.ontimeupdate = null;
         }
     } else {
         if (video) video.style.display = 'none';
-        if (overlay) overlay.style.display = 'none';
         if (placeholder) placeholder.style.display = 'flex';
         if (placeholderText) placeholderText.innerText = `Đang phát đoạn băng câu ${data.questionIndex || 1}...`;
     }
