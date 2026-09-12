@@ -192,7 +192,7 @@ let heartbeatInterval = null;
 function startHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     sendHeartbeat();
-    heartbeatInterval = setInterval(sendHeartbeat, 2500);
+    heartbeatInterval = setInterval(sendHeartbeat, 8000);
 }
 
 function sendHeartbeat() {
@@ -210,31 +210,12 @@ function sendHeartbeat() {
         timestamp: Date.now()
     };
 
-    // 0. Supabase & MQTT Realtime sync
+    // 0. Supabase, WebSocket & Realtime sync
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(hbPayload);
     }
 
-    // 1. API POST (if server backend is present)
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(hbPayload)
-            }).catch(() => {});
-        } catch(e) {}
-    }
-
-    // 2. BroadcastChannel
-    try {
-        if (typeof BroadcastChannel !== 'undefined') {
-            const bc = new BroadcastChannel('ddvq_game_channel');
-            bc.postMessage(hbPayload);
-        }
-    } catch(e) {}
-
-    // 3. LocalStorage
+    // LocalStorage
     try {
         localStorage.setItem('ddvq_client_heartbeat', JSON.stringify(hbPayload));
     } catch(e) {}

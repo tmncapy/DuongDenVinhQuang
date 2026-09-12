@@ -114,7 +114,7 @@ let hostHeartbeatInterval = null;
 function startHostHeartbeat() {
     if (hostHeartbeatInterval) clearInterval(hostHeartbeatInterval);
     sendHostHeartbeat();
-    hostHeartbeatInterval = setInterval(sendHostHeartbeat, 2500);
+    hostHeartbeatInterval = setInterval(sendHostHeartbeat, 8000);
 }
 
 function sendHostHeartbeat() {
@@ -132,35 +132,8 @@ function sendHostHeartbeat() {
         sendSupabaseAction(hbData);
     }
 
-    // 1. API POST
-    fetch(getApiUrl('/api/action'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hbData)
-    }).catch(() => {});
-
-    // 2. BroadcastChannel
     try {
-        if (typeof BroadcastChannel !== 'undefined') {
-            const bc = new BroadcastChannel('ddvq_game_channel');
-            bc.postMessage({
-                type: 'CLIENT_HEARTBEAT',
-                role: 'host',
-                roomCode: hostRoomCode,
-                name: 'Máy MC (Host)',
-                timestamp: Date.now()
-            });
-        }
-    } catch(e) {}
-
-    // 3. LocalStorage
-    try {
-        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify({
-            role: 'host',
-            roomCode: hostRoomCode,
-            name: 'Máy MC (Host)',
-            timestamp: Date.now()
-        }));
+        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify(hbData));
     } catch(e) {}
 }
 

@@ -203,8 +203,10 @@ function handleIncomingAction(action, senderWs = null) {
     action.buzzerState = serverState.buzzerState;
   }
 
-  // Broadcast to all WebSocket and SSE clients
-  broadcastToClients(action, senderWs);
+  // Broadcast to all WebSocket and SSE clients (skip raw heartbeats to prevent network flooding)
+  if (type !== 'CLIENT_HEARTBEAT') {
+    broadcastToClients(action, senderWs);
+  }
 }
 
 // Initialize WebSocket Server on /ws and root paths

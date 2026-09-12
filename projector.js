@@ -696,8 +696,7 @@ function notifyControllerReady() {
     const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(msg);
-    }
-    if (projectorChannel) {
+    } else if (projectorChannel) {
         try { projectorChannel.postMessage(msg); } catch(e) {}
     }
     try {
@@ -708,19 +707,9 @@ function notifyControllerReady() {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            const actionUrl = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/action') : '/api/action';
-            fetch(actionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(msg)
-            }).catch(() => {});
-        } catch(e) {}
-    }
 }
+// Notify once on initial startup (no polling interval needed)
 notifyControllerReady();
-setInterval(notifyControllerReady, 3000);
 
 window.addEventListener('storage', function(event) {
     if (event.key === 'ddvq_latest_action' && event.newValue) {
@@ -1613,42 +1602,14 @@ function sendProjectorHeartbeat() {
         sendSupabaseAction(hbData);
     }
 
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            fetch(getApiUrlProj('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(hbData)
-            }).catch(() => {});
-        } catch(e) {}
-    }
-
     try {
-        if (typeof BroadcastChannel !== 'undefined') {
-            const bc = new BroadcastChannel('ddvq_game_channel');
-            bc.postMessage({
-                type: 'CLIENT_HEARTBEAT',
-                role: 'projector',
-                roomCode: projRoomCode,
-                name: 'Máy Chiếu',
-                timestamp: Date.now()
-            });
-        }
-    } catch(e) {}
-
-    try {
-        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify({
-            role: 'projector',
-            roomCode: projRoomCode,
-            name: 'Máy Chiếu',
-            timestamp: Date.now()
-        }));
+        localStorage.setItem('ddvq_client_heartbeat', JSON.stringify(hbData));
         localStorage.setItem('ddvq_projector_status', Date.now().toString());
     } catch(e) {}
 }
 
 sendProjectorHeartbeat();
-setInterval(sendProjectorHeartbeat, 2500);
+setInterval(sendProjectorHeartbeat, 8000);
 
 function playIntroVideoExplicitly() {
     const video = document.getElementById('intro_video_player');
