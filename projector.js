@@ -970,7 +970,7 @@ function handleProjectorMessage(data) {
         }
     } else if (data.type === 'XUAT_PHAT_STOP_SOUND') {
         stopAllAudio1();
-    } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO') {
+    } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO' || data.type === 'RA_KHOI_SHOW_QUESTION') {
         handleRKPlayClip(data);
     } else if (data.type === 'RA_KHOI_START_TIMER') {
         switchView(2);
@@ -987,8 +987,53 @@ function handleProjectorMessage(data) {
         rkTimerAlreadyTriggered = false;
         const clockEl = document.getElementById('rk_clock_box');
         if (clockEl) clockEl.innerText = "30";
+
+        // Stop, reset & hide video clip completely
         const video = document.getElementById('rk_video_player');
-        if (video) { video.pause(); video.currentTime = 0; }
+        if (video) {
+            try {
+                video.pause();
+                video.currentTime = 0;
+                video.src = "";
+                video.removeAttribute('src');
+                video.load();
+            } catch(e) {}
+            video.style.display = 'none';
+        }
+        const overlay = document.getElementById('rk_video_play_overlay');
+        if (overlay) overlay.style.display = 'none';
+
+        const placeholder = document.getElementById('rk_video_placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+
+        const placeholderText = document.getElementById('rk_placeholder_text');
+        if (placeholderText) placeholderText.innerText = "";
+
+        const qText = document.getElementById('rk_question_text');
+        if (qText) {
+            qText.innerText = "";
+            qText.style.display = 'none';
+        }
+
+        // Stop any playing audio in round 2
+        const vAudio = document.getElementById('vongThiAudio2');
+        if (vAudio) { try { vAudio.pause(); vAudio.currentTime = 0; } catch(e) {} }
+        const aAudio = document.getElementById('soundRKAnswer2') || document.getElementById('soundRKAnswer');
+        if (aAudio) { try { aAudio.pause(); aAudio.currentTime = 0; } catch(e) {} }
+
+        // Stop intro overlay if active
+        const introOverlay = document.getElementById('intro_video_overlay');
+        const introPlayer = document.getElementById('intro_video_player');
+        if (introPlayer) {
+            try {
+                introPlayer.pause();
+                introPlayer.currentTime = 0;
+                introPlayer.src = "";
+                introPlayer.removeAttribute('src');
+            } catch(e) {}
+        }
+        if (introOverlay) introOverlay.style.display = 'none';
+
         const qScene = document.getElementById('rk-scene-question');
         const aScene = document.getElementById('rk-scene-answers');
         if (qScene) qScene.style.display = 'flex';

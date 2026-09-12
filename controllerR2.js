@@ -180,8 +180,19 @@ function onClickRKDatLai() {
     const timerEl = document.getElementById('rk_preview_timer');
     if (timerEl) timerEl.innerText = rkTimeLeft;
     const statusEl = document.getElementById('rk_preview_status');
-    if (statusEl) statusEl.innerText = "Đã đặt lại";
+    if (statusEl) statusEl.innerText = "Đã đặt lại (Dừng/Ẩn clip)";
     updateTab2Preview();
-    sendToProjector('RA_KHOI_RESET');
-    showToast('Đã đặt lại vòng thi Ra Khơi');
+    
+    sendToProjector('RA_KHOI_RESET', {
+        questionIndex: currentRKQuestion,
+        timestamp: Date.now()
+    });
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({
+            type: 'RA_KHOI_RESET',
+            questionIndex: currentRKQuestion,
+            timestamp: Date.now()
+        });
+    }
+    showToast('Đã đặt lại vòng Ra Khơi: Đã dừng và ẩn đoạn clip!');
 }

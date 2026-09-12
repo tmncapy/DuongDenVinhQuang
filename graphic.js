@@ -1008,7 +1008,20 @@ function handleProjectorMessage(data) {
         const clockEl = document.getElementById('rk_clock_box');
         if (clockEl) clockEl.innerText = "30";
         const video = document.getElementById('rk_video_player');
-        if (video) { video.pause(); video.currentTime = 0; }
+        if (video) {
+            try {
+                video.pause();
+                video.currentTime = 0;
+                video.src = "";
+                video.removeAttribute('src');
+                video.load();
+            } catch(e) {}
+            video.style.display = 'none';
+        }
+        const overlay = document.getElementById('rk_video_play_overlay');
+        if (overlay) overlay.style.display = 'none';
+        const placeholder = document.getElementById('rk_video_placeholder');
+        if (placeholder) placeholder.style.display = 'none';
         const qScene = document.getElementById('rk-scene-question');
         const aScene = document.getElementById('rk-scene-answers');
         if (qScene) qScene.style.display = 'flex';
