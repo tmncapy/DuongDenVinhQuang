@@ -990,7 +990,7 @@ function handleProjectorMessage(data) {
         }
     } else if (data.type === 'XUAT_PHAT_STOP_SOUND') {
         stopAllAudio1();
-    } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO') {
+    } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO' || data.type === 'RA_KHOI_SHOW_QUESTION') {
         handleRKPlayClip(data);
     } else if (data.type === 'RA_KHOI_START_TIMER') {
         switchView(2);
@@ -1158,6 +1158,10 @@ function handleProjectorMessage(data) {
         handleVSReset();
         resetVQProjector();
         switchView(1);
+    } else if (data.type === 'RELOAD_CLIENT') {
+        if (data.target === 'projector' || data.target === 'graphic' || data.target === 'all' || data.role === 'projector' || data.role === 'graphic') {
+            setTimeout(() => { window.location.reload(); }, 300);
+        }
     }
 }
 
