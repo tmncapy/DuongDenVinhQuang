@@ -493,13 +493,6 @@ app.get('/sounds/:filename', (req, res, next) => {
     if (match) {
       return res.sendFile(path.join(soundsDir, match));
     }
-    
-    if (reqName.toLowerCase().includes('60s')) {
-      const fallbackFile = path.join(soundsDir, '25sV1.mp3');
-      if (fs.existsSync(fallbackFile)) {
-        return res.sendFile(fallbackFile);
-      }
-    }
   } catch (e) {
     console.warn('[Sound Route] Warning:', e);
   }

@@ -65,7 +65,7 @@ let score1 = 0, timeLeft1 = 60, timerInterval1 = null, isRolling1 = false, curre
 let soundShowTitle1 = new Audio('sounds/ShowTitle.mp3');
 let soundRandomSet1 = new Audio('sounds/RandomSet.mp3');
 let soundBeginQues1 = new Audio('sounds/BeginQues.mp3');
-let sound60s1 = new Audio('sounds/25sV1.mp3');
+let sound60s1 = new Audio('sounds/60s.mp3');
 let soundTick1 = new Audio('sounds/Tick.mp3');
 let soundTimeUp1 = new Audio('sounds/TImeUp.mp3');
 let soundRight1 = new Audio('sounds/right.mp3');
