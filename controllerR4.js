@@ -199,10 +199,13 @@ function onClickVQAnChonGoiDiem() {
 }
 
 function onClickVQHienCauHoi() {
+    const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
     sendToProjector('VINH_QUANG_SHOW_QUESTION', {
         pack: currentVQPack,
         subject: currentVQSubject,
-        questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang..."
+        questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
+        hasStar: anyStarActive,
+        starActive: anyStarActive
     });
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = "Hiện câu hỏi";

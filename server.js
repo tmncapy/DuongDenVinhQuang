@@ -499,6 +499,28 @@ app.get('/sounds/:filename', (req, res, next) => {
   next();
 });
 
+// Robust Case-Insensitive Images Route
+app.get(['/Images/:filename', '/images/:filename'], (req, res, next) => {
+  const reqName = req.params.filename;
+  const imgDir = path.join(__dirname, 'Images');
+  const exactPath = path.join(imgDir, reqName);
+  
+  if (fs.existsSync(exactPath)) {
+    return res.sendFile(exactPath);
+  }
+  
+  try {
+    const files = fs.readdirSync(imgDir);
+    const match = files.find(f => f.toLowerCase() === reqName.toLowerCase());
+    if (match) {
+      return res.sendFile(path.join(imgDir, match));
+    }
+  } catch (e) {
+    console.warn('[Images Route] Warning:', e);
+  }
+  next();
+});
+
 // Serve all static assets from the current directory
 app.use(express.static(__dirname));
 

@@ -232,6 +232,7 @@
         #view-file-7 .round-name { position: absolute; left: 269.856px; top: 763.344px; width: 880px; height: 47.376px; z-index: 5; display: flex; align-items: center; justify-content: flex-start; color: #002060; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         #view-file-7 .selected-pack { position: absolute; left: 1160.64px; top: 763.344px; width: 487.584px; height: 47.376px; z-index: 5; display: flex; align-items: center; justify-content: center; color: #b91c1c; font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         #view-file-7 .question-box { position: absolute; left: 210.096px; top: 810.72px; width: 1437.984px; height: 205.488px; z-index: 5; display: flex; align-items: flex-start; justify-content: flex-start; padding: 15px 25px; font-size: 28px; color: #ffffff; font-weight: bold; line-height: 1.35; text-align: left; box-sizing: border-box; }
+        #view-file-7 .vq-star-gif { width: 75px; height: 75px; object-fit: contain; flex-shrink: 0; margin-right: 18px; margin-top: -2px; display: none; filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.8)); }
         #view-file-7 .clock-box { position: absolute; left: 1653.984px; top: 810.72px; width: 169.344px; height: 169.344px; z-index: 5; display: flex; align-items: center; justify-content: center; background: transparent; color: #ffffff; font-size: 58px; font-weight: 900; cursor: pointer; user-select: none; }
 
         /* VIEW 8 */
@@ -458,7 +459,10 @@
                 <img src="Images/QuesBox2.png" alt="QuesBox" class="ques-box">
                 <div class="round-name" id="vq_round_title">VINH QUANG</div>
                 <div class="selected-pack" id="vq_selected_pack_title"></div>
-                <div class="question-box" id="vq_question_text">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
+                <div class="question-box">
+                    <img id="vq_star_icon" src="Images/star.gif" alt="Ngôi sao hy vọng" class="vq-star-gif">
+                    <div id="vq_question_text" style="flex: 1;">Nội dung câu hỏi sẽ hiển thị ở đây cho thí sinh đọc và trả lời...</div>
+                </div>
                 <div id="clock7" class="clock-box" onclick="startCountdown7()">25</div>
             </div>
             <audio id="vongThiAudio7" src="sounds/25sV1.mp3"></audio>

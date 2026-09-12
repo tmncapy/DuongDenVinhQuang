@@ -1542,14 +1542,15 @@ window.vqStars = [false, false, false, false];
 window.toggleVQStar = function(idx) {
     const starIndex = idx - 1;
     window.vqStars[starIndex] = !window.vqStars[starIndex];
+    const isActive = window.vqStars[starIndex];
+    const anyStarActive = window.vqStars.some(s => !!s);
     const btn = document.getElementById(`vq_star_btn_${idx}`);
     if (btn) {
-        if (window.vqStars[starIndex]) {
+        if (isActive) {
             btn.style.background = "#f59e0b";
             btn.style.borderColor = "#d97706";
             btn.style.color = "#ffffff";
             btn.innerText = "⭐ STAR ON";
-            sendToProjector('VINH_QUANG_STAR_OF_HOPE', { contestantIndex: idx });
             showToast(`Thí sinh ${idx} đã chọn NGÔI SAO HY VỌNG!`);
         } else {
             btn.style.background = "#e2e8f0";
@@ -1559,6 +1560,11 @@ window.toggleVQStar = function(idx) {
             showToast(`Đã hủy Ngôi sao hy vọng của Thí sinh ${idx}`);
         }
     }
+    sendToProjector('VINH_QUANG_STAR_OF_HOPE', { 
+        contestantIndex: idx, 
+        active: isActive, 
+        hasStar: anyStarActive 
+    });
 }
 
 window.vqCorrectAnswer = function(idx) {

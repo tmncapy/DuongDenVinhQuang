@@ -488,10 +488,13 @@ function resetVQProjector() {
         clearInterval(countdown7);
     }
     isRunning7 = false;
+    isVQStarActive = false;
     const qEl7 = document.getElementById('vq_question_text');
     const rEl7 = document.getElementById('vq_round_title');
+    const starIcon7 = document.getElementById('vq_star_icon');
     if (qEl7) qEl7.innerText = "";
     if (rEl7) rEl7.innerText = "VINH QUANG";
+    if (starIcon7) starIcon7.style.display = "none";
     const clockEl7 = document.getElementById('clock7');
     if (clockEl7) clockEl7.innerText = "25";
 
@@ -566,7 +569,7 @@ window.addEventListener('keydown', function(event) {
 });
 
 /* VIEW 7 LOGIC */
-let countdown7, timeLeft7 = 25, isRunning7 = false;
+let countdown7, timeLeft7 = 25, isRunning7 = false, isVQStarActive = false;
 function startCountdown7(duration = 25) {
     if (isRunning7) clearInterval(countdown7);
     isRunning7 = true;
@@ -1030,11 +1033,20 @@ function handleProjectorMessage(data) {
         const qEl = document.getElementById('vq_question_text');
         const rEl = document.getElementById('vq_round_title');
         const pEl = document.getElementById('vq_selected_pack_title');
+        const starIcon = document.getElementById('vq_star_icon');
         if (qEl) qEl.innerText = data.questionText || "Nội dung câu hỏi Vinh Quang...";
         if (rEl) rEl.innerText = "VINH QUANG";
         if (pEl) {
             const packTxt = data.pack ? `GÓI ${data.pack} ĐIỂM` : (data.subject ? data.subject.toUpperCase() : "");
             pEl.innerText = packTxt;
+        }
+        if (data.hasStar !== undefined) {
+            isVQStarActive = !!data.hasStar;
+        } else if (data.starActive !== undefined) {
+            isVQStarActive = !!data.starActive;
+        }
+        if (starIcon) {
+            starIcon.style.display = isVQStarActive ? "block" : "none";
         }
         const clockEl = document.getElementById('clock7');
         if (clockEl) clockEl.innerText = "25";
@@ -1042,8 +1054,20 @@ function handleProjectorMessage(data) {
         switchView(7);
         startCountdown7(data.duration || 25);
     } else if (data.type === 'VINH_QUANG_STAR_OF_HOPE') {
-        safePlay(soundChooseQues);
-        // showPopup has been removed as requested
+        if (data.active !== undefined) {
+            isVQStarActive = !!data.active;
+        } else if (data.hasStar !== undefined) {
+            isVQStarActive = !!data.hasStar;
+        } else {
+            isVQStarActive = !isVQStarActive;
+        }
+        if (isVQStarActive) {
+            safePlay(soundChooseQues);
+        }
+        const starIcon = document.getElementById('vq_star_icon');
+        if (starIcon) {
+            starIcon.style.display = isVQStarActive ? "block" : "none";
+        }
     } else if (data.type === 'VINH_QUANG_SHOW_ANSWERS') {
         switchView(8);
         const ansAudio = document.getElementById('audioVQAnswer') || document.getElementById('soundRKAnswer');
