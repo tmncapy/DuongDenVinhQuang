@@ -1125,6 +1125,10 @@ function handleProjectorMessage(data) {
         handleVSReset();
         resetVQProjector();
         switchView(1);
+    } else if (data.type === 'RELOAD_CLIENT') {
+        if (data.target === 'projector' || data.target === 'all' || data.role === 'projector') {
+            setTimeout(() => { window.location.reload(); }, 300);
+        }
     } else if (data.type === 'PLAY_INTRO_VIDEO') {
         const overlay = document.getElementById('intro_video_overlay');
         const player = document.getElementById('intro_video_player');

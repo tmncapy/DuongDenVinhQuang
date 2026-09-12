@@ -116,6 +116,22 @@ function handleIncomingAction(action, senderWs = null) {
     }
   }
 
+  // Handle Client Kick / Disconnect
+  if (type === 'KICK_CLIENT') {
+    const targetRole = action.role || action.target || (action.contestantId ? `ts${action.contestantId}` : null);
+    if (targetRole && serverState.connectedClients[targetRole]) {
+      serverState.connectedClients[targetRole].connected = false;
+      serverState.connectedClients[targetRole].lastSeen = 0;
+      serverState.connectedClients[targetRole].name = '';
+    } else if (targetRole === 'all') {
+      Object.keys(serverState.connectedClients).forEach(r => {
+        serverState.connectedClients[r].connected = false;
+        serverState.connectedClients[r].lastSeen = 0;
+        serverState.connectedClients[r].name = '';
+      });
+    }
+  }
+
   // Handle Room Code Changes
   if (type === 'SET_ROOM_CODE') {
     if (action.roomCode) serverState.roomCode = action.roomCode.trim().toUpperCase();

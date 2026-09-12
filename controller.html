@@ -627,32 +627,67 @@
 
                 <table class="conn-table">
                     <tr>
-                        <td style="width: 120px;"><span id="status_badge_ts1" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">🔴 Chưa kết nối</span></td>
+                        <td style="width: 215px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_ts1" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">🔴 Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('ts1')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Tải lại màn hình Thí sinh 1">🔄 Reload</button>
+                                <button type="button" class="btn" onclick="kickClientSlot('ts1')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 1">🚫 Kick</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 1" id="ts_name_1" oninput="updateContestantName(1, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 1 (player1.html)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 120px;"><span id="status_badge_ts2" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">🔴 Chưa kết nối</span></td>
+                        <td style="width: 215px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_ts2" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">🔴 Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('ts2')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Tải lại màn hình Thí sinh 2">🔄 Reload</button>
+                                <button type="button" class="btn" onclick="kickClientSlot('ts2')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 2">🚫 Kick</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 2" id="ts_name_2" oninput="updateContestantName(2, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 2 (player2.html)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 120px;"><span id="status_badge_ts3" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">🔴 Chưa kết nối</span></td>
+                        <td style="width: 215px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_ts3" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">🔴 Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('ts3')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Tải lại màn hình Thí sinh 3">🔄 Reload</button>
+                                <button type="button" class="btn" onclick="kickClientSlot('ts3')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 3">🚫 Kick</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 3" id="ts_name_3" oninput="updateContestantName(3, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 3 (player3.html)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 120px;"><span id="status_badge_ts4" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">🔴 Chưa kết nối</span></td>
+                        <td style="width: 215px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_ts4" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">🔴 Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('ts4')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Tải lại màn hình Thí sinh 4">🔄 Reload</button>
+                                <button type="button" class="btn" onclick="kickClientSlot('ts4')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 4">🚫 Kick</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 4" id="ts_name_4" oninput="updateContestantName(4, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 4 (player4.html)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td><span id="status_badge_host" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">🔴 Chưa kết nối</span></td>
+                        <td style="width: 215px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_host" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">🔴 Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('host')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Tải lại máy MC">🔄 Reload</button>
+                                <button type="button" class="btn" onclick="kickClientSlot('host')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer;" title="Mời ra / Đá khỏi Máy MC">🚫 Kick</button>
+                            </div>
+                        </td>
                         <td><input type="text" value="Máy MC" readonly style="font-weight: bold; background: #f1f5f9;"></td>
                         <td><input type="text" readonly placeholder="Màn hình Người dẫn chương trình (host.html)" style="color: #64748b; font-size: 11px;"></td>
                     </tr>
                     <tr>
-                        <td><span id="status_badge_projector" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">🔴 Chưa kết nối</span></td>
+                        <td style="width: 215px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_projector" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">🔴 Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('projector')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Tải lại màn hình Máy Chiếu">🔄 Reload</button>
+                            </div>
+                        </td>
                         <td><input type="text" value="Máy Chiếu" readonly style="font-weight: bold; background: #f1f5f9;"></td>
                         <td><input type="text" readonly placeholder="Màn hình Máy chiếu / Graphic" style="color: #64748b; font-size: 11px;"></td>
                     </tr>
@@ -666,6 +701,7 @@
                     <button class="btn">▼</button>
                     <button class="btn">📁</button>
                     <button class="btn" onclick="updateContestantNames()">Cập nhật tên thí sinh</button>
+                    <button class="btn" onclick="reloadClientSlot('all')" style="background: #0284c7; color: white; border-color: #0369a1; font-weight: bold;" title="Tải lại tất cả các máy thí sinh và máy chiếu">🔄 Tải lại tất cả máy</button>
                     <input type="text" id="statusMessage" placeholder="Thông báo hệ thống...">
                     <button class="btn" onclick="showToast('Đã gửi thông báo thành công!')">Gửi</button>
                     <button class="btn" onclick="showToast('Kiểm tra kết nối: Tất cả các máy phản hồi tốt!')">Kiểm tra kết nối</button>

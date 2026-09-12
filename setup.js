@@ -1045,6 +1045,68 @@ function updateClientStatusBadges(connectedClients) {
     }
 }
 
+function getClientRoleLabel(role) {
+    if (role === 'ts1') return 'Thí sinh 1';
+    if (role === 'ts2') return 'Thí sinh 2';
+    if (role === 'ts3') return 'Thí sinh 3';
+    if (role === 'ts4') return 'Thí sinh 4';
+    if (role === 'host') return 'Máy MC';
+    if (role === 'projector') return 'Máy Chiếu';
+    if (role === 'all') return 'Tất cả các máy';
+    return role;
+}
+
+window.reloadClientSlot = function(role) {
+    const label = getClientRoleLabel(role);
+    const payload = {
+        type: 'RELOAD_CLIENT',
+        target: role,
+        role: role,
+        contestantId: (role && role.startsWith('ts')) ? parseInt(role.replace('ts', '')) : null,
+        timestamp: Date.now()
+    };
+    sendToProjector('RELOAD_CLIENT', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+    showToast(`🔄 Đã gửi yêu cầu Reload cho ${label}!`);
+};
+
+window.kickClientSlot = function(role) {
+    const label = getClientRoleLabel(role);
+    const contestantId = (role && role.startsWith('ts')) ? parseInt(role.replace('ts', '')) : null;
+    const payload = {
+        type: 'KICK_CLIENT',
+        target: role,
+        role: role,
+        contestantId: contestantId,
+        timestamp: Date.now()
+    };
+
+    // 1. Reset local state in controller immediately
+    if (controllerConnectedClients[role]) {
+        controllerConnectedClients[role].connected = false;
+        controllerConnectedClients[role].lastSeen = 0;
+        controllerConnectedClients[role].name = '';
+    }
+    const badge = document.getElementById(`status_badge_${role}`);
+    if (badge) {
+        badge.className = 'status-indicator disconnected';
+        badge.innerHTML = '🔴 Chưa kết nối';
+        badge.style.color = '#dc2626';
+        badge.style.background = '#fee2e2';
+        badge.style.borderColor = '#fca5a5';
+    }
+
+    // 2. Broadcast kick action
+    sendToProjector('KICK_CLIENT', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+
+    showToast(`🚫 Đã ngắt kết nối / mời ra slot ${label}!`);
+};
+
 function updateRoomCodeFromController() {
     const input = document.getElementById('room_code_input');
     const authInput = document.getElementById('room_auth_input');

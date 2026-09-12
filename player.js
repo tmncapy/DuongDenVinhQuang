@@ -1341,6 +1341,32 @@ function handlePlayerMessage(data) {
     if (data.type === 'PLAYER_SUBMIT_ANSWER' || data.playerAnswers) {
         updateSubmissionStatusFromState(data);
     }
+
+    // Remote Reload / Kick handlers for player recovery
+    if (data.type === 'RELOAD_CLIENT') {
+        const target = data.target || data.role;
+        const myRole = `ts${contestantId}`;
+        if (!target || target === 'all' || target === myRole || data.contestantId === contestantId) {
+            showToast('🔄 Máy điều khiển yêu cầu Tải lại trang (Reload)...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        }
+    }
+
+    if (data.type === 'KICK_CLIENT') {
+        const target = data.target || data.role;
+        const myRole = `ts${contestantId}`;
+        if (!target || target === 'all' || target === myRole || data.contestantId === contestantId) {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            sessionStorage.removeItem('ddvq_active_slot');
+            localStorage.removeItem('contestant_id');
+            showToast('⚠️ Bạn đã được mời ra khỏi vị trí thí sinh này.');
+            setTimeout(() => {
+                reopenSlotSelection();
+            }, 200);
+        }
+    }
 }
 
 // Initial render of Vượt Sóng grid

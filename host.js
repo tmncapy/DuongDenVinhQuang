@@ -226,6 +226,16 @@ function processHostAction(data) {
         if (input) input.value = data.roomCode;
     }
 
+    // Reload / Kick handler for Host
+    if (data.type === 'RELOAD_CLIENT' && (data.target === 'host' || data.target === 'all' || data.role === 'host')) {
+        setTimeout(() => { window.location.reload(); }, 300);
+        return;
+    }
+    if (data.type === 'KICK_CLIENT' && (data.target === 'host' || data.target === 'all' || data.role === 'host')) {
+        setTimeout(() => { window.location.reload(); }, 300);
+        return;
+    }
+
     // Merge state
     currentHostState = { ...currentHostState, ...data };
 
