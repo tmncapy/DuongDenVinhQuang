@@ -1242,6 +1242,31 @@ function handleProjectorMessage(data) {
         if (data.target === 'projector' || data.target === 'graphic' || data.target === 'all' || data.role === 'projector' || data.role === 'graphic') {
             setTimeout(() => { window.location.reload(); }, 300);
         }
+    } else if (data.type === 'PLAY_INTRO_VIDEO') {
+        const overlay = document.getElementById('intro_video_overlay');
+        const player = document.getElementById('intro_video_player');
+        if (overlay && player) {
+            overlay.style.display = 'flex';
+            player.src = data.src;
+            player.load();
+
+            player.play().catch(err => {
+                console.warn("Intro video play error on graphic:", err);
+            });
+
+            player.onended = () => {
+                overlay.style.display = 'none';
+                player.src = '';
+            };
+        }
+    } else if (data.type === 'STOP_INTRO_VIDEO') {
+        const overlay = document.getElementById('intro_video_overlay');
+        const player = document.getElementById('intro_video_player');
+        if (overlay && player) {
+            player.pause();
+            player.src = '';
+            overlay.style.display = 'none';
+        }
     }
 }
 

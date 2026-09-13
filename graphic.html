@@ -448,6 +448,11 @@
 
     </div>
 
+    <!-- Fullscreen Intro Video Overlay for Graphic Screen -->
+    <div id="intro_video_overlay" style="position: fixed; inset: 0; width: 100vw; height: 100vh; background: #000; z-index: 99999; display: none; align-items: center; justify-content: center; pointer-events: auto;">
+        <video id="intro_video_player" style="width: 100%; height: 100%; object-fit: contain;" playsinline autoplay></video>
+    </div>
+
     <script src="network_sync.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-sync.js"></script>

@@ -25,6 +25,13 @@ let gameData = {
         { q: "", a: "" },
         { q: "", a: "" }
     ],
+    intros: {
+        opening: './Opening.mp4',
+        v1: './V1.mp4',
+        v2: './V2.mp4',
+        v3: './V3.mp4',
+        v4: './V4.mp4'
+    },
     contestants: [
         { name: "Thí sinh 1", score: 0 },
         { name: "Thí sinh 2", score: 0 },
@@ -620,6 +627,20 @@ function fillCauHoiPhuInputs() {
     }
 }
 
+function fillIntroInputs() {
+    if (!gameData.intros) return;
+    const opEl = document.getElementById('intro_media_opening');
+    const v1El = document.getElementById('intro_media_v1');
+    const v2El = document.getElementById('intro_media_v2');
+    const v3El = document.getElementById('intro_media_v3');
+    const v4El = document.getElementById('intro_media_v4');
+    if (opEl && gameData.intros.opening) opEl.value = gameData.intros.opening;
+    if (v1El && gameData.intros.v1) v1El.value = gameData.intros.v1;
+    if (v2El && gameData.intros.v2) v2El.value = gameData.intros.v2;
+    if (v3El && gameData.intros.v3) v3El.value = gameData.intros.v3;
+    if (v4El && gameData.intros.v4) v4El.value = gameData.intros.v4;
+}
+
 function saveAllData(notify = false) {
     try {
         if (!Array.isArray(gameData.raKhoi)) gameData.raKhoi = [];
@@ -676,6 +697,26 @@ function saveAllData(notify = false) {
             const aVal = document.getElementById(`chp_a_${i}`)?.value || '';
             if (qVal || aVal) gameData.cauHoiPhu[i - 1] = { q: qVal, a: aVal };
         }
+
+        if (!gameData.intros) {
+            gameData.intros = {
+                opening: './Opening.mp4',
+                v1: './V1.mp4',
+                v2: './V2.mp4',
+                v3: './V3.mp4',
+                v4: './V4.mp4'
+            };
+        }
+        const opEl = document.getElementById('intro_media_opening');
+        const v1El = document.getElementById('intro_media_v1');
+        const v2El = document.getElementById('intro_media_v2');
+        const v3El = document.getElementById('intro_media_v3');
+        const v4El = document.getElementById('intro_media_v4');
+        if (opEl) gameData.intros.opening = opEl.value;
+        if (v1El) gameData.intros.v1 = v1El.value;
+        if (v2El) gameData.intros.v2 = v2El.value;
+        if (v3El) gameData.intros.v3 = v3El.value;
+        if (v4El) gameData.intros.v4 = v4El.value;
 
         safeSetStorage('duong_den_vinh_quang_data', JSON.stringify(gameData));
         if (notify) {
@@ -780,6 +821,7 @@ function loadSavedData() {
             fillVuotSongInputs();
             renderVinhQuangPackUI(currentVinhQuangPack);
             fillCauHoiPhuInputs();
+            fillIntroInputs();
             updateVuotSongState();
             syncContestantsUI();
             if (typeof updateTab1Preview === 'function') updateTab1Preview();
@@ -1597,20 +1639,31 @@ function triggerFilePicker(targetInputId, acceptType) {
         const file = e.target.files[0];
         if (!file) return;
 
-        showToast(`Đang tải lên file: ${file.name}...`);
+        showToast(`Đang tải file ${file.name} lên hệ thống...`);
 
-        const reader = new FileReader();
-        reader.onload = function(uploadEvent) {
-            const base64Result = uploadEvent.target.result;
-            const inputEl = document.getElementById(targetInputId);
-            if (inputEl) {
-                inputEl.value = base64Result;
-                inputEl.dispatchEvent(new Event('change'));
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.url) {
+                const inputEl = document.getElementById(targetInputId);
+                if (inputEl) {
+                    inputEl.value = data.url;
+                    inputEl.dispatchEvent(new Event('change'));
+                }
+                saveAllData();
+                showToast(`Đã tải lên thành công: ${file.name}`);
+            } else {
+                throw new Error(data.error || 'Lỗi tải file');
             }
-            saveAllData();
-            showToast(`Đã tải lên thành công: ${file.name}`);
-        };
-        reader.onerror = function() {
+        })
+        .catch(err => {
+            console.warn("Upload API error, fallback to Blob URL:", err);
             const blobUrl = URL.createObjectURL(file);
             const inputEl = document.getElementById(targetInputId);
             if (inputEl) {
@@ -1619,10 +1672,32 @@ function triggerFilePicker(targetInputId, acceptType) {
             }
             saveAllData();
             showToast(`Đã chọn file thành công: ${file.name}`);
-        };
-        reader.readAsDataURL(file);
+        });
     };
     fileInput.click();
+}
+
+function playIntroVideo(inputIdOrDefault) {
+    let src = '';
+    const inputEl = document.getElementById(inputIdOrDefault);
+    if (inputEl && inputEl.value && inputEl.value.trim()) {
+        src = inputEl.value.trim();
+    } else if (typeof inputIdOrDefault === 'string') {
+        src = inputIdOrDefault.trim();
+    }
+
+    if (!src) {
+        showToast("Chưa chọn file / URL Video Intro!");
+        return;
+    }
+
+    sendToProjector('PLAY_INTRO_VIDEO', { src: src });
+    showToast(`Đang phát Video Intro: ${src}`);
+}
+
+function stopIntroVideo() {
+    sendToProjector('STOP_INTRO_VIDEO', {});
+    showToast("Đã dừng phát Video Intro");
 }
 
 window.adjustScore = function(idx, delta) {
@@ -1728,11 +1803,9 @@ function onClickTongKet() {
 }
 
 function onClickPlayIntroVideo(src) {
-    sendToProjector('PLAY_INTRO_VIDEO', { src: src });
-    showToast(`Đang yêu cầu phát video: ${src}`);
+    playIntroVideo(src);
 }
 
 function onClickStopIntroVideo() {
-    sendToProjector('STOP_INTRO_VIDEO');
-    showToast('Đã dừng phát video.');
+    stopIntroVideo();
 }

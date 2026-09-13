@@ -5,6 +5,7 @@ import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
+import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,8 +14,30 @@ const app = express();
 const server = http.createServer(app);
 const PORT = 3000;
 
+// Setup disk storage for uploaded media (intro videos, audio, etc.)
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname) || '.mp4';
+    const safeName = (file.fieldname || 'media') + '_' + Date.now() + '_' + Math.round(Math.random() * 1E6) + ext;
+    cb(null, safeName);
+  }
+});
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 500 * 1024 * 1024 } // 500MB max file size
+});
+
 // Enable JSON body parsing and CORS for all LAN and Internet origins
 app.use(express.json({ limit: '10mb' }));
+app.use('/uploads', express.static(uploadsDir));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -353,6 +376,22 @@ function getLocalNetworkAddresses() {
   }
   return addresses;
 }
+
+// POST /api/upload - Direct stream upload for Intro videos and media files
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: 'Không tìm thấy file tải lên' });
+  }
+  const fileUrl = `/uploads/${req.file.filename}`;
+  console.log(`📁 [Upload] File uploaded successfully: ${req.file.originalname} -> ${fileUrl} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
+  res.json({
+    success: true,
+    url: fileUrl,
+    filename: req.file.filename,
+    originalName: req.file.originalname,
+    size: req.file.size
+  });
+});
 
 // GET /api/network-info
 app.get('/api/network-info', (req, res) => {

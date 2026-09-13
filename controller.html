@@ -758,6 +758,60 @@
                 </div>
             </div>
 
+            <!-- Khung Cấu hình & Phát Video Intro -->
+            <div class="panel" style="background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 8px; padding: 12px; margin-top: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #7dd3fc; padding-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 16px;">🎬</span>
+                        <strong style="color: #0369a1; font-size: 13px; text-transform: uppercase;">CẤU HÌNH & PHÁT VIDEO INTRO (CUỘC THI & CÁC VÒNG THI)</strong>
+                    </div>
+                    <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px; border-radius: 6px;">⏹️ DỪNG INTRO ĐANG PHÁT</button>
+                </div>
+
+                <!-- Grid 5 Intro Slots -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Intro Cuộc thi (Main Opening) -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
+                        <span style="font-weight: bold; color: #0284c7; width: 160px; font-size: 12px;">🏆 Intro Mở Đầu Cuộc Thi:</span>
+                        <input type="text" id="intro_media_opening" value="./Opening.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: bold; border-color: #7dd3fc;" onclick="triggerFilePicker('intro_media_opening', 'video/*')">📁 Tải Video</button>
+                        <button class="btn" style="background: #0284c7; color: white; font-size: 11px; font-weight: bold; border-color: #0369a1;" onclick="playIntroVideo('intro_media_opening')">▶️ PHÁT INTRO</button>
+                    </div>
+
+                    <!-- Intro Vòng 1: Xuất Phát -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
+                        <span style="font-weight: bold; color: #15803d; width: 160px; font-size: 12px;">🚀 Intro Vòng 1 (Xuất Phát):</span>
+                        <input type="text" id="intro_media_v1" value="./V1.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: bold; border-color: #86efac;" onclick="triggerFilePicker('intro_media_v1', 'video/*')">📁 Tải Video</button>
+                        <button class="btn" style="background: #16a34a; color: white; font-size: 11px; font-weight: bold; border-color: #15803d;" onclick="playIntroVideo('intro_media_v1')">▶️ PHÁT INTRO</button>
+                    </div>
+
+                    <!-- Intro Vòng 2: Ra Khơi -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
+                        <span style="font-weight: bold; color: #1e40af; width: 160px; font-size: 12px;">⛵ Intro Vòng 2 (Ra Khơi):</span>
+                        <input type="text" id="intro_media_v2" value="./V2.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: bold; border-color: #93c5fd;" onclick="triggerFilePicker('intro_media_v2', 'video/*')">📁 Tải Video</button>
+                        <button class="btn" style="background: #2563eb; color: white; font-size: 11px; font-weight: bold; border-color: #1d4ed8;" onclick="playIntroVideo('intro_media_v2')">▶️ PHÁT INTRO</button>
+                    </div>
+
+                    <!-- Intro Vòng 3: Vượt Sóng -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
+                        <span style="font-weight: bold; color: #b45309; width: 160px; font-size: 12px;">🌊 Intro Vòng 3 (Vượt Sóng):</span>
+                        <input type="text" id="intro_media_v3" value="./V3.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #fef3c7; color: #b45309; font-size: 11px; font-weight: bold; border-color: #fde047;" onclick="triggerFilePicker('intro_media_v3', 'video/*')">📁 Tải Video</button>
+                        <button class="btn" style="background: #d97706; color: white; font-size: 11px; font-weight: bold; border-color: #b45309;" onclick="playIntroVideo('intro_media_v3')">▶️ PHÁT INTRO</button>
+                    </div>
+
+                    <!-- Intro Vòng 4: Vinh Quang -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
+                        <span style="font-weight: bold; color: #6b21a8; width: 160px; font-size: 12px;">👑 Intro Vòng 4 (Vinh Quang):</span>
+                        <input type="text" id="intro_media_v4" value="./V4.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #f3e8ff; color: #6b21a8; font-size: 11px; font-weight: bold; border-color: #d8b4fe;" onclick="triggerFilePicker('intro_media_v4', 'video/*')">📁 Tải Video</button>
+                        <button class="btn" style="background: #7e22ce; color: white; font-size: 11px; font-weight: bold; border-color: #6b21a8;" onclick="playIntroVideo('intro_media_v4')">▶️ PHÁT INTRO</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Khung Quy trình -->
             <div class="panel process-box">
                 <div style="font-weight: bold; margin-bottom: 5px;">Quy trình chuẩn bị:</div>
@@ -1009,14 +1063,18 @@
 
     <!-- TAB 1: XUẤT PHÁT -->
     <div class="tab-content" id="tab1-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto;">
-        <!-- TOP TOOLBAR FOR TAB 1: EXCEL IMPORT -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <!-- TOP TOOLBAR FOR TAB 1: EXCEL IMPORT & INTRO -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Excel:</span>
                 <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
             </div>
-            <div style="font-size: 12px; font-weight: bold; color: #0056b3;">
-                ĐIỀU KHIỂN VÒNG THI XUẤT PHÁT
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn" onclick="playIntroVideo('intro_media_v1')" style="background: #16a34a; color: white; border-color: #15803d; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 1</button>
+                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
+                <div style="font-size: 12px; font-weight: bold; color: #0056b3;">
+                    ĐIỀU KHIỂN VÒNG THI XUẤT PHÁT
+                </div>
             </div>
         </div>
 
@@ -1118,9 +1176,9 @@
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
-                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('Opening.mp4')" style="background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; font-weight: bold;">🎬 Phát Opening</button>
-                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V1.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">🏁 Phát V1</button>
-                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
+                    <button class="ctrl-btn-sm" onclick="playIntroVideo('intro_media_opening')" style="background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; font-weight: bold;">🎬 Phát Opening</button>
+                    <button class="ctrl-btn-sm" onclick="playIntroVideo('intro_media_v1')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">🏁 Phát V1</button>
+                    <button class="ctrl-btn-sm" onclick="stopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
             </div>
@@ -1215,13 +1273,17 @@
     <div class="tab-content" id="tab2-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
         
         <!-- TOP TOOLBAR / HEADER FOR TAB 2 -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Ra Khơi:</span>
                 <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
             </div>
-            <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
-                ĐIỀU KHIỂN VÒNG THI RA KHƠI
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn" onclick="playIntroVideo('intro_media_v2')" style="background: #2563eb; color: white; border-color: #1d4ed8; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 2</button>
+                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
+                <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                    ĐIỀU KHIỂN VÒNG THI RA KHƠI
+                </div>
             </div>
         </div>
 
@@ -1380,8 +1442,8 @@
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
-                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V2.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">⚓ Phát V2</button>
-                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
+                    <button class="ctrl-btn-sm" onclick="playIntroVideo('intro_media_v2')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">⚓ Phát V2</button>
+                    <button class="ctrl-btn-sm" onclick="stopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
             </div>
@@ -1457,13 +1519,17 @@
     <!-- TAB 3: VƯỢT SÓNG -->
     <div class="tab-content" id="tab3-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
         <!-- TOP TOOLBAR -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Vượt Sóng:</span>
                 <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
             </div>
-            <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
-                ĐIỀU KHIỂN VÒNG THI VƯỢT SÓNG (GIẢI Ô CHỮ)
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn" onclick="playIntroVideo('intro_media_v3')" style="background: #d97706; color: white; border-color: #b45309; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 3</button>
+                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
+                <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                    ĐIỀU KHIỂN VÒNG THI VƯỢT SÓNG (GIẢI Ô CHỮ)
+                </div>
             </div>
         </div>
 
@@ -1595,8 +1661,8 @@
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
-                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V3.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">🌊 Phát V3</button>
-                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
+                    <button class="ctrl-btn-sm" onclick="playIntroVideo('intro_media_v3')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">🌊 Phát V3</button>
+                    <button class="ctrl-btn-sm" onclick="stopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%;">Phát âm thanh</button>
             </div>
@@ -1677,6 +1743,21 @@
     <!-- TAB 4: VINH QUANG -->
     <div class="tab-content" id="tab4-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
         
+        <!-- TOP TOOLBAR FOR TAB 4 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Vinh Quang:</span>
+                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn" onclick="playIntroVideo('intro_media_v4')" style="background: #7e22ce; color: white; border-color: #6b21a8; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 4</button>
+                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
+                <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                    ĐIỀU KHIỂN VÒNG THI VINH QUANG
+                </div>
+            </div>
+        </div>
+
         <!-- TOP SECTION: CONTESTANTS (LEFT) & CHỌN GÓI ĐIỂM (RIGHT) -->
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; flex-shrink: 0; width: 100%;">
             
@@ -1844,8 +1925,8 @@
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
-                    <button class="ctrl-btn-sm" onclick="onClickPlayIntroVideo('V4.mp4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold; width: 100%;">🏆 Phát V4</button>
-                    <button class="ctrl-btn-sm" onclick="onClickStopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold; width: 100%;">⏹ Dừng video</button>
+                    <button class="ctrl-btn-sm" onclick="playIntroVideo('intro_media_v4')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold; width: 100%;">🏆 Phát V4</button>
+                    <button class="ctrl-btn-sm" onclick="stopIntroVideo()" style="background: #fef2f2; border-color: #fca5a5; color: #b91c1c; font-weight: bold; width: 100%;">⏹ Dừng video</button>
                 </div>
                 <button class="ctrl-btn-sm" onclick="onClickPhatAmThanh()" style="width: 100%; height: 30px;">Phát âm thanh</button>
             </div>
