@@ -316,13 +316,13 @@
                 </div>
 
                 <!-- CENTER VIDEO PLAYER & CONTENT -->
-                <div style="width: 1920px; height: 1080px; position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center;">
+                <div id="rk_center_black_bg" style="display: none; width: 1920px; height: 1080px; position: absolute; inset: 0; background: #000; align-items: center; justify-content: center;">
                     <!-- VIDEO CONTAINER -->
                     <div style="width: 100%; height: 100%; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                         <video id="rk_video_player" style="width: 100%; height: 100%; object-fit: contain; display: none;" playsinline controls autoplay></video>
 
                         <!-- SIMULATED/PLACEHOLDER MEDIA SCREEN IF NO REAL MP4 LOADED -->
-                        <div id="rk_video_placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #94a3b8; text-align: center;">
+                        <div id="rk_video_placeholder" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #94a3b8; text-align: center;">
                             <div style="font-size: 90px; filter: drop-shadow(0 0 20px #3b82f6);">🎥</div>
                             <div id="rk_placeholder_text" style="font-size: 32px; font-weight: bold; color: #60a5fa;">Đoạn băng clip đang phát...</div>
                             <div id="rk_video_status_sub" style="display: none; font-size: 20px; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 8px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);">

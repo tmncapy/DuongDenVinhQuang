@@ -1021,6 +1021,9 @@ function handleProjectorMessage(data) {
         const placeholderText = document.getElementById('rk_placeholder_text');
         if (placeholderText) placeholderText.innerText = "";
 
+        const blackBg = document.getElementById('rk_center_black_bg');
+        if (blackBg) blackBg.style.display = 'none';
+
         const qText = document.getElementById('rk_question_text');
         if (qText) {
             qText.innerText = "";
@@ -1584,6 +1587,9 @@ function handleRKPlayClip(data) {
     const aScene = document.getElementById('rk-scene-answers');
     if (qScene) qScene.style.display = 'flex';
     if (aScene) aScene.style.display = 'none';
+
+    const blackBg = document.getElementById('rk_center_black_bg');
+    if (blackBg) blackBg.style.display = 'flex';
 
     const headerTitle = document.getElementById('rk_ques_header_title');
     if (headerTitle) headerTitle.innerText = `VÒNG THI RA KHƠI - CÂU HỎI THỨ ${data.questionIndex || 1}`;
