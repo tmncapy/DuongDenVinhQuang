@@ -1540,6 +1540,8 @@ function handleVSShowAnswers(data) {
 let rkTimerIntervalProj = null;
 let rkAutoTimerTimeout = null;
 let rkTimerAlreadyTriggered = false;
+let lastRKClipTimestamp = 0;
+let lastRKMediaUrl = '';
 
 function startRKTimer30s(duration = 30) {
     if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
@@ -1608,21 +1610,47 @@ function handleRKPlayClip(data) {
     if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
     rkTimerAlreadyTriggered = false;
 
-    if (data.mediaUrl && data.mediaUrl.trim() !== '' && data.mediaUrl.trim() !== '...') {
+    const targetMediaUrl = (data.mediaUrl || '').trim();
+    if (targetMediaUrl !== '' && targetMediaUrl !== '...') {
         if (video) {
-            video.src = data.mediaUrl;
-            video.load();
             video.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
 
-            video.play().catch(err => {
-                console.warn("Video play error:", err);
-            });
+            let targetAbsoluteUrl = targetMediaUrl;
+            try {
+                targetAbsoluteUrl = new URL(targetMediaUrl, window.location.href).href;
+            } catch(e) {}
 
-            video.ontimeupdate = null;
+            const isSameSrc = (video.src === targetAbsoluteUrl) || (video.src.endsWith(targetMediaUrl));
+            const isExplicitNewTrigger = data.timestamp && (data.timestamp !== lastRKClipTimestamp);
+
+            if (data.timestamp) {
+                lastRKClipTimestamp = data.timestamp;
+            }
+
+            if (!isSameSrc || !video.src || (isExplicitNewTrigger && data.type === 'RA_KHOI_PLAY_CLIP')) {
+                lastRKMediaUrl = targetMediaUrl;
+                video.src = targetMediaUrl;
+                video.load();
+                video.play().catch(err => {
+                    console.warn("Video play error:", err);
+                });
+            } else if (video.paused && !video.ended) {
+                video.play().catch(err => {
+                    console.warn("Video play resume error:", err);
+                });
+            }
         }
     } else {
-        if (video) video.style.display = 'none';
+        lastRKMediaUrl = '';
+        if (video) {
+            try {
+                video.pause();
+                video.src = "";
+                video.removeAttribute('src');
+            } catch(e) {}
+            video.style.display = 'none';
+        }
         if (placeholder) placeholder.style.display = 'flex';
         if (placeholderText) placeholderText.innerText = `Đang phát đoạn băng câu ${data.questionIndex || 1}...`;
     }

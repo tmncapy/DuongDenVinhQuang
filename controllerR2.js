@@ -63,7 +63,8 @@ function onClickBatDauDoanBang() {
     sendToProjector('RA_KHOI_PLAY_CLIP', {
         questionIndex: currentRKQuestion,
         questionText: qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`,
-        mediaUrl: qItem.m || ''
+        mediaUrl: qItem.m || '',
+        timestamp: Date.now()
     });
     const statusEl = document.getElementById('rk_preview_status');
     if (statusEl) statusEl.innerText = "Phát đoạn băng";
