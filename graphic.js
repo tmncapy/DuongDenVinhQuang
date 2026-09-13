@@ -1018,6 +1018,8 @@ function handleProjectorMessage(data) {
         if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
         if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
         rkTimerAlreadyTriggered = false;
+        lastRKClipTimestamp = 0;
+        lastRKMediaUrl = '';
         const clockEl = document.getElementById('rk_clock_box');
         if (clockEl) clockEl.innerText = "30";
         const video = document.getElementById('rk_video_player');

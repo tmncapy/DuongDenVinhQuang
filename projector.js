@@ -997,6 +997,8 @@ function handleProjectorMessage(data) {
         if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
         if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
         rkTimerAlreadyTriggered = false;
+        lastRKClipTimestamp = 0;
+        lastRKMediaUrl = '';
         const clockEl = document.getElementById('rk_clock_box');
         if (clockEl) clockEl.innerText = "30";
 
