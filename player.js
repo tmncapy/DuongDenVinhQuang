@@ -2,6 +2,44 @@ let contestantId = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID)
 let currentRoomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
 let currentRoomAuth = localStorage.getItem('ddvq_room_auth') || '123456';
 let playerContestants = [];
+let currentS1TurnIndex = 1;
+let s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
+let s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+
+function updateS1RandomDeButtonUI() {
+    const btn = document.getElementById('s1_random_btn');
+    if (!btn) return;
+
+    if (parseInt(currentS1TurnIndex) !== parseInt(contestantId)) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        btn.style.background = '#475569';
+        btn.style.borderColor = '#64748b';
+        btn.style.boxShadow = 'none';
+        btn.innerHTML = `<span>🔒 CHƯA ĐẾN LƯỢT THI (TS ${currentS1TurnIndex} ĐANG THI)</span>`;
+        return;
+    }
+
+    if (s1HasSelectedDeForTurn[contestantId]) {
+        btn.disabled = true;
+        btn.style.opacity = '0.8';
+        btn.style.cursor = 'not-allowed';
+        btn.style.background = '#1e3a8a';
+        btn.style.borderColor = '#3b82f6';
+        btn.style.boxShadow = 'none';
+        const deText = s1ChosenDeMap[contestantId] ? `BỘ ĐỀ ${s1ChosenDeMap[contestantId]}` : 'ĐÃ CHỌN';
+        btn.innerHTML = `<span>🔒 ĐÃ CHỌN (${deText})</span>`;
+    } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)';
+        btn.style.borderColor = '#60a5fa';
+        btn.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.4)';
+        btn.innerHTML = `<span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span><span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>`;
+    }
+}
 
 function getApiUrl(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
@@ -93,6 +131,7 @@ function onSelectContestant(val) {
     if (currentRoomCode) {
         startHeartbeat();
     }
+    updateS1RandomDeButtonUI();
 }
 
 function chooseContestantSlot(slotId) {
@@ -109,6 +148,8 @@ function chooseContestantSlot(slotId) {
     if (document.getElementById('s2_badge_box')) document.getElementById('s2_badge_box').innerText = `TS ${contestantId}: ${myName}`;
     if (document.getElementById('s3_badge_box')) document.getElementById('s3_badge_box').innerText = `TS ${contestantId}: ${myName}`;
     if (document.getElementById('s4_badge_box')) document.getElementById('s4_badge_box').innerText = `TS ${contestantId}: ${myName}`;
+
+    updateS1RandomDeButtonUI();
 
     const joinPayload = {
         type: 'CLIENT_JOIN',
@@ -328,6 +369,18 @@ let s3TimerInterval = null;
 let s3TimeLeft = 0;
 let s3TimerStartTime = 0;
 let s3RoundStartTime = parseInt(localStorage.getItem('s3_round_start_time')) || 0;
+let s3HasSubmittedVongThi = false;
+
+function resetS3SubmitBtn() {
+    s3HasSubmittedVongThi = false;
+    const submitBtn = document.querySelector('.s3-submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.innerText = 'TRẢ LỜI ĐÁP ÁN VÒNG THI';
+    }
+}
 let s4TimerInterval = null;
 let s4TimeLeft = 0;
 let s4TimerStartTime = 0;
@@ -788,7 +841,21 @@ function submitScene3Answer(isVongThi = false) {
             }).catch(() => {});
         }
     } else {
-        // Vòng thi (Chướng ngại vật) answer: always allowed, calculate elapsed time since round started
+        // Vòng thi (Chướng ngại vật) answer: allowed once until reset
+        if (s3HasSubmittedVongThi) {
+            showToast("Bạn đã bấm chuông / gửi đáp án Vòng thi rồi! Không thể bấm thêm.");
+            return;
+        }
+
+        s3HasSubmittedVongThi = true;
+        const submitBtn = document.querySelector('.s3-submit-btn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.innerText = '🔒 ĐÃ BẤM CHUÔNG / GỬI ĐÁP ÁN';
+        }
+
         const ans = s3Input ? s3Input.value.trim() : "";
         const finalAnswer = ans;
 
@@ -979,6 +1046,7 @@ function clearPlayerSubmissionStatus(round) {
         if (tm) tm.innerText = 'Thời gian: --.--';
     }
     if (!round || round === 'VS') {
+        resetS3SubmitBtn();
         const input = document.getElementById('s3_answer_input');
         if (input) input.value = "";
         const badge = document.getElementById('s3_status_badge');
@@ -1181,9 +1249,55 @@ function handlePlayerMessage(data) {
         return;
     }
 
+    if (data.type === 'RESET_VS_BELL') {
+        if (data.contestantId === 'ALL' || !data.contestantId || parseInt(data.contestantId) === parseInt(contestantId)) {
+            resetS3SubmitBtn();
+            clearPlayerSubmissionStatus('VS');
+            if (typeof showToast === 'function') {
+                showToast("Nút trả lời Vòng 3 / Bấm chuông đã được mở lại!");
+            }
+        }
+        return;
+    }
+
+    if (data.type === 'RESET_S1_DE') {
+        if (data.contestantId === 'ALL' || !data.contestantId || parseInt(data.contestantId) === parseInt(contestantId)) {
+            s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
+            s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+            updateS1RandomDeButtonUI();
+            if (typeof showToast === 'function') {
+                showToast("Đã mở lại nút chọn bộ đề Xuất Phát!");
+            }
+        }
+        return;
+    }
+
     // --- VÒNG 1: XUẤT PHÁT ---
     if (data.type && data.type.startsWith('XUAT_PHAT_')) {
         autoSwitchScene(1);
+
+        if (data.turnIndex !== undefined || data.currentXuatPhatTurn !== undefined) {
+            currentS1TurnIndex = parseInt(data.turnIndex || data.currentXuatPhatTurn);
+        }
+
+        if (data.type === 'XUAT_PHAT_RANDOM_DE') {
+            const tIdx = parseInt(data.turnIndex || data.contestantId || currentS1TurnIndex);
+            if (tIdx) {
+                s1HasSelectedDeForTurn[tIdx] = true;
+                if (data.deNumber) s1ChosenDeMap[tIdx] = data.deNumber;
+            }
+        } else if (data.type === 'XUAT_PHAT_SHOW_QUESTION') {
+            const tIdx = parseInt(data.turnIndex || currentS1TurnIndex);
+            if (tIdx) {
+                s1HasSelectedDeForTurn[tIdx] = true;
+                if (data.deIndex) s1ChosenDeMap[tIdx] = data.deIndex;
+            }
+        } else if (data.type === 'XUAT_PHAT_RESET') {
+            s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
+            s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+        }
+
+        updateS1RandomDeButtonUI();
 
         if (data.questionText) {
             document.getElementById('s1_question_text').innerText = data.questionText;
@@ -1443,13 +1557,32 @@ fetchCurrentState();
 setInterval(fetchCurrentState, 2000);
 
 function triggerRandomDeFromPlayer() {
+    if (parseInt(currentS1TurnIndex) !== parseInt(contestantId)) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Chưa đến lượt thi của bạn! (Hiện tại đang là lượt Thí sinh ${currentS1TurnIndex})`);
+        }
+        return;
+    }
+
+    if (s1HasSelectedDeForTurn[contestantId]) {
+        if (typeof showToast === 'function') {
+            showToast(`🔒 Bạn đã chọn bộ đề rồi, không thể chọn lại!`);
+        }
+        return;
+    }
+
     const chosenSet = Math.floor(Math.random() * 8) + 1;
     const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
+
+    s1HasSelectedDeForTurn[contestantId] = true;
+    s1ChosenDeMap[contestantId] = chosenSet;
+    updateS1RandomDeButtonUI();
 
     const payload = {
         id: Math.random().toString(36).substring(2, 9),
         type: 'XUAT_PHAT_RANDOM_DE',
         contestantId: contestantId,
+        turnIndex: contestantId,
         deNumber: chosenSet,
         name: myName,
         timestamp: Date.now()

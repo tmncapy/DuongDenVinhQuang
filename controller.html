@@ -1198,11 +1198,12 @@
                     </button>
                 </div>
 
-                <!-- BUTTON ACTIONS ROW 2: Khởi động, Hoàn thành, Dừng nhạc, Đặt lại, Tổng kết -->
+                <!-- BUTTON ACTIONS ROW 2: Khởi động, Hoàn thành, Dừng nhạc, Đặt lại, Reset chọn đề, Tổng kết -->
                 <div style="display: flex; gap: 6px; justify-content: space-between;">
                     <button class="ctrl-btn-bottom" onclick="onClickKhoidong()">Khởi Động</button>
                     <button class="ctrl-btn-bottom" onclick="onClickHoanThanh()">Hoàn thành</button>
                     <button class="ctrl-btn-bottom" onclick="onClickDungNhac()">Dừng nhạc</button>
+                    <button class="ctrl-btn-bottom" onclick="resetS1ContestantDe('ALL')" style="background: #4b5563; color: white;" title="Reset nút bấm chọn đề cho thí sinh">🔄 Reset chọn đề</button>
                     <button class="ctrl-btn-bottom" onclick="onClickDatLaiVongThi()">Đặt lại</button>
                     <button class="ctrl-btn-bottom" onclick="onClickTongKet()" style="background: #0f172a; color: white;">Tổng kết</button>
                 </div>
@@ -1481,6 +1482,7 @@
                             <input type="text" id="ts1_name_vs" value="Thí sinh 1" oninput="updateContestantName(1, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
                             <input type="text" id="ts1_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="triggerVSBell(1)">🔔 Chuông TS1</button>
+                            <button class="btn" style="padding: 1px 5px; font-size: 11px; background: #4b5563; color: white;" onclick="resetVSContestantBell(1)" title="Reset chuông TS1 nếu bấm nhầm">🔄 Reset</button>
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts1_ans_vs" placeholder="Đáp án CNV của TS1" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1501,6 +1503,7 @@
                             <input type="text" id="ts2_name_vs" value="Thí sinh 2" oninput="updateContestantName(2, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
                             <input type="text" id="ts2_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="triggerVSBell(2)">🔔 Chuông TS2</button>
+                            <button class="btn" style="padding: 1px 5px; font-size: 11px; background: #4b5563; color: white;" onclick="resetVSContestantBell(2)" title="Reset chuông TS2 nếu bấm nhầm">🔄 Reset</button>
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts2_ans_vs" placeholder="Đáp án CNV của TS2" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1521,6 +1524,7 @@
                             <input type="text" id="ts3_name_vs" value="Thí sinh 3" oninput="updateContestantName(3, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
                             <input type="text" id="ts3_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="triggerVSBell(3)">🔔 Chuông TS3</button>
+                            <button class="btn" style="padding: 1px 5px; font-size: 11px; background: #4b5563; color: white;" onclick="resetVSContestantBell(3)" title="Reset chuông TS3 nếu bấm nhầm">🔄 Reset</button>
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts3_ans_vs" placeholder="Đáp án CNV của TS3" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1541,6 +1545,7 @@
                             <input type="text" id="ts4_name_vs" value="Thí sinh 4" oninput="updateContestantName(4, this.value)" style="background: transparent; border: none; font-weight: bold; color: #000; font-size: 14px; flex: 1; outline: none;">
                             <input type="text" id="ts4_extra_vs" placeholder="00.00" style="width: 70px; background: #fff; border: 1px solid #ccc; height: 22px; font-size: 12px; border-radius: 2px; text-align: center;">
                             <button class="btn" style="padding: 1px 6px; font-size: 11px; background: #ef4444; color: white;" onclick="triggerVSBell(4)">🔔 Chuông TS4</button>
+                            <button class="btn" style="padding: 1px 5px; font-size: 11px; background: #4b5563; color: white;" onclick="resetVSContestantBell(4)" title="Reset chuông TS4 nếu bấm nhầm">🔄 Reset</button>
                         </div>
                         <div style="height: 24px; background: #15803d; border-radius: 0 0 2px 2px; border: 2px solid #166534; border-top: none; display: flex; align-items: center;">
                             <input type="text" id="ts4_ans_vs" placeholder="Đáp án CNV của TS4" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
@@ -1654,6 +1659,9 @@
                     </button>
                     <button class="btn" onclick="showToast('Đã dừng nhạc')" style="background: #fff; border: 1px solid #ccc; padding: 6px 12px;">
                         Dừng nhạc
+                    </button>
+                    <button class="btn" onclick="resetVSContestantBell('ALL')" style="background: #dc2626; color: white; font-weight: bold; padding: 6px 12px;" title="Reset nút chuông cho tất cả thí sinh">
+                        🔄 Reset chuông
                     </button>
                     <button class="btn" onclick="onClickVSDatLai()" style="background: #fff; border: 1px solid #ccc; padding: 6px 12px;">
                         Đặt lại

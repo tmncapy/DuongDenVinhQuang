@@ -195,6 +195,13 @@ function onClickChuyenCau() {
     }
 }
 
+function resetS1ContestantDe(tsIdx) {
+    sendToProjector('RESET_S1_DE', { contestantId: tsIdx || 'ALL' });
+    if (typeof showToast === 'function') {
+        showToast(`Đã reset nút chọn bộ đề Xuất Phát`);
+    }
+}
+
 function onClickDatLaiVongThi() {
     clearInterval(xuatPhatTimerInterval);
     xuatPhatTimeLeft = 60;
@@ -207,6 +214,7 @@ function onClickDatLaiVongThi() {
 
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
     sendToProjector('XUAT_PHAT_RESET', { score });
+    sendToProjector('RESET_S1_DE', { contestantId: 'ALL' });
     showToast('Đã đặt lại vòng thi Xuất Phát');
 }
 

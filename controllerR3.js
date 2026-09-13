@@ -232,8 +232,50 @@ function triggerVSBell(idx) {
     }
 }
 
+function resetVSContestantBell(tsIdx) {
+    if (tsIdx === 'ALL' || !tsIdx) {
+        window.vsSubmissions = {};
+        for (let i = 1; i <= 4; i++) {
+            const extraInput = document.getElementById(`ts${i}_extra_vs`);
+            if (extraInput) extraInput.value = '';
+            const ansInput = document.getElementById(`ts${i}_ans_vs`);
+            if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.includes('[CNV]'))) {
+                ansInput.value = '';
+            }
+            const nameInput = document.getElementById(`ts${i}_name_vs`);
+            if (nameInput) {
+                const rawBase = gameData.contestants?.[i - 1]?.name || `Thí sinh ${i}`;
+                const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+                nameInput.value = baseName;
+                nameInput.style.color = '#000';
+                nameInput.style.fontWeight = 'normal';
+            }
+        }
+        sendToProjector('RESET_VS_BELL', { contestantId: 'ALL' });
+        if (typeof showToast === 'function') showToast('Đã reset nút chuông cho tất cả thí sinh');
+    } else {
+        if (window.vsSubmissions) delete window.vsSubmissions[tsIdx];
+        const extraInput = document.getElementById(`ts${tsIdx}_extra_vs`);
+        if (extraInput) extraInput.value = '';
+        const ansInput = document.getElementById(`ts${tsIdx}_ans_vs`);
+        if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.includes('[CNV]'))) {
+            ansInput.value = '';
+        }
+        const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
+        if (nameInput) {
+            const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
+            const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+            nameInput.value = baseName;
+            nameInput.style.color = '#000';
+            nameInput.style.fontWeight = 'normal';
+        }
+        sendToProjector('RESET_VS_BELL', { contestantId: tsIdx });
+        if (typeof showToast === 'function') showToast(`Đã reset nút chuông cho Thí sinh ${tsIdx}`);
+    }
+}
+
 function onClickVSDatLai() {
-    window.vsSubmissions = {};
+    resetVSContestantBell('ALL');
     window.vsRoundStartTime = Date.now();
     vsRevealedKeyIndices = [];
     clearInterval(vsTimerInterval);
