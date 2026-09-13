@@ -312,6 +312,9 @@ function ensureVSGridSynced() {
     }
 }
 
+window.vsOpenedRows = window.vsOpenedRows || { 1: false, 2: false, 3: false, 4: false, center: false, keyword: false };
+window.vsRevealedIndices = window.vsRevealedIndices || [];
+
 function syncVuotSongGrid(vsData) {
     if (vsData) {
         windowCurrentVsData = vsData;
@@ -347,14 +350,16 @@ function syncVuotSongGrid(vsData) {
         const isMultiLine = totalChars > 15;
         const tileHeight = isMultiLine ? 44 : heightRow;
         const fontSize = isMultiLine ? '26px' : '40px';
+        const isRowOpened = !!(window.vsOpenedRows && window.vsOpenedRows[h]);
 
         for (let i = 0; i < totalChars; i++) {
             const lineInRow = Math.floor(i / 15);
             const colInLine = i % 15;
             const currentX = startX_Row + colInLine * deltaX_Row;
             const currentY = isMultiLine ? (baseY + lineInRow * 46) : baseY;
+            const charToShow = (isRowOpened && i < cleanAns.length) ? cleanAns[i] : '';
 
-            rowHtml += `<div class="game-item row-${h}-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthRow}px; height: ${tileHeight}px; font-size: ${fontSize}; background-image: url('Images/LetterDefault.png');"></div>`;
+            rowHtml += `<div class="game-item row-${h}-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthRow}px; height: ${tileHeight}px; font-size: ${fontSize}; background-image: url('Images/LetterDefault.png');">${charToShow}</div>`;
         }
     }
     rowsContainer.innerHTML = rowHtml;
@@ -365,13 +370,17 @@ function syncVuotSongGrid(vsData) {
     const kw = dataToUse ? (dataToUse.keyword || dataToUse.center?.a || '') : '';
     const cleanKw = removeVietnameseTones(kw).replace(/\s+/g, '').toUpperCase();
     const kwL = cleanKw.length;
+    const isKwAllOpened = !!(window.vsOpenedRows && (window.vsOpenedRows.keyword || window.vsOpenedRows.center));
 
     if (kwL > 0) {
         if (kwL <= 15) {
             const computedStartX_Key = (1920 - (kwL * deltaX_Key - (deltaX_Key - widthKey))) / 2;
             for (let cot = 0; cot < kwL; cot++) {
                 let currentX = computedStartX_Key + cot * deltaX_Key;
-                keyHtml += `<div class="game-item key-item" style="left: ${currentX}px; top: ${startY_Key}px; width: ${widthKey}px; height: ${heightKey}px; background-image: url('Images/LetterKey.png');"></div>`;
+                const isOpened = isKwAllOpened || (window.vsRevealedIndices && window.vsRevealedIndices.includes(cot));
+                const bg = isOpened ? "url('Images/LetterKeyOpen.png')" : "url('Images/LetterKey.png')";
+                const charToShow = isOpened ? (cleanKw[cot] || '') : '';
+                keyHtml += `<div class="game-item key-item" style="left: ${currentX}px; top: ${startY_Key}px; width: ${widthKey}px; height: ${heightKey}px; background-image: ${bg};">${charToShow}</div>`;
             }
         } else {
             for (let i = 0; i < kwL; i++) {
@@ -381,8 +390,11 @@ function syncVuotSongGrid(vsData) {
                 const computedStartX = (1920 - (lineCharCount * deltaX_Key - (deltaX_Key - widthKey))) / 2;
                 const currentX = computedStartX + colInLine * deltaX_Key;
                 const currentY = startY_Key + lineIndex * 46;
+                const isOpened = isKwAllOpened || (window.vsRevealedIndices && window.vsRevealedIndices.includes(i));
+                const bg = isOpened ? "url('Images/LetterKeyOpen.png')" : "url('Images/LetterKey.png')";
+                const charToShow = isOpened ? (cleanKw[i] || '') : '';
 
-                keyHtml += `<div class="game-item key-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthKey}px; height: 44px; font-size: 26px; background-image: url('Images/LetterKey.png');"></div>`;
+                keyHtml += `<div class="game-item key-item" style="left: ${currentX}px; top: ${currentY}px; width: ${widthKey}px; height: 44px; font-size: 26px; background-image: ${bg};">${charToShow}</div>`;
             }
         }
     }
@@ -592,8 +604,11 @@ window.addEventListener('keydown', function(event) {
 
 /* VIEW 7 LOGIC */
 let countdown7, timeLeft7 = 25, isRunning7 = false, isVQStarActive = false;
-function startCountdown7(duration = 25) {
-    if (isRunning7) clearInterval(countdown7);
+function startCountdown7(duration = 25, forceRestart = false) {
+    if (isRunning7 && !forceRestart) {
+        return;
+    }
+    if (countdown7) clearInterval(countdown7);
     isRunning7 = true;
     timeLeft7 = duration;
     const clockElement = document.getElementById('clock7');
@@ -1016,6 +1031,52 @@ function handleProjectorMessage(data) {
         const aScene = document.getElementById('rk-scene-answers');
         if (qScene) qScene.style.display = 'flex';
         if (aScene) aScene.style.display = 'none';
+
+        // Clear answers and times on graphic for the new question
+        for (let i = 1; i <= 4; i++) {
+            const t = document.getElementById('thoi_gian_ts' + i);
+            const n = document.getElementById('ten_ts' + i);
+            const a = document.getElementById('dap_an_ts' + i);
+            if (t) t.innerText = "";
+            if (n) n.innerText = "";
+            if (a) a.innerText = "";
+        }
+    } else if (data.type === 'CLEAR_PLAYER_ANSWERS') {
+        const r = data.round;
+        if (!r || r === 'RK') {
+            for (let i = 1; i <= 4; i++) {
+                const t = document.getElementById('thoi_gian_ts' + i);
+                const n = document.getElementById('ten_ts' + i);
+                const a = document.getElementById('dap_an_ts' + i);
+                if (t) t.innerText = "";
+                if (n) n.innerText = "";
+                if (a) a.innerText = "";
+            }
+        }
+        if (!r || r === 'VS') {
+            for (let i = 1; i <= 4; i++) {
+                const timeEl = document.getElementById(`vs_time_ts${i}`);
+                const nameEl = document.getElementById(`vs_name_ts${i}`);
+                const ansEl = document.getElementById(`vs_ans_ts${i}`);
+                if (timeEl) timeEl.innerText = "";
+                if (nameEl) nameEl.innerText = "";
+                if (ansEl) ansEl.innerText = "";
+                const valEl = document.getElementById(`vs_ans_val_${i}`);
+                const vTimeEl = document.getElementById(`vs_ans_time_${i}`);
+                if (valEl) valEl.innerText = "";
+                if (vTimeEl) vTimeEl.innerText = "";
+            }
+        }
+        if (!r || r === 'VQ') {
+            for (let i = 1; i <= 4; i++) {
+                const vqAns = document.getElementById(`vq_ans_val_${i}`);
+                const vqTime = document.getElementById(`vq_ans_time_${i}`);
+                if (vqAns) vqAns.innerText = "";
+                if (vqTime) vqTime.innerText = "";
+                const ansEl = document.getElementById(`vq_ans_ts${i}`);
+                if (ansEl) ansEl.innerText = "";
+            }
+        }
     } else if (data.type === 'PLAYER_SUBMIT_ANSWER') {
         if (data.round === 'VS' && data.isVongThi) {
             safePlay(soundActivate);
@@ -1052,6 +1113,10 @@ function handleProjectorMessage(data) {
         resetVQProjector();
     } else if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
         switchView(7);
+        if (countdown7) clearInterval(countdown7);
+        isRunning7 = false;
+        const vqAudio = document.getElementById('vongThiAudio7');
+        if (vqAudio) { try { vqAudio.pause(); vqAudio.currentTime = 0; } catch(e) {} }
         safePlay(soundBeginQues1);
         const qEl = document.getElementById('vq_question_text');
         const rEl = document.getElementById('vq_round_title');
@@ -1073,6 +1138,10 @@ function handleProjectorMessage(data) {
         }
         const clockEl = document.getElementById('clock7');
         if (clockEl) clockEl.innerText = "25";
+        for (let i = 1; i <= 4; i++) {
+            const ansEl = document.getElementById(`vq_ans_ts${i}`);
+            if (ansEl) ansEl.innerText = "";
+        }
     } else if (data.type === 'VINH_QUANG_START_TIMER' || data.type === 'VINH_QUANG_25S') {
         switchView(7);
         startCountdown7(data.duration || 25);
@@ -1161,7 +1230,13 @@ function handleVSOpenRowAnswer(data) {
     const rowsContainer = document.getElementById('file3-rows-container');
     if (!rowsContainer || !data.row) return;
 
+    if (!window.vsOpenedRows) {
+        window.vsOpenedRows = { 1: false, 2: false, 3: false, 4: false, center: false, keyword: false };
+    }
+
     if (data.row === 'center' || data.row === 'keyword') {
+        window.vsOpenedRows.center = true;
+        window.vsOpenedRows.keyword = true;
         const kwItems = document.querySelectorAll('#file3-keys-container .key-item');
         const rawKw = data.answer || (windowCurrentVsData?.keyword) || (windowCurrentVsData?.center?.a) || '';
         const kwAns = removeVietnameseTones(rawKw).replace(/\s+/g, '').toUpperCase();
@@ -1177,6 +1252,7 @@ function handleVSOpenRowAnswer(data) {
         return;
     }
 
+    window.vsOpenedRows[data.row] = true;
     const items = rowsContainer.querySelectorAll(`.row-${data.row}-item`);
     let ans = (data.answer || '').replace(/\s+/g, '').toUpperCase();
     if (!ans && windowCurrentVsData && windowCurrentVsData[`h${data.row}`]) {
@@ -1203,11 +1279,12 @@ function handleVSOpenKeywordLetters(data) {
     const rawKw = data.keyword || windowCurrentVsData?.keyword || windowCurrentVsData?.center?.a || '';
     const kwAns = removeVietnameseTones(rawKw).replace(/\s+/g, '').toUpperCase();
     const revealed = data.revealedIndices || [];
+    window.vsRevealedIndices = Array.from(new Set([...(window.vsRevealedIndices || []), ...revealed]));
     const kwItems = keysContainer.querySelectorAll('.key-item');
 
     kwItems.forEach((item, index) => {
         if (index < kwAns.length) {
-            if (revealed.includes(index)) {
+            if (window.vsRevealedIndices.includes(index) || (window.vsOpenedRows && (window.vsOpenedRows.keyword || window.vsOpenedRows.center))) {
                 item.innerText = kwAns[index];
                 item.style.backgroundImage = "url('Images/LetterKeyOpen.png')";
             } else {
@@ -1227,6 +1304,7 @@ function handleVSOpenAllAnswers(data) {
     switchView(3);
     safePlay(soundRightV3);
     if (data.vuotSong) windowCurrentVsData = data.vuotSong;
+    window.vsOpenedRows = { 1: true, 2: true, 3: true, 4: true, center: true, keyword: true };
     ensureVSGridSynced();
     const rowsContainer = document.getElementById('file3-rows-container');
     const keysContainer = document.getElementById('file3-keys-container');
@@ -1265,6 +1343,8 @@ function handleVSOpenAllAnswers(data) {
 
 function handleVSReset() {
     switchView(3);
+    window.vsOpenedRows = { 1: false, 2: false, 3: false, 4: false, center: false, keyword: false };
+    window.vsRevealedIndices = [];
     ensureVSGridSynced();
     const rowsContainer = document.getElementById('file3-rows-container');
     const keysContainer = document.getElementById('file3-keys-container');
@@ -1326,7 +1406,11 @@ function flashVuotSongRow(row) {
     const rowsContainer = document.getElementById('file3-rows-container');
     if (!rowsContainer) return;
     const items = rowsContainer.querySelectorAll(`.row-${row}-item`);
+    const isAlreadyOpened = !!(window.vsOpenedRows && window.vsOpenedRows[row]);
     
+    // Only flash if this row is not already opened with revealed letters
+    if (isAlreadyOpened) return;
+
     let count = 0;
     if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
     window.vsFlashInterval = setInterval(() => {
@@ -1429,9 +1513,11 @@ function startRKTimer30s(duration = 30) {
         if (timeLeft <= 0) {
             clearInterval(rkTimerIntervalProj);
             if (clockEl) clockEl.innerText = "00";
-            try {
-                safePlay(soundTimeUp1);
-            } catch(e) {}
+            // User request: Khi hết 30s trả lời ở vòng ra khơi thì không có bất kỳ sfx nào chạy nữa
+            const rkAudio = document.getElementById('vongThiAudio2');
+            if (rkAudio) {
+                try { rkAudio.pause(); rkAudio.currentTime = 0; } catch(e) {}
+            }
         }
     }, 1000);
 }

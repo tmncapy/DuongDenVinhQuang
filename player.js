@@ -967,7 +967,43 @@ function submitScene4Answer() {
     }
 }
 
-function startS4Timer(sec) {
+function clearPlayerSubmissionStatus(round) {
+    if (!round || round === 'RK') {
+        const input = document.getElementById('s2_answer_input');
+        if (input) input.value = "";
+        const badge = document.getElementById('s2_status_badge');
+        if (badge) { badge.innerText = "CHƯA GỬI"; badge.style.background = "#64748b"; }
+        const txt = document.getElementById('s2_submitted_text');
+        if (txt) txt.innerText = 'Chưa gửi câu trả lời';
+        const tm = document.getElementById('s2_submitted_time');
+        if (tm) tm.innerText = 'Thời gian: --.--';
+    }
+    if (!round || round === 'VS') {
+        const input = document.getElementById('s3_answer_input');
+        if (input) input.value = "";
+        const badge = document.getElementById('s3_status_badge');
+        if (badge) { badge.innerText = "CHƯA GỬI"; badge.style.background = "#64748b"; }
+        const txt = document.getElementById('s3_submitted_text');
+        if (txt) txt.innerText = 'Chưa gửi câu trả lời';
+        const tm = document.getElementById('s3_submitted_time');
+        if (tm) tm.innerText = 'Thời gian: --.--';
+    }
+    if (!round || round === 'VQ') {
+        const input = document.getElementById('s4_answer_input');
+        if (input) input.value = "";
+        const badge = document.getElementById('s4_status_badge');
+        if (badge) { badge.innerText = "CHƯA GỬI"; badge.style.background = "#64748b"; }
+        const txt = document.getElementById('s4_submitted_text');
+        if (txt) txt.innerText = 'Chưa gửi câu trả lời';
+        const tm = document.getElementById('s4_submitted_time');
+        if (tm) tm.innerText = 'Thời gian: --.--';
+    }
+}
+
+function startS4Timer(sec, forceRestart = false) {
+    if (s4TimeLeft > 0 && !forceRestart && s4TimerInterval) {
+        return;
+    }
     clearInterval(s4TimerInterval);
     s4TimerStartTime = Date.now();
     s4TimeLeft = sec;
@@ -1137,9 +1173,11 @@ function handlePlayerMessage(data) {
         if (data.playerAnswers) {
             updateSubmissionStatusFromState(data);
         }
-        if (data.latestAction && data.latestAction.type) {
-            handlePlayerMessage(data.latestAction);
-        }
+        return;
+    }
+
+    if (data.type === 'CLEAR_PLAYER_ANSWERS') {
+        clearPlayerSubmissionStatus(data.round);
         return;
     }
 
@@ -1189,7 +1227,8 @@ function handlePlayerMessage(data) {
             document.getElementById('s2_question_text').innerText = data.questionText;
         }
 
-        if (data.type === 'RA_KHOI_SHOW_QUESTION' || data.type === 'RA_KHOI_PLAY_CLIP') {
+        if (data.type === 'RA_KHOI_SHOW_QUESTION' || data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SELECT_QUESTION') {
+            clearPlayerSubmissionStatus('RK');
             s2TimerStartTime = 0;
             clearInterval(s2TimerInterval);
             const s2Input = document.getElementById('s2_answer_input');
@@ -1239,6 +1278,7 @@ function handlePlayerMessage(data) {
         }
 
         if (data.type === 'VUOT_SONG_SELECT_ROW' || data.type === 'VUOT_SONG_SHOW_QUESTION') {
+            clearPlayerSubmissionStatus('VS');
             s3TimerStartTime = 0;
             clearInterval(s3TimerInterval);
             updateMasterRemainingTime('--');
@@ -1279,7 +1319,8 @@ function handlePlayerMessage(data) {
             if (document.getElementById('s4_question_text')) document.getElementById('s4_question_text').innerText = data.questionText;
         }
 
-        if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
+        if (data.type === 'VINH_QUANG_SHOW_QUESTION' || data.type === 'VINH_QUANG_SELECT_PACK') {
+            clearPlayerSubmissionStatus('VQ');
             s4TimerStartTime = 0;
             clearInterval(s4TimerInterval);
             updateMasterRemainingTime('--');

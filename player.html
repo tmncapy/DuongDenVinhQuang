@@ -997,7 +997,7 @@
 
                 <!-- Answer input & Controls BELOW Question Box -->
                 <div class="s4-answer-box" style="top: 42%;">
-                    <input type="text" id="s4_answer_input" class="s4-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene4Answer()" disabled>
+                    <input type="text" id="s4_answer_input" class="s4-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitScene4Answer(); }" disabled>
                 </div>
                 <div class="s4-time-box" id="s4_time_box" style="top: 42%;">Thời gian</div>
                 <button class="s4-submit-btn" onclick="submitScene4Answer()" style="top: 42%;">GỬI ĐÁP ÁN</button>
