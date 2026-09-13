@@ -71,6 +71,10 @@ function switchTab(index) {
         }
     });
 
+    if (typeof syncContestantsUI === 'function') {
+        syncContestantsUI();
+    }
+
     if (index === 1 && typeof updateTab1Preview === 'function') {
         updateTab1Preview();
     }
@@ -697,15 +701,17 @@ function syncContestantsUI() {
             const tab4Input = document.getElementById(`ts${idx}_name_vq`);
             if (tab4Input) tab4Input.value = c.name || `Thí sinh ${idx}`;
             
+            const scoreVal = c.score !== undefined ? c.score : 0;
             const disp = document.getElementById(`ts${idx}_score_disp`);
-            if (disp) disp.innerText = c.score || 0;
+            if (disp) disp.innerText = scoreVal;
             const dispRK = document.getElementById(`ts${idx}_score_disp_rk`);
-            if (dispRK) dispRK.innerText = c.score || 0;
+            if (dispRK) dispRK.innerText = scoreVal;
             const dispVS = document.getElementById(`ts${idx}_score_disp_vs`);
-            if (dispVS) dispVS.innerText = c.score || 0;
+            if (dispVS) dispVS.innerText = scoreVal;
             const dispVQ = document.getElementById(`ts${idx}_score_disp_vq`);
-            if (dispVQ) dispVQ.innerText = c.score || 0;
+            if (dispVQ) dispVQ.innerText = scoreVal;
         });
+        if (typeof updateTab1Preview === 'function') updateTab1Preview();
         sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     }
 }
@@ -1514,14 +1520,8 @@ function promptScore(idx) {
     const newScore = prompt(`Nhập điểm cho Thí sinh ${idx}:`, current);
     if (newScore !== null && !isNaN(parseInt(newScore))) {
         gameData.contestants[idx - 1].score = parseInt(newScore);
-        const disps = [
-            document.getElementById(`ts${idx}_score_disp`),
-            document.getElementById(`ts${idx}_score_disp_rk`),
-            document.getElementById(`ts${idx}_score_disp_vq`)
-        ];
-        disps.forEach(disp => { if (disp) disp.innerText = gameData.contestants[idx - 1].score; });
+        syncContestantsUI();
         saveAllData();
-        if (typeof updateTab1Preview === 'function') updateTab1Preview();
         sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
             name: gameData.contestants[idx - 1].name,
             score: gameData.contestants[idx - 1].score
@@ -1571,17 +1571,8 @@ window.adjustScore = function(idx, delta) {
     const newScore = current + delta;
     gameData.contestants[idx - 1].score = newScore;
     
-    const disps = [
-        document.getElementById(`ts${idx}_score_disp`),
-        document.getElementById(`ts${idx}_score_disp_rk`),
-        document.getElementById(`ts${idx}_score_disp_vs`),
-        document.getElementById(`ts${idx}_score_disp_vq`)
-    ];
-    disps.forEach(disp => { if (disp) disp.innerText = newScore; });
-    
+    syncContestantsUI();
     saveAllData();
-    if (typeof updateTab1Preview === 'function') updateTab1Preview();
-    sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     
     if (typeof showToast === 'function') {
         const contestantName = gameData.contestants[idx - 1].name || `Thí sinh ${idx}`;
