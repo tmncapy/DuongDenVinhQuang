@@ -43,7 +43,11 @@ function selectVSRow(row) {
     for (let i = 1; i <= 5; i++) {
         const ansEl = document.getElementById(`ts${i}_ans_vs`);
         if (ansEl) ansEl.value = '';
+        const extraEl = document.getElementById(`ts${i}_extra_vs`);
+        if (extraEl) extraEl.value = '';
     }
+
+    sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VS' });
 
     const titleEl = document.getElementById('vs_preview_title');
     const qTextEl = document.getElementById('vs_preview_q_text');
@@ -65,12 +69,7 @@ function selectVSRow(row) {
         if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
         currentQText = q;
     }
-    if (typeof updateVuotSongState === 'function') {
-        updateVuotSongState();
-    } else {
-        sendToProjector('VUOT_SONG_SYNC_GRID', { vuotSong: gameData.vuotSong });
-    }
-    sendToProjector('VUOT_SONG_SELECT_ROW', { row: row, questionText: currentQText, contestants: gameData.contestants });
+    sendToProjector('VUOT_SONG_SELECT_ROW', { row: row, round: 'VS', questionText: currentQText, contestants: gameData.contestants });
     showToast(`Đã chọn Hàng ngang ${row}`);
 }
 

@@ -155,7 +155,17 @@ function onClickVQChonGoiDiem(pack) {
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = `Đã chọn ${pack}đ`;
 
+    // Clear contestant inputs on controller for the new question
+    for (let i = 1; i <= 5; i++) {
+        const ansEl = document.getElementById(`ts${i}_ans_vq`);
+        if (ansEl) ansEl.value = '';
+        const extraEl = document.getElementById(`ts${i}_extra_vq`);
+        if (extraEl) extraEl.value = '';
+    }
+    sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VQ' });
+
     sendToProjector('VINH_QUANG_SELECT_PACK', {
+        round: 'VQ',
         pack: pack,
         subject: currentVQSubject,
         questionText: currentVQQuestionText,
@@ -199,8 +209,18 @@ function onClickVQAnChonGoiDiem() {
 }
 
 function onClickVQHienCauHoi() {
+    // Clear contestant inputs on controller for the new question
+    for (let i = 1; i <= 5; i++) {
+        const ansEl = document.getElementById(`ts${i}_ans_vq`);
+        if (ansEl) ansEl.value = '';
+        const extraEl = document.getElementById(`ts${i}_extra_vq`);
+        if (extraEl) extraEl.value = '';
+    }
+    sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VQ' });
+
     const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
     sendToProjector('VINH_QUANG_SHOW_QUESTION', {
+        round: 'VQ',
         pack: currentVQPack,
         subject: currentVQSubject,
         questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
@@ -213,6 +233,9 @@ function onClickVQHienCauHoi() {
 }
 
 function onClickVQ25s() {
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+    }
     clearInterval(vqTimerInterval);
     vqTimeLeft = 25;
     const timerEl = document.getElementById('vq_preview_timer');

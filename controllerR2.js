@@ -25,10 +25,13 @@ function selectRKQuestion(num) {
         if (extraEl) extraEl.value = '';
     }
 
+    sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'RK' });
+
     rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
     updateTab2Preview();
     const qItem = gameData.raKhoi ? (gameData.raKhoi[num - 1] || { q: '', a: '' }) : { q: '', a: '' };
     sendToProjector('RA_KHOI_SHOW_QUESTION', {
+        round: 'RK',
         questionIndex: num,
         questionText: qItem.q || `Nội dung câu hỏi Ra Khơi số ${num}`,
         contestants: gameData.contestants

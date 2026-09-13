@@ -154,6 +154,7 @@ function handleIncomingAction(action, senderWs = null) {
   // Handle Player Answer Submissions
   if (type === 'PLAYER_SUBMIT_ANSWER' && action.contestantId) {
     const tsIdx = action.contestantId;
+    const rKey = action.round ? `ts${tsIdx}_${action.round}` : `ts${tsIdx}`;
     serverState.playerAnswers[`ts${tsIdx}`] = {
       contestantId: tsIdx,
       answer: action.answer || '',
@@ -162,11 +163,33 @@ function handleIncomingAction(action, senderWs = null) {
       isVongThi: !!action.isVongThi,
       timestamp: now
     };
+    serverState.playerAnswers[rKey] = serverState.playerAnswers[`ts${tsIdx}`];
   }
 
-  // Handle Reset / Clear Answers
-  if (type === 'CLEAR_PLAYER_ANSWERS' || type === 'XUAT_PHAT_START' || type === 'RA_KHOI_OPEN_QUESTION' || type === 'VUOT_SONG_OPEN_HANG_NGANG' || type === 'VINH_QUANG_START') {
-    serverState.playerAnswers = {};
+  // Handle Reset / Clear Answers on question switch or explicit clear
+  if (
+    type === 'CLEAR_PLAYER_ANSWERS' ||
+    type === 'RA_KHOI_SHOW_QUESTION' ||
+    type === 'RA_KHOI_OPEN_QUESTION' ||
+    type === 'RA_KHOI_RESET' ||
+    type === 'VUOT_SONG_SELECT_ROW' ||
+    type === 'VUOT_SONG_SHOW_QUESTION' ||
+    type === 'VUOT_SONG_OPEN_HANG_NGANG' ||
+    type === 'VUOT_SONG_RESET' ||
+    type === 'VINH_QUANG_SELECT_PACK' ||
+    type === 'VINH_QUANG_SHOW_QUESTION' ||
+    type === 'VINH_QUANG_START' ||
+    type === 'VINH_QUANG_RESET'
+  ) {
+    if (action.round) {
+      for (const k of Object.keys(serverState.playerAnswers)) {
+        if (serverState.playerAnswers[k].round === action.round || k.endsWith(`_${action.round}`)) {
+          delete serverState.playerAnswers[k];
+        }
+      }
+    } else {
+      serverState.playerAnswers = {};
+    }
   }
 
   // Handle Complete Data Reset
