@@ -686,6 +686,46 @@ function saveAllData(notify = false) {
     }
 }
 
+window.vsSubmissions = window.vsSubmissions || {};
+
+function markVSContestantSubmitted(tsIdx, timeStr) {
+    if (!tsIdx || tsIdx < 1 || tsIdx > 4) return;
+    
+    let cleanTime = (timeStr || '').toString().replace(/s|giây/gi, '').trim();
+    if (!cleanTime || cleanTime === '00.00' || isNaN(parseFloat(cleanTime))) {
+        if (!window.vsRoundStartTime) window.vsRoundStartTime = Date.now();
+        let elapsed = (Date.now() - window.vsRoundStartTime) / 1000;
+        cleanTime = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
+    } else {
+        let num = parseFloat(cleanTime);
+        if (!isNaN(num)) {
+            cleanTime = num < 10 ? '0' + num.toFixed(2) : num.toFixed(2);
+        }
+    }
+
+    window.vsSubmissions[tsIdx] = cleanTime;
+
+    const extraInput = document.getElementById(`ts${tsIdx}_extra_vs`);
+    if (extraInput) {
+        extraInput.value = cleanTime;
+    }
+
+    const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
+    if (nameInput) {
+        const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
+        const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+        nameInput.value = `${baseName} (${cleanTime}s)`;
+        nameInput.style.color = '#dc2626';
+        nameInput.style.fontWeight = 'bold';
+    }
+
+    const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
+    const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+    if (typeof showToast === 'function') {
+        showToast(`${baseName} đã trả lời đáp án vòng thi (${cleanTime}s)!`);
+    }
+}
+
 function syncContestantsUI() {
     if (gameData.contestants && Array.isArray(gameData.contestants)) {
         gameData.contestants.forEach((c, i) => {
@@ -696,8 +736,21 @@ function syncContestantsUI() {
             if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
             const tab2Input = document.getElementById(`ts${idx}_name_rk`);
             if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
+            
             const tab3Input = document.getElementById(`ts${idx}_name_vs`);
-            if (tab3Input) tab3Input.value = c.name || `Thí sinh ${idx}`;
+            if (tab3Input) {
+                const baseName = c.name || `Thí sinh ${idx}`;
+                if (window.vsSubmissions && window.vsSubmissions[idx]) {
+                    tab3Input.value = `${baseName} (${window.vsSubmissions[idx]}s)`;
+                    tab3Input.style.color = '#dc2626';
+                    tab3Input.style.fontWeight = 'bold';
+                } else {
+                    tab3Input.value = baseName;
+                    tab3Input.style.color = '#000';
+                    tab3Input.style.fontWeight = 'normal';
+                }
+            }
+
             const tab4Input = document.getElementById(`ts${idx}_name_vq`);
             if (tab4Input) tab4Input.value = c.name || `Thí sinh ${idx}`;
             
@@ -759,8 +812,9 @@ let updateContestantNameTimeout = null;
 function updateContestantName(i, val) {
     if (!gameData.contestants) gameData.contestants = [];
     
-    // Preserve raw input while converting to uppercase for Vietnamese text
-    const upperVal = (val || '').toLocaleUpperCase('vi-VN');
+    // Preserve raw input while converting to uppercase for Vietnamese text, stripping time suffix if present
+    const cleanRaw = (val || '').replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+    const upperVal = cleanRaw.toLocaleUpperCase('vi-VN');
 
     if (!gameData.contestants[i - 1]) {
         gameData.contestants[i - 1] = { name: upperVal, score: 0 };
@@ -967,6 +1021,9 @@ function handleIncomingPlayerAnswer(data) {
             const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
             if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
             if (inputAns && inputAns.value !== ans) inputAns.value = ans;
+            if (data.round === 'VS' && data.isVongThi !== false) {
+                markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+            }
         }
         if (data.round === 'VQ' || !data.round) {
             const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);
@@ -1000,6 +1057,9 @@ function handleIncomingPlayerAnswer(data) {
                     const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
                     if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
                     if (inputAns && inputAns.value !== ans) inputAns.value = ans;
+                    if (ansObj.round === 'VS' && ansObj.isVongThi !== false) {
+                        markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                    }
                 }
                 if (ansObj.round === 'VQ' || !ansObj.round) {
                     const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);

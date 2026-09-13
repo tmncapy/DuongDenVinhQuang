@@ -218,7 +218,23 @@ function onClickVSShowAnswers() {
     showToast('Hiển thị đáp án thí sinh Vượt Sóng trên Projector');
 }
 
+function triggerVSBell(idx) {
+    if (!window.vsRoundStartTime) window.vsRoundStartTime = Date.now();
+    let elapsed = (Date.now() - window.vsRoundStartTime) / 1000;
+    let timeStr = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
+    
+    const ansInput = document.getElementById(`ts${idx}_ans_vs`);
+    if (ansInput && !ansInput.value) {
+        ansInput.value = '[CNV] Bấm chuông';
+    }
+    if (typeof markVSContestantSubmitted === 'function') {
+        markVSContestantSubmitted(idx, timeStr);
+    }
+}
+
 function onClickVSDatLai() {
+    window.vsSubmissions = {};
+    window.vsRoundStartTime = Date.now();
     vsRevealedKeyIndices = [];
     clearInterval(vsTimerInterval);
     vsTimeLeft = 20;
@@ -231,6 +247,10 @@ function onClickVSDatLai() {
         if (ansEl) ansEl.value = '';
         const extraEl = document.getElementById(`ts${i}_extra_vs`);
         if (extraEl) extraEl.value = '';
+    }
+
+    if (typeof syncContestantsUI === 'function') {
+        syncContestantsUI();
     }
 
     currentVSRow = null;
