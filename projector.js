@@ -503,9 +503,11 @@ function resetVQProjector() {
     isVQStarActive = false;
     const qEl7 = document.getElementById('vq_question_text');
     const rEl7 = document.getElementById('vq_round_title');
+    const pEl7 = document.getElementById('vq_selected_pack_title');
     const starIcon7 = document.getElementById('vq_star_icon');
     if (qEl7) qEl7.innerText = "";
-    if (rEl7) rEl7.innerText = "VINH QUANG";
+    if (rEl7) rEl7.innerText = "";
+    if (pEl7) pEl7.innerText = "";
     if (starIcon7) starIcon7.style.display = "none";
     const clockEl7 = document.getElementById('clock7');
     if (clockEl7) clockEl7.innerText = "25";
@@ -515,9 +517,13 @@ function resetVQProjector() {
         const scoreEl = document.getElementById(`vq_score_ts${i}`);
         const nameEl = document.getElementById(`vq_name_ts${i}`);
         const ansEl = document.getElementById(`vq_ans_ts${i}`);
-        if (scoreEl) scoreEl.innerText = '0';
-        if (nameEl) nameEl.innerText = `THÍ SINH ${i}`;
+        const valEl = document.getElementById(`vq_ans_val_${i}`);
+        const timeEl = document.getElementById(`vq_ans_time_${i}`);
+        if (scoreEl) scoreEl.innerText = '';
+        if (nameEl) nameEl.innerText = '';
         if (ansEl) ansEl.innerText = '';
+        if (valEl) valEl.innerText = '';
+        if (timeEl) timeEl.innerText = '';
     }
 
     // 4. Switch to view 6 (which acts as a transparent empty canvas when pageWrapper is in fly-down)
@@ -961,9 +967,11 @@ function handleProjectorMessage(data) {
         if (xp) xp.style.display = 'block';
         if (cl) cl.style.display = 'none';
         if (ri) ri.style.display = 'none';
-        if (dn) dn.style.display = 'none';
-        if (nb) nb.style.display = 'none';
+        if (dn) { dn.innerText = ""; dn.style.display = 'none'; }
+        if (nb) { nb.innerText = ""; nb.style.display = 'none'; }
         if (bd) bd.style.display = 'none';
+        const q1 = document.getElementById('questionText1');
+        if (q1) q1.innerText = "";
 
         for (let i = 1; i <= 10; i++) {
             let box = document.getElementById('kq1-' + i);

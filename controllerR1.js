@@ -38,6 +38,7 @@ function selectLuotThi(turnIndex) {
 
     updateTab1Preview();
     sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
+        turnIndex: currentXuatPhatTurn,
         name,
         score,
         questionIndex: 1,
@@ -87,7 +88,7 @@ function onClickLuatXuatPhat() {
 
 function onClickHienGraphicChonDe() {
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { name });
+    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { turnIndex: currentXuatPhatTurn, name });
     showToast('Đã hiện graphic Chọn Đề trên Projector');
 }
 
@@ -95,6 +96,7 @@ function onClickHienGraphicCauHoi() {
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
     sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI', { 
+        turnIndex: currentXuatPhatTurn,
         name: name,
         score: score
     });
@@ -107,13 +109,13 @@ function onClickRandomDe() {
     currentXuatPhatQIndex = 0;
     updateTab1Preview();
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-    sendToProjector('XUAT_PHAT_RANDOM_DE', { deNumber: chosenSet, name: name });
+    sendToProjector('XUAT_PHAT_RANDOM_DE', { turnIndex: currentXuatPhatTurn, deNumber: chosenSet, name: name });
     showToast(`Đã random chọn Bộ đề ${chosenSet} cho ${name}`);
 }
 
 function onClickKhoidong() {
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { name });
+    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { turnIndex: currentXuatPhatTurn, name });
     showToast('Khởi động lượt thi');
 }
 
@@ -129,6 +131,7 @@ function onClickBatDau60s() {
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
     sendToProjector('XUAT_PHAT_START_TIMER', {
+        turnIndex: currentXuatPhatTurn,
         questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
         questionIndex: currentXuatPhatQIndex + 1,
         contestantName: name,
