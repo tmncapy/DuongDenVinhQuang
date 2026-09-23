@@ -1198,7 +1198,9 @@ function handleProjectorMessage(data) {
             const ansEl = document.getElementById(`vq_ans_ts${i}`);
             if (scoreEl) scoreEl.innerText = ts.score !== undefined ? ts.score : '0';
             if (nameEl) nameEl.innerText = ts.name || `THÍ SINH ${i}`;
-            if (ansEl) ansEl.innerText = ts.answer || '';
+            if (ansEl) {
+                fitAnswerText(ansEl, ts.answer || '');
+            }
         }
     } else if (data.type === 'UPDATE_CONTESTANTS' || data.type === 'UPDATE_SCORES' || data.type === 'FULL_STATE_SYNC' || data.type === 'UPDATE_STATE') {
         if (data.contestants && Array.isArray(data.contestants)) {
@@ -1496,6 +1498,32 @@ function handleVSStartTimer(data) {
     startCountdown4();
 }
 
+function fitAnswerText(el, text) {
+    if (!el) return;
+    const clean = (text || '').toString().replace(/[\r\n\t]+/g, ' ').trim().slice(0, 90);
+    el.innerText = clean;
+    el.style.color = '#dc2626';
+    el.style.whiteSpace = 'nowrap';
+    el.style.overflow = 'hidden';
+    el.style.textOverflow = 'ellipsis';
+    el.style.display = 'block';
+    el.style.lineHeight = '60.624px';
+    el.style.textAlign = 'center';
+    el.style.fontWeight = '800';
+    const len = clean.length;
+    if (len > 50) {
+        el.style.fontSize = '18px';
+    } else if (len > 35) {
+        el.style.fontSize = '21px';
+    } else if (len > 24) {
+        el.style.fontSize = '23px';
+    } else if (len > 15) {
+        el.style.fontSize = '25px';
+    } else {
+        el.style.fontSize = '26px';
+    }
+}
+
 function handleVSShowAnswers(data) {
     switchView(5);
     const audio = document.getElementById('soundVSAnswer');
@@ -1530,7 +1558,9 @@ function handleVSShowAnswers(data) {
             time = '00.00';
         }
 
-        if (valEl) valEl.innerText = ans;
+        if (valEl) {
+            fitAnswerText(valEl, ans);
+        }
         if (timeEl) timeEl.innerText = time;
     }
 }
@@ -1676,7 +1706,7 @@ function handleRKShowContestantAnswers(data) {
 
         if (tenEl) tenEl.innerText = ts.name || `THÍ SINH ${i}`;
 
-        let ans = ts.rk_answer || ts.answer || `ĐÁP ÁN TS${i}`;
+        let ans = ts.rk_answer || ts.answer || '';
         let time = ts.rk_time || ts.time || '';
 
         const match = ans.match(/\(([\d\.]+)(?:s|giây)?\)/i);
@@ -1696,7 +1726,9 @@ function handleRKShowContestantAnswers(data) {
         }
 
         if (tgEl) tgEl.innerText = time;
-        if (daEl) daEl.innerText = ans;
+        if (daEl) {
+            fitAnswerText(daEl, ans);
+        }
     }
 }
 

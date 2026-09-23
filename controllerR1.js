@@ -48,31 +48,37 @@ function selectLuotThi(turnIndex) {
 }
 
 function updateTab1Preview() {
+    const titleEl = document.getElementById('preview_turn_title');
+    const scoreEl = document.getElementById('preview_current_score');
+    const qNumEl = document.getElementById('preview_q_num');
+    const deSelectEl = document.getElementById('preview_de_select');
+    const timerEl = document.getElementById('preview_timer');
+    const qTextEl = document.getElementById('preview_q_text');
+    const aTextEl = document.getElementById('preview_a_text');
+
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        if (titleEl) titleEl.innerText = `LƯỢT THI: CHƯA CHỌN THÍ SINH`;
+        if (scoreEl) scoreEl.innerText = '0';
+        if (qNumEl) qNumEl.innerText = '1';
+        if (timerEl) timerEl.innerText = '60';
+        if (qTextEl) qTextEl.innerText = 'Vui lòng chọn Lượt thi của Thí sinh (TS1, TS2, TS3, hoặc TS4)...';
+        if (aTextEl) aTextEl.innerText = 'Đáp án: ...';
+        return;
+    }
+
     const turnName = gameData.contestants[currentXuatPhatTurn - 1]?.name || `THÍ SINH ${currentXuatPhatTurn}`;
     const currentScore = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
-    const titleEl = document.getElementById('preview_turn_title');
     if (titleEl) titleEl.innerText = `LƯỢT THI ${currentXuatPhatTurn}: ${turnName.toUpperCase()}`;
-
-    const qNumEl = document.getElementById('preview_q_num');
     if (qNumEl) qNumEl.innerText = currentXuatPhatQIndex + 1;
-
-    const deSelectEl = document.getElementById('preview_de_select');
     if (deSelectEl) deSelectEl.value = currentXuatPhatDe;
-
-    const timerEl = document.getElementById('preview_timer');
     if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
-
-    const scoreEl = document.getElementById('preview_current_score');
     if (scoreEl) scoreEl.innerText = currentScore;
 
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
 
-    const qTextEl = document.getElementById('preview_q_text');
     if (qTextEl) qTextEl.innerText = currentQ.q ? `Câu ${currentXuatPhatQIndex + 1}: ${currentQ.q}` : `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`;
-
-    const aTextEl = document.getElementById('preview_a_text');
     if (aTextEl) aTextEl.innerText = `Đáp án: ${currentQ.a || '...'}`;
 }
 
@@ -87,12 +93,20 @@ function onClickLuatXuatPhat() {
 }
 
 function onClickHienGraphicChonDe() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước (TS1, TS2, TS3, hoặc TS4)!');
+        return;
+    }
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { turnIndex: currentXuatPhatTurn, name });
     showToast('Đã hiện graphic Chọn Đề trên Projector');
 }
 
 function onClickHienGraphicCauHoi() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước (TS1, TS2, TS3, hoặc TS4)!');
+        return;
+    }
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
     sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI', { 
@@ -104,6 +118,10 @@ function onClickHienGraphicCauHoi() {
 }
 
 function onClickRandomDe() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước (TS1, TS2, TS3, hoặc TS4)!');
+        return;
+    }
     const chosenSet = Math.floor(Math.random() * 8) + 1;
     currentXuatPhatDe = chosenSet;
     currentXuatPhatQIndex = 0;
@@ -114,12 +132,20 @@ function onClickRandomDe() {
 }
 
 function onClickKhoidong() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước (TS1, TS2, TS3, hoặc TS4)!');
+        return;
+    }
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { turnIndex: currentXuatPhatTurn, name });
     showToast('Khởi động lượt thi');
 }
 
 function onClickBatDau60s() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước (TS1, TS2, TS3, hoặc TS4)!');
+        return;
+    }
     clearInterval(xuatPhatTimerInterval);
     xuatPhatTimeLeft = 60;
     const timerEl = document.getElementById('preview_timer');
@@ -155,6 +181,10 @@ function onClickBatDau60s() {
 }
 
 function onClickDung() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước!');
+        return;
+    }
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
     if (gameData.contestants[currentXuatPhatTurn - 1]) {
@@ -170,6 +200,10 @@ function onClickDung() {
 }
 
 function onClickSai() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước!');
+        return;
+    }
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
@@ -178,6 +212,10 @@ function onClickSai() {
 }
 
 function onClickChuyenCau() {
+    if (!currentXuatPhatTurn || currentXuatPhatTurn <= 0) {
+        showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước!');
+        return;
+    }
     if (currentXuatPhatQIndex < 9) {
         currentXuatPhatQIndex++;
         updateTab1Preview();
@@ -206,16 +244,26 @@ function onClickDatLaiVongThi() {
     clearInterval(xuatPhatTimerInterval);
     xuatPhatTimeLeft = 60;
     currentXuatPhatQIndex = 0;
+    currentXuatPhatTurn = 0;
+    for (let i = 1; i <= 4; i++) {
+        const btn = document.getElementById(`btn_luot_${i}`);
+        if (btn) btn.classList.remove('active');
+    }
     const timerEl = document.getElementById('preview_timer');
     if (timerEl) timerEl.innerText = "60";
     const statusEl = document.getElementById('preview_status_text');
     if (statusEl) statusEl.innerText = "Đã đặt lại";
     updateTab1Preview();
 
-    const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-    sendToProjector('XUAT_PHAT_RESET', { score });
+    sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, score: 0 });
     sendToProjector('RESET_S1_DE', { contestantId: 'ALL' });
-    showToast('Đã đặt lại vòng thi Xuất Phát');
+    
+    // Reset all other rounds
+    sendToProjector('RA_KHOI_RESET');
+    sendToProjector('VUOT_SONG_RESET');
+    sendToProjector('VINH_QUANG_RESET');
+
+    showToast('Đã đặt lại vòng thi Xuất Phát và toàn bộ các vòng khác');
 }
 
 function onClickDungNhac() {

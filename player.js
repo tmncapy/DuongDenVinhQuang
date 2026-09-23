@@ -2,13 +2,24 @@ let contestantId = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID)
 let currentRoomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
 let currentRoomAuth = localStorage.getItem('ddvq_room_auth') || '123456';
 let playerContestants = [];
-let currentS1TurnIndex = 1;
+let currentS1TurnIndex = 0;
 let s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
 let s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
 
 function updateS1RandomDeButtonUI() {
     const btn = document.getElementById('s1_random_btn');
     if (!btn) return;
+
+    if (!currentS1TurnIndex || currentS1TurnIndex <= 0) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        btn.style.background = '#475569';
+        btn.style.borderColor = '#64748b';
+        btn.style.boxShadow = 'none';
+        btn.innerHTML = `<span>🔒 CHƯA BẮT ĐẦU LƯỢT THI (ĐANG CHỜ MC CHỌN THÍ SINH)</span>`;
+        return;
+    }
 
     if (parseInt(currentS1TurnIndex) !== parseInt(contestantId)) {
         btn.disabled = true;
@@ -53,6 +64,20 @@ function getApiUrl(path) {
         return 'http://localhost:3000' + cleanPath;
     }
     return cleanPath;
+}
+
+function getPlayerSessionId() {
+    let sid = null;
+    try {
+        sid = sessionStorage.getItem('ddvq_player_session_id');
+        if (!sid) {
+            sid = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            sessionStorage.setItem('ddvq_player_session_id', sid);
+        }
+    } catch(e) {
+        sid = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+    return sid;
 }
 
 function parsePlayerUrlParams() {
@@ -137,8 +162,6 @@ function onSelectContestant(val) {
 function chooseContestantSlot(slotId) {
     slotId = parseInt(slotId) || 1;
     contestantId = slotId;
-    localStorage.setItem('contestant_id', slotId);
-    sessionStorage.setItem('ddvq_active_slot', slotId);
 
     const sel = document.getElementById('contestant_select');
     if (sel) sel.value = slotId;
@@ -157,6 +180,7 @@ function chooseContestantSlot(slotId) {
         contestantId: contestantId,
         roomCode: currentRoomCode,
         auth: currentRoomAuth,
+        sessionId: getPlayerSessionId(),
         name: myName
     };
 
@@ -176,24 +200,36 @@ function chooseContestantSlot(slotId) {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
+                localStorage.setItem('contestant_id', slotId);
+                sessionStorage.setItem('ddvq_active_slot', slotId);
                 const modal = document.getElementById('room_code_modal');
                 if (modal) modal.style.display = 'none';
                 showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
                 startHeartbeat();
             } else {
+                sessionStorage.removeItem('ddvq_active_slot');
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+                const modal = document.getElementById('room_code_modal');
+                if (modal) modal.style.display = 'flex';
                 if (errorBox) {
-                    errorBox.innerText = data.error || 'Mã phòng hoặc mật khẩu không chính xác!';
+                    errorBox.innerHTML = `⚠️ <strong>Không thể vào vị trí:</strong><br>${data.error || `Mật khẩu xác thực không đúng cho Thí sinh ${contestantId}!`}`;
                     errorBox.style.display = 'block';
+                    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
         })
-        .catch(() => {
+        .catch((err) => {
+            console.error("Join fallback error:", err);
+            localStorage.setItem('contestant_id', slotId);
+            sessionStorage.setItem('ddvq_active_slot', slotId);
             const modal = document.getElementById('room_code_modal');
             if (modal) modal.style.display = 'none';
             showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
             startHeartbeat();
         });
     } else {
+        localStorage.setItem('contestant_id', slotId);
+        sessionStorage.setItem('ddvq_active_slot', slotId);
         const modal = document.getElementById('room_code_modal');
         if (modal) modal.style.display = 'none';
         showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
@@ -247,6 +283,7 @@ function sendHeartbeat() {
         contestantId: contestantId,
         roomCode: currentRoomCode,
         auth: currentRoomAuth,
+        sessionId: getPlayerSessionId(),
         name: myName,
         timestamp: Date.now()
     };
@@ -260,12 +297,77 @@ function sendHeartbeat() {
     try {
         localStorage.setItem('ddvq_client_heartbeat', JSON.stringify(hbPayload));
     } catch(e) {}
+
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        fetch(getApiUrl('/api/action'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(hbPayload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.success === false) {
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+                sessionStorage.removeItem('ddvq_active_slot');
+                const modal = document.getElementById('room_code_modal');
+                const errorBox = document.getElementById('login_error_msg');
+                if (modal) modal.style.display = 'flex';
+                if (errorBox) {
+                    errorBox.innerHTML = `⚠️ <strong>Ngắt kết nối:</strong><br>${data.error || 'Vị trí này đã bị ngắt kết nối hoặc có người khác đăng nhập.'}`;
+                    errorBox.style.display = 'block';
+                }
+            }
+        })
+        .catch(() => {});
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     parsePlayerUrlParams();
 
-    // Fetch live state and contestant names immediately from server
+    // 1. Slot auto-restoration on F5 reload:
+    // If contestant was already selected earlier, enter directly without blocking modal
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramSlot = parseInt(urlParams.get('slot') || urlParams.get('ts') || '0');
+    const savedSlot = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID)
+        ? window.FIXED_CONTESTANT_ID
+        : (paramSlot || parseInt(sessionStorage.getItem('ddvq_active_slot')) || parseInt(localStorage.getItem('contestant_id')) || 0);
+
+    if (savedSlot >= 1 && savedSlot <= 4) {
+        chooseContestantSlot(savedSlot);
+        const modal = document.getElementById('room_code_modal');
+        if (modal) modal.style.display = 'none';
+        const sel = document.getElementById('contestant_select');
+        if (sel) {
+            sel.value = savedSlot;
+            if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) sel.disabled = true;
+        }
+    } else {
+        const modal = document.getElementById('room_code_modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            highlightLastChosenSlot();
+        }
+    }
+
+    // 2. Instant local round & timer restore from localStorage (zero delay on F5)
+    try {
+        const savedRound = localStorage.getItem('ddvq_active_round');
+        const savedTimerStr = localStorage.getItem('ddvq_current_timer');
+        let savedTimer = null;
+        if (savedTimerStr) {
+            try { savedTimer = JSON.parse(savedTimerStr); } catch(e) {}
+        }
+        if (savedRound || savedTimer) {
+            applyPlayerGameState({
+                type: 'FULL_STATE_SYNC',
+                activeRound: savedRound || savedTimer?.round,
+                currentTimer: savedTimer
+            });
+        }
+    } catch(e) {}
+
+    // 3. Fetch live state from server immediately
     if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
         fetch(getApiUrl('/api/state'))
             .then(res => res.json())
@@ -282,30 +384,198 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (data.roomAuth && !new URLSearchParams(window.location.search).get('auth')) {
                         currentRoomAuth = data.roomAuth;
                     }
+                    applyPlayerGameState(data);
                 }
             })
             .catch(() => {});
     }
 
-    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
-        chooseContestantSlot(window.FIXED_CONTESTANT_ID);
-        const sel = document.getElementById('contestant_select');
-        if (sel) {
-            sel.value = window.FIXED_CONTESTANT_ID;
-            sel.disabled = true;
+    // 4. Request current state from Controller/Projector/Server
+    const reqMsg = {
+        type: 'REQUEST_CURRENT_STATE',
+        role: `ts${contestantId}`,
+        contestantId: contestantId,
+        timestamp: Date.now()
+    };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(reqMsg);
+    }
+    if (playerChannel) {
+        try { playerChannel.postMessage(reqMsg); } catch(e) {}
+    }
+    try {
+        if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(reqMsg, '*');
         }
-        const reopenBtn = document.getElementById('btn_reopen_slot');
-        if (reopenBtn) reopenBtn.style.display = 'none';
-    } else {
-        // Show selection modal so the contestant can tap their name immediately.
-        // If they click the wrong name, F5 reloads and lets them select again seamlessly.
-        const modal = document.getElementById('room_code_modal');
-        if (modal) {
-            modal.style.display = 'flex';
-            highlightLastChosenSlot();
+    } catch(e) {}
+});
+
+function applyPlayerGameState(data) {
+    if (!data) return;
+
+    // 1. Determine active round
+    let round = data.activeRound || data.currentRound;
+    if (!round && data.latestAction && data.latestAction.type) {
+        const act = data.latestAction.type;
+        if (act.startsWith('XUAT_PHAT_')) round = 'XUAT_PHAT';
+        else if (act.startsWith('RA_KHOI_')) round = 'RA_KHOI';
+        else if (act.startsWith('VUOT_SONG_')) round = 'VUOT_SONG';
+        else if (act.startsWith('VINH_QUANG_')) round = 'VINH_QUANG';
+        else if (act === 'SWITCH_VIEW') {
+            const v = data.latestAction.viewNum;
+            if (v === 1) round = 'XUAT_PHAT';
+            else if (v === 2) round = 'RA_KHOI';
+            else if (v === 3 || v === 4 || v === 5) round = 'VUOT_SONG';
+            else if (v === 6 || v === 7) round = 'VINH_QUANG';
         }
     }
-});
+    if (!round && data.type) {
+        if (data.type.startsWith('XUAT_PHAT_')) round = 'XUAT_PHAT';
+        else if (data.type.startsWith('RA_KHOI_')) round = 'RA_KHOI';
+        else if (data.type.startsWith('VUOT_SONG_')) round = 'VUOT_SONG';
+        else if (data.type.startsWith('VINH_QUANG_')) round = 'VINH_QUANG';
+    }
+    if (!round) {
+        try { round = localStorage.getItem('ddvq_active_round'); } catch(e) {}
+    }
+
+    let sceneNum = 0;
+    if (round === 'XUAT_PHAT') sceneNum = 1;
+    else if (round === 'RA_KHOI') sceneNum = 2;
+    else if (round === 'VUOT_SONG') sceneNum = 3;
+    else if (round === 'VINH_QUANG') sceneNum = 4;
+    else if (round === 'CAU_HOI_PHU') sceneNum = 4;
+
+    if (sceneNum > 0) {
+        displaySceneView(sceneNum);
+        if (round) {
+            try { localStorage.setItem('ddvq_active_round', round); } catch(e) {}
+        }
+    }
+
+    // 2. Sync contestants and contestant's score
+    if (data.contestants && Array.isArray(data.contestants)) {
+        updatePlayerContestants(data.contestants);
+        const myData = data.contestants[contestantId - 1];
+        if (myData && myData.score !== undefined) {
+            updateContestantScoreDisplay(myData.score);
+        }
+    }
+
+    // 3. Sync Vuot Song grid & row
+    if (data.vuotSong) {
+        renderPlayerVSGrid(data.vuotSong);
+    }
+    if (data.vuotSongRow !== undefined && data.vuotSongRow > 0) {
+        highlightS3Row(data.vuotSongRow);
+    }
+
+    // 4. Sync Question Text & Index
+    const qText = data.questionText || data.currentQuestion?.questionText;
+    if (qText) {
+        if (sceneNum === 1 || !sceneNum) {
+            const el = document.getElementById('s1_question_text');
+            if (el) el.innerText = qText;
+        }
+        if (sceneNum === 2) {
+            const el = document.getElementById('s2_question_text');
+            if (el) el.innerText = qText;
+        }
+        if (sceneNum === 3) {
+            const el = document.getElementById('s3_question_text');
+            if (el) el.innerText = qText;
+        }
+        if (sceneNum === 4) {
+            const el = document.getElementById('s4_question_text');
+            if (el) el.innerText = qText;
+        }
+    }
+    const qIdx = data.questionIndex !== undefined ? data.questionIndex : data.currentQuestion?.questionIndex;
+    if (qIdx !== undefined) {
+        setS1QuestionIndex(qIdx - 1);
+    }
+
+    if (data.turnIndex !== undefined || data.currentXuatPhatTurn !== undefined) {
+        currentS1TurnIndex = parseInt(data.turnIndex !== undefined ? data.turnIndex : data.currentXuatPhatTurn) || 0;
+        updateS1RandomDeButtonUI();
+    }
+
+    // 5. Player Answer Submissions
+    if (data.playerAnswers) {
+        updateSubmissionStatusFromState(data);
+    }
+
+    // 6. Active Timer Synchronization ("nếu reload trong lúc tính thời gian thì tính ngay lúc đó luôn")
+    const timer = data.currentTimer;
+    if (timer && timer.startTime && timer.duration) {
+        const now = Date.now();
+        const targetTime = timer.targetTime || (timer.startTime + timer.duration * 1000);
+        const remainingSec = timer.remaining !== undefined ? timer.remaining : Math.max(0, Math.ceil((targetTime - now) / 1000));
+        const timerRound = timer.round || round;
+
+        if (remainingSec > 0) {
+            try { localStorage.setItem('ddvq_current_timer', JSON.stringify(timer)); } catch(e) {}
+
+            if (timerRound === 'XUAT_PHAT' || sceneNum === 1) {
+                if (!s1TimerInterval || Math.abs(s1TimeLeft - remainingSec) > 2) {
+                    startS1Timer(remainingSec);
+                }
+            } else if (timerRound === 'RA_KHOI' || sceneNum === 2) {
+                if (!s2TimerInterval || Math.abs(s2TimerStartTime - timer.startTime) > 1000) {
+                    startS2Timer(remainingSec, timer.startTime);
+                }
+            } else if (timerRound === 'VUOT_SONG' || sceneNum === 3) {
+                if (!s3TimerInterval || Math.abs(s3TimerStartTime - timer.startTime) > 1000) {
+                    startS3Timer(remainingSec, timer.startTime);
+                }
+            } else if (timerRound === 'VINH_QUANG' || sceneNum === 4) {
+                if (!s4TimerInterval || Math.abs(s4TimerStartTime - timer.startTime) > 1000) {
+                    startS4Timer(remainingSec, true, timer.startTime);
+                }
+            }
+        } else {
+            // Timer expired
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
+            if (timerRound === 'XUAT_PHAT' || sceneNum === 1) {
+                clearInterval(s1TimerInterval);
+                s1TimerInterval = null;
+                const clock = document.getElementById('s1_clock_box');
+                if (clock) clock.innerText = "0";
+                updateMasterRemainingTime("HẾT GIỜ");
+            } else if (timerRound === 'RA_KHOI' || sceneNum === 2) {
+                clearInterval(s2TimerInterval);
+                s2TimerInterval = null;
+                const timeBox = document.getElementById('s2_time_box');
+                if (timeBox) timeBox.innerText = "HẾT GIỜ";
+                updateMasterRemainingTime("HẾT GIỜ");
+                const s2Input = document.getElementById('s2_answer_input');
+                if (s2Input) {
+                    s2Input.disabled = true;
+                    s2Input.placeholder = "Đang khóa (Hết thời gian trả lời)";
+                }
+            } else if (timerRound === 'VUOT_SONG' || sceneNum === 3) {
+                clearInterval(s3TimerInterval);
+                s3TimerInterval = null;
+                updateMasterRemainingTime("HẾT GIỜ");
+                const s3Input = document.getElementById('s3_answer_input');
+                if (s3Input) {
+                    s3Input.placeholder = "Hàng ngang đã khóa. Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+                }
+            } else if (timerRound === 'VINH_QUANG' || sceneNum === 4) {
+                clearInterval(s4TimerInterval);
+                s4TimerInterval = null;
+                const timeBox = document.getElementById('s4_time_box');
+                if (timeBox) timeBox.innerText = "HẾT GIỜ";
+                updateMasterRemainingTime("HẾT GIỜ");
+                const s4Input = document.getElementById('s4_answer_input');
+                if (s4Input) {
+                    s4Input.disabled = true;
+                    s4Input.placeholder = "Đang khóa (Hết thời gian trả lời)";
+                }
+            }
+        }
+    }
+}
 
 function updatePlayerContestants(contestants) {
     if (!contestants || !Array.isArray(contestants)) return;
@@ -738,6 +1008,8 @@ function submitScene2Answer() {
         id: Math.random().toString(36).substring(2, 9),
         type: 'PLAYER_SUBMIT_ANSWER',
         contestantId: contestantId,
+        roomCode: currentRoomCode,
+        auth: currentRoomAuth,
         round: currentS2Round,
         answer: ans,
         time: timeStr,
@@ -809,6 +1081,8 @@ function submitScene3Answer(isVongThi = false) {
             id: Math.random().toString(36).substring(2, 9),
             type: 'PLAYER_SUBMIT_ANSWER',
             contestantId: contestantId,
+            roomCode: currentRoomCode,
+            auth: currentRoomAuth,
             round: 'VS',
             isVongThi: false,
             answer: ans,
@@ -881,6 +1155,8 @@ function submitScene3Answer(isVongThi = false) {
             id: Math.random().toString(36).substring(2, 9),
             type: 'PLAYER_SUBMIT_ANSWER',
             contestantId: contestantId,
+            roomCode: currentRoomCode,
+            auth: currentRoomAuth,
             round: 'VS',
             isVongThi: true,
             answer: finalAnswer,
@@ -935,9 +1211,9 @@ function startS1Timer(sec) {
     }, 1000);
 }
 
-function startS2Timer(sec) {
+function startS2Timer(sec, customStartTime = null) {
     clearInterval(s2TimerInterval);
-    s2TimerStartTime = Date.now();
+    s2TimerStartTime = customStartTime || Date.now();
     s2TimeLeft = sec;
     document.getElementById('s2_time_box').innerText = `${s2TimeLeft}s`;
     updateMasterRemainingTime(`${s2TimeLeft}s`);
@@ -997,6 +1273,8 @@ function submitScene4Answer() {
         id: Math.random().toString(36).substring(2, 9),
         type: 'PLAYER_SUBMIT_ANSWER',
         contestantId: contestantId,
+        roomCode: currentRoomCode,
+        auth: currentRoomAuth,
         round: 'VQ',
         answer: ans,
         time: timeStr,
@@ -1068,12 +1346,12 @@ function clearPlayerSubmissionStatus(round) {
     }
 }
 
-function startS4Timer(sec, forceRestart = false) {
+function startS4Timer(sec, forceRestart = false, customStartTime = null) {
     if (s4TimeLeft > 0 && !forceRestart && s4TimerInterval) {
         return;
     }
     clearInterval(s4TimerInterval);
-    s4TimerStartTime = Date.now();
+    s4TimerStartTime = customStartTime || Date.now();
     s4TimeLeft = sec;
     if (document.getElementById('s4_time_box')) document.getElementById('s4_time_box').innerText = `${s4TimeLeft}s`;
     updateMasterRemainingTime(`${s4TimeLeft}s`);
@@ -1102,9 +1380,9 @@ function startS4Timer(sec, forceRestart = false) {
     }, 1000);
 }
 
-function startS3Timer(sec) {
+function startS3Timer(sec, customStartTime = null) {
     clearInterval(s3TimerInterval);
-    s3TimerStartTime = Date.now();
+    s3TimerStartTime = customStartTime || Date.now();
     s3TimeLeft = sec;
     updateMasterRemainingTime(`${s3TimeLeft}s`);
 
@@ -1188,59 +1466,8 @@ function handlePlayerMessage(data) {
     }
 
     // Full State Sync or Update State
-    if (data.type === 'FULL_STATE_SYNC' || data.type === 'UPDATE_STATE' || data.type === 'UPDATE_SCORES') {
-        if (data.vuotSong) {
-            renderPlayerVSGrid(data.vuotSong);
-        }
-        if (data.activeRound === 'XUAT_PHAT') {
-            autoSwitchScene(1);
-            s3RoundStartTime = 0;
-            localStorage.removeItem('s3_round_start_time');
-        } else if (data.activeRound === 'RA_KHOI') {
-            autoSwitchScene(2);
-            currentS2Round = 'RK';
-            s3RoundStartTime = 0;
-            localStorage.removeItem('s3_round_start_time');
-        } else if (data.activeRound === 'VUOT_SONG') {
-            autoSwitchScene(3);
-            if (!s3RoundStartTime) {
-                s3RoundStartTime = Date.now();
-                localStorage.setItem('s3_round_start_time', s3RoundStartTime);
-            }
-            const s3Input = document.getElementById('s3_answer_input');
-            if (s3Input) {
-                s3Input.disabled = false;
-                if (!s3TimerStartTime || s3TimeLeft <= 0) {
-                    s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
-                }
-            }
-        } else if (data.activeRound === 'VINH_QUANG') {
-            autoSwitchScene(4);
-            currentS2Round = 'VQ';
-            s3RoundStartTime = 0;
-            localStorage.removeItem('s3_round_start_time');
-        }
-
-        if (data.questionText) {
-            if (data.activeRound === 'XUAT_PHAT' || !data.activeRound) {
-                if (document.getElementById('s1_question_text')) document.getElementById('s1_question_text').innerText = data.questionText;
-            }
-            if (data.activeRound === 'RA_KHOI') {
-                if (document.getElementById('s2_question_text')) document.getElementById('s2_question_text').innerText = data.questionText;
-            }
-            if (data.activeRound === 'VINH_QUANG') {
-                if (document.getElementById('s4_question_text')) document.getElementById('s4_question_text').innerText = data.questionText;
-            }
-            if (data.activeRound === 'VUOT_SONG') {
-                if (document.getElementById('s3_question_text')) document.getElementById('s3_question_text').innerText = data.questionText;
-            }
-        }
-        if (data.questionIndex !== undefined) {
-            setS1QuestionIndex(data.questionIndex - 1);
-        }
-        if (data.playerAnswers) {
-            updateSubmissionStatusFromState(data);
-        }
+    if (data.type === 'FULL_STATE_SYNC' || data.type === 'INITIAL_STATE_SYNC' || data.type === 'UPDATE_STATE' || data.type === 'UPDATE_SCORES' || (!data.type && (data.activeRound || data.roomCode))) {
+        applyPlayerGameState(data);
         return;
     }
 
@@ -1277,7 +1504,7 @@ function handlePlayerMessage(data) {
         autoSwitchScene(1);
 
         if (data.turnIndex !== undefined || data.currentXuatPhatTurn !== undefined) {
-            currentS1TurnIndex = parseInt(data.turnIndex || data.currentXuatPhatTurn);
+            currentS1TurnIndex = parseInt(data.turnIndex !== undefined ? data.turnIndex : data.currentXuatPhatTurn) || 0;
         }
 
         if (data.type === 'XUAT_PHAT_RANDOM_DE') {
@@ -1293,6 +1520,7 @@ function handlePlayerMessage(data) {
                 if (data.deIndex) s1ChosenDeMap[tIdx] = data.deIndex;
             }
         } else if (data.type === 'XUAT_PHAT_RESET') {
+            currentS1TurnIndex = parseInt(data.turnIndex) || 0;
             s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
             s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
         }
@@ -1312,7 +1540,18 @@ function handlePlayerMessage(data) {
         }
 
         if (data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI') {
-            startS1Timer(data.duration || 60);
+            const startTime = data.startTime || Date.now();
+            const duration = data.duration || 60;
+            const remaining = data.startTime ? Math.max(0, Math.ceil(((startTime + duration * 1000) - Date.now()) / 1000)) : duration;
+            startS1Timer(remaining);
+            try {
+                localStorage.setItem('ddvq_current_timer', JSON.stringify({
+                    round: 'XUAT_PHAT',
+                    duration: duration,
+                    startTime: startTime,
+                    targetTime: startTime + duration * 1000
+                }));
+            } catch(e) {}
         } else if (data.type === 'XUAT_PHAT_RIGHT') {
             const btn = document.getElementById(`s1_btn_${s1QIndex + 1}`);
             if (btn) btn.className = 's1-page-btn correct';
@@ -1321,6 +1560,8 @@ function handlePlayerMessage(data) {
             if (btn) btn.className = 's1-page-btn wrong';
         } else if (data.type === 'XUAT_PHAT_RESET') {
             clearInterval(s1TimerInterval);
+            s1TimerInterval = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             updateMasterRemainingTime('--');
             const clockEl = document.getElementById('s1_clock_box');
             if (clockEl) clockEl.innerText = "60";
@@ -1345,6 +1586,8 @@ function handlePlayerMessage(data) {
             clearPlayerSubmissionStatus('RK');
             s2TimerStartTime = 0;
             clearInterval(s2TimerInterval);
+            s2TimerInterval = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             const s2Input = document.getElementById('s2_answer_input');
             if (s2Input) {
                 s2Input.value = "";
@@ -1354,11 +1597,23 @@ function handlePlayerMessage(data) {
             document.getElementById('s2_time_box').innerText = "Thời gian";
             updateMasterRemainingTime('--');
         } else if (data.type === 'RA_KHOI_START_TIMER') {
-            s2TimerStartTime = Date.now();
-            startS2Timer(data.duration || 30);
+            const startTime = data.startTime || Date.now();
+            const duration = data.duration || 30;
+            const remaining = data.startTime ? Math.max(0, Math.ceil(((startTime + duration * 1000) - Date.now()) / 1000)) : duration;
+            startS2Timer(remaining, startTime);
+            try {
+                localStorage.setItem('ddvq_current_timer', JSON.stringify({
+                    round: 'RA_KHOI',
+                    duration: duration,
+                    startTime: startTime,
+                    targetTime: startTime + duration * 1000
+                }));
+            } catch(e) {}
         } else if (data.type === 'RA_KHOI_RESET') {
             clearInterval(s2TimerInterval);
+            s2TimerInterval = null;
             s2TimerStartTime = 0;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             document.getElementById('s2_time_box').innerText = "Thời gian";
             updateMasterRemainingTime('--');
             document.getElementById('s2_question_text').innerText = "Đang chờ câu hỏi Ra Khơi...";
@@ -1395,6 +1650,8 @@ function handlePlayerMessage(data) {
             clearPlayerSubmissionStatus('VS');
             s3TimerStartTime = 0;
             clearInterval(s3TimerInterval);
+            s3TimerInterval = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             updateMasterRemainingTime('--');
             const s3Input = document.getElementById('s3_answer_input');
             if (s3Input) {
@@ -1403,14 +1660,26 @@ function handlePlayerMessage(data) {
                 s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
             }
         } else if (data.type === 'VUOT_SONG_START_TIMER') {
-            s3TimerStartTime = Date.now();
-            startS3Timer(data.duration || 20);
+            const startTime = data.startTime || Date.now();
+            const duration = data.duration || 20;
+            const remaining = data.startTime ? Math.max(0, Math.ceil(((startTime + duration * 1000) - Date.now()) / 1000)) : duration;
+            startS3Timer(remaining, startTime);
+            try {
+                localStorage.setItem('ddvq_current_timer', JSON.stringify({
+                    round: 'VUOT_SONG',
+                    duration: duration,
+                    startTime: startTime,
+                    targetTime: startTime + duration * 1000
+                }));
+            } catch(e) {}
         } else if (data.type === 'VUOT_SONG_RESET') {
             highlightS3Row(0);
             playerOpenedRows = {};
             renderPlayerVSGrid(null, {});
             clearInterval(s3TimerInterval);
+            s3TimerInterval = null;
             s3TimerStartTime = 0;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             updateMasterRemainingTime('--');
             s3RoundStartTime = Date.now();
             localStorage.setItem('s3_round_start_time', s3RoundStartTime);
@@ -1437,6 +1706,8 @@ function handlePlayerMessage(data) {
             clearPlayerSubmissionStatus('VQ');
             s4TimerStartTime = 0;
             clearInterval(s4TimerInterval);
+            s4TimerInterval = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             updateMasterRemainingTime('--');
             const s4Input = document.getElementById('s4_answer_input');
             if (s4Input) {
@@ -1446,14 +1717,36 @@ function handlePlayerMessage(data) {
             }
             if (document.getElementById('s4_time_box')) document.getElementById('s4_time_box').innerText = "Thời gian";
         } else if (data.type === 'VINH_QUANG_START_TIMER') {
-            s4TimerStartTime = Date.now();
-            startS4Timer(data.duration || 25);
+            const startTime = data.startTime || Date.now();
+            const duration = data.duration || 25;
+            const remaining = data.startTime ? Math.max(0, Math.ceil(((startTime + duration * 1000) - Date.now()) / 1000)) : duration;
+            startS4Timer(remaining, true, startTime);
+            try {
+                localStorage.setItem('ddvq_current_timer', JSON.stringify({
+                    round: 'VINH_QUANG',
+                    duration: duration,
+                    startTime: startTime,
+                    targetTime: startTime + duration * 1000
+                }));
+            } catch(e) {}
         } else if (data.type === 'VINH_QUANG_START_TIMER_5S') {
-            s4TimerStartTime = Date.now();
-            startS4Timer(5);
+            const startTime = data.startTime || Date.now();
+            const duration = 5;
+            const remaining = data.startTime ? Math.max(0, Math.ceil(((startTime + duration * 1000) - Date.now()) / 1000)) : duration;
+            startS4Timer(remaining, true, startTime);
+            try {
+                localStorage.setItem('ddvq_current_timer', JSON.stringify({
+                    round: 'VINH_QUANG',
+                    duration: duration,
+                    startTime: startTime,
+                    targetTime: startTime + duration * 1000
+                }));
+            } catch(e) {}
         } else if (data.type === 'VINH_QUANG_RESET') {
             clearInterval(s4TimerInterval);
+            s4TimerInterval = null;
             s4TimerStartTime = 0;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
             updateMasterRemainingTime('--');
             if (document.getElementById('s4_time_box')) document.getElementById('s4_time_box').innerText = "Thời gian";
             if (document.getElementById('s4_question_text')) document.getElementById('s4_question_text').innerText = "Đang chờ câu hỏi Vinh Quang...";
@@ -1478,7 +1771,35 @@ function handlePlayerMessage(data) {
         updateSubmissionStatusFromState(data);
     }
 
-    // Remote Reload / Kick handlers for player recovery
+    // Remote Reload / Kick / Room Credential Change handlers
+    if (data.type === 'ROOM_CREDENTIALS_CHANGED' || data.type === 'SET_ROOM_CODE') {
+        let isInvalid = false;
+        let reason = '';
+        if (data.roomCode && currentRoomCode && data.roomCode !== currentRoomCode) {
+            isInvalid = true;
+            reason = `Mã phòng đã được Ban Tổ Chức đổi thành: <strong>${data.roomCode}</strong>.`;
+        } else if (data.slotAuth && contestantId && currentRoomAuth) {
+            const expectedAuth = data.slotAuth[contestantId];
+            if (expectedAuth && currentRoomAuth !== expectedAuth && currentRoomAuth !== data.roomAuth) {
+                isInvalid = true;
+                reason = `Mật khẩu xác thực cho Thí sinh ${contestantId} đã được Ban Tổ Chức làm mới.`;
+            }
+        }
+        if (isInvalid) {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            sessionStorage.removeItem('ddvq_active_slot');
+            const modal = document.getElementById('room_code_modal');
+            const errorBox = document.getElementById('login_error_msg');
+            if (modal) modal.style.display = 'flex';
+            if (errorBox) {
+                errorBox.innerHTML = `🚫 <strong>Phiên thi đấu đã hết hạn:</strong><br>${reason}<br>Vui lòng quét lại mã QR mới nhất từ Ban Tổ Chức để tiếp tục.`;
+                errorBox.style.display = 'block';
+            }
+            showToast('🚫 Mã phòng hoặc Mật khẩu đã được cập nhật lại!');
+            return;
+        }
+    }
+
     if (data.type === 'RELOAD_CLIENT') {
         const target = data.target || data.role;
         const myRole = `ts${contestantId}`;
@@ -1497,10 +1818,14 @@ function handlePlayerMessage(data) {
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             sessionStorage.removeItem('ddvq_active_slot');
             localStorage.removeItem('contestant_id');
+            const modal = document.getElementById('room_code_modal');
+            const errorBox = document.getElementById('login_error_msg');
+            if (modal) modal.style.display = 'flex';
+            if (errorBox) {
+                errorBox.innerHTML = `⚠️ <strong>Thông báo:</strong><br>Bạn đã được mời ra khỏi vị trí Thí sinh ${contestantId} bởi Ban Tổ Chức.`;
+                errorBox.style.display = 'block';
+            }
             showToast('⚠️ Bạn đã được mời ra khỏi vị trí thí sinh này.');
-            setTimeout(() => {
-                reopenSlotSelection();
-            }, 200);
         }
     }
 }
@@ -1557,6 +1882,13 @@ fetchCurrentState();
 setInterval(fetchCurrentState, 2000);
 
 function triggerRandomDeFromPlayer() {
+    if (!currentS1TurnIndex || currentS1TurnIndex <= 0) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Vòng thi Xuất Phát chưa bắt đầu lượt thi!`);
+        }
+        return;
+    }
+
     if (parseInt(currentS1TurnIndex) !== parseInt(contestantId)) {
         if (typeof showToast === 'function') {
             showToast(`⚠️ Chưa đến lượt thi của bạn! (Hiện tại đang là lượt Thí sinh ${currentS1TurnIndex})`);

@@ -198,5 +198,11 @@ function onClickRKDatLai() {
             timestamp: Date.now()
         });
     }
-    showToast('Đã đặt lại vòng Ra Khơi: Đã dừng và ẩn đoạn clip!');
+
+    // Reset all other rounds
+    sendToProjector('XUAT_PHAT_RESET');
+    sendToProjector('VUOT_SONG_RESET');
+    sendToProjector('VINH_QUANG_RESET');
+
+    showToast('Đã đặt lại vòng Ra Khơi và toàn bộ các vòng khác');
 }

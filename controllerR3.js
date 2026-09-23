@@ -39,12 +39,14 @@ function selectVSRow(row) {
         }
     });
 
-    // Clear contestant inputs on controller for the new horizontal row
-    for (let i = 1; i <= 5; i++) {
-        const ansEl = document.getElementById(`ts${i}_ans_vs`);
-        if (ansEl) ansEl.value = '';
+    // Clear contestant 20s inputs on controller for the new horizontal row
+    for (let i = 1; i <= 4; i++) {
         const extraEl = document.getElementById(`ts${i}_extra_vs`);
         if (extraEl) extraEl.value = '';
+        const ansEl = document.getElementById(`ts${i}_ans_vs`);
+        if (ansEl && !ansEl.value.startsWith('[CNV]')) {
+            ansEl.value = '';
+        }
     }
 
     sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VS' });
@@ -208,8 +210,11 @@ function onClickVSShowAnswers() {
             timeVal = '00.00';
         }
 
+        const rawBase = gameData.contestants?.[i-1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`;
+        const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+
         contestants.push({
-            name: gameData.contestants?.[i-1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`,
+            name: baseName,
             answer: ansVal,
             time: timeVal
         });
@@ -236,38 +241,34 @@ function resetVSContestantBell(tsIdx) {
     if (tsIdx === 'ALL' || !tsIdx) {
         window.vsSubmissions = {};
         for (let i = 1; i <= 4; i++) {
-            const extraInput = document.getElementById(`ts${i}_extra_vs`);
-            if (extraInput) extraInput.value = '';
             const ansInput = document.getElementById(`ts${i}_ans_vs`);
-            if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.includes('[CNV]'))) {
+            if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.startsWith('[CNV]'))) {
                 ansInput.value = '';
             }
             const nameInput = document.getElementById(`ts${i}_name_vs`);
             if (nameInput) {
                 const rawBase = gameData.contestants?.[i - 1]?.name || `Thí sinh ${i}`;
-                const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+                const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
                 nameInput.value = baseName;
                 nameInput.style.color = '#000';
-                nameInput.style.fontWeight = 'normal';
+                nameInput.style.fontWeight = 'bold';
             }
         }
         sendToProjector('RESET_VS_BELL', { contestantId: 'ALL' });
         if (typeof showToast === 'function') showToast('Đã reset nút chuông cho tất cả thí sinh');
     } else {
         if (window.vsSubmissions) delete window.vsSubmissions[tsIdx];
-        const extraInput = document.getElementById(`ts${tsIdx}_extra_vs`);
-        if (extraInput) extraInput.value = '';
         const ansInput = document.getElementById(`ts${tsIdx}_ans_vs`);
-        if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.includes('[CNV]'))) {
+        if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.startsWith('[CNV]'))) {
             ansInput.value = '';
         }
         const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
         if (nameInput) {
             const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
-            const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+            const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
             nameInput.value = baseName;
             nameInput.style.color = '#000';
-            nameInput.style.fontWeight = 'normal';
+            nameInput.style.fontWeight = 'bold';
         }
         sendToProjector('RESET_VS_BELL', { contestantId: tsIdx });
         if (typeof showToast === 'function') showToast(`Đã reset nút chuông cho Thí sinh ${tsIdx}`);
@@ -309,5 +310,11 @@ function onClickVSDatLai() {
     if (aTextEl) aTextEl.innerText = "Đáp án...";
     
     sendToProjector('VUOT_SONG_RESET');
-    showToast('Đã đặt lại vòng Vượt Sóng');
+    
+    // Reset all other rounds
+    sendToProjector('XUAT_PHAT_RESET');
+    sendToProjector('RA_KHOI_RESET');
+    sendToProjector('VINH_QUANG_RESET');
+
+    showToast('Đã đặt lại vòng Vượt Sóng và toàn bộ các vòng khác');
 }

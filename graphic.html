@@ -139,8 +139,23 @@
         /* VIEW 2 */
         #view-file-2 { background-color: transparent; }
         #view-file-2 #container { position: relative; width: 1920px; height: 1080px; background-image: url('Images/RKAnswer.png'); background-size: cover; }
-        #view-file-2 .text-box { position: absolute; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; }
-        #view-file-2 .dap-an { color: rgb(0, 32, 96); background-color: rgba(255, 255, 255, 0.8); }
+        #view-file-2 .text-box { position: absolute; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #view-file-2 .dap-an, #rk-scene-answers .dap-an, #dap_an_ts1, #dap_an_ts2, #dap_an_ts3, #dap_an_ts4 {
+            color: #dc2626 !important;
+            background-color: transparent !important;
+            display: block !important;
+            line-height: 60.624px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            padding: 0 20px !important;
+            box-sizing: border-box !important;
+            font-size: 26px !important;
+            font-weight: 800 !important;
+            max-width: 947.688px !important;
+            max-height: 60.624px !important;
+        }
 
         /* VIEW 3 */
         #view-file-3 { background-color: transparent; }
@@ -152,14 +167,28 @@
         #view-file-4 .scene-container { position: relative; width: 1920px; height: 1080px; }
         #view-file-4 .ques-box { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; z-index: 1; object-fit: fill; }
         #view-file-4 .round-name { position: absolute; left: 269.856px; top: 763.344px; width: 880px; height: 47.376px; z-index: 5; display: flex; align-items: center; justify-content: flex-start; color: #002060; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        #view-file-4 .question-box { position: absolute; left: 210.096px; top: 810.72px; width: 1437.984px; height: 205.488px; z-index: 5; display: flex; align-items: flex-start; justify-content: flex-start; padding: 15px 25px; font-size: 28px; color: #ffffff; font-weight: bold; line-height: 1.35; text-align: left; box-sizing: border-box; }
+        #view-file-4 .question-box { position: absolute; left: 210.096px; top: 812.72px; width: 1445px; height: 208px; z-index: 5; display: flex; align-items: flex-start; justify-content: flex-start; padding: 15px 25px; font-size: 28px; color: #ffffff; font-weight: bold; line-height: 1.35; text-align: left; box-sizing: border-box; }
         #view-file-4 .clock-box { position: absolute; left: 1653.984px; top: 810.72px; width: 169.344px; height: 169.344px; z-index: 5; display: flex; align-items: center; justify-content: center; background: transparent; color: #ffffff; font-size: 58px; font-weight: 900; cursor: pointer; user-select: none; }
 
         /* VIEW 5 */
         #view-file-5 { background: url('Images/VSAnswer.png') no-repeat center center; background-size: 100% 100%; }
-        #view-file-5 .element { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: bold; background: transparent; border: none; text-shadow: none; font-size: 24px; }
-        #view-file-5 .dap-an { color: rgb(0, 32, 96); }
-        #view-file-5 .other { color: white; }
+        #view-file-5 .element { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: bold; background: transparent; border: none; text-shadow: none; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #view-file-5 .dap-an, #vs_ans_val_1, #vs_ans_val_2, #vs_ans_val_3, #vs_ans_val_4 {
+            color: #dc2626 !important;
+            display: block !important;
+            line-height: 60.624px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            padding: 0 20px !important;
+            box-sizing: border-box !important;
+            font-size: 26px !important;
+            font-weight: 800 !important;
+            max-width: 947.664px !important;
+            max-height: 60.624px !important;
+        }
+        #view-file-5 .other { color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* VIEW 6 */
         #view-file-6 {
@@ -226,7 +255,7 @@
         #view-file-7 .ques-box { position: absolute; left: 0px; top: 0px; width: 1920px; height: 1080px; z-index: 1; object-fit: fill; }
         #view-file-7 .round-name { position: absolute; left: 269.856px; top: 763.344px; width: 880px; height: 47.376px; z-index: 5; display: flex; align-items: center; justify-content: flex-start; color: #002060; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         #view-file-7 .selected-pack { position: absolute; left: 1160.64px; top: 763.344px; width: 487.584px; height: 47.376px; z-index: 5; display: flex; align-items: center; justify-content: center; color: #b91c1c; font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        #view-file-7 .question-box { position: absolute; left: 210.096px; top: 810.72px; width: 1437.984px; height: 205.488px; z-index: 5; display: flex; align-items: flex-start; justify-content: flex-start; padding: 15px 25px; font-size: 28px; color: #ffffff; font-weight: bold; line-height: 1.35; text-align: left; box-sizing: border-box; }
+        #view-file-7 .question-box { position: absolute; left: 210.096px; top: 812.72px; width: 1445px; height: 208px; z-index: 5; display: flex; align-items: flex-start; justify-content: flex-start; padding: 15px 25px; font-size: 28px; color: #ffffff; font-weight: bold; line-height: 1.35; text-align: left; box-sizing: border-box; }
         #view-file-7 .vq-star-gif { position: absolute; left: -280px; top: -140px; width: 340px; height: 340px; object-fit: contain; pointer-events: none; z-index: 10; display: none; filter: drop-shadow(0 0 15px rgba(253, 224, 71, 0.9)); }
         #view-file-7 .clock-box { position: absolute; left: 1653.984px; top: 810.72px; width: 169.344px; height: 169.344px; z-index: 5; display: flex; align-items: center; justify-content: center; background: transparent; color: #ffffff; font-size: 58px; font-weight: 900; cursor: pointer; user-select: none; }
 
@@ -236,8 +265,24 @@
             background-size: cover;
             background-repeat: no-repeat;
         }
-        #view-file-8 .item { position: absolute; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box; font-size: 24px; }
-        #view-file-8 .ans-ts { color: rgb(0, 32, 96); text-shadow: none; -webkit-text-stroke: 0; }
+        #view-file-8 .item { position: absolute; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #view-file-8 .ans-ts, #vq_ans_ts1, #vq_ans_ts2, #vq_ans_ts3, #vq_ans_ts4 {
+            color: #dc2626 !important;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0 !important;
+            display: block !important;
+            line-height: 60.624px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            padding: 0 20px !important;
+            box-sizing: border-box !important;
+            font-size: 26px !important;
+            font-weight: 800 !important;
+            max-width: 927.072px !important;
+            max-height: 60.624px !important;
+        }
         #view-file-8 .vq-score { font-size: 50px !important; }
     </style>
 </head>
@@ -344,19 +389,19 @@
             <div id="rk-scene-answers" style="display: none; position: relative; width: 1920px; height: 1080px; background-image: url('Images/RKAnswer.png'); background-size: cover;">
                 <div class="text-box" id="thoi_gian_ts1" style="left: 412.138px; top: 289.008px; width: 190.085px; height: 141.696px;">00.00</div>
                 <div class="text-box" id="ten_ts1" style="left: 602.223px; top: 298.08px; width: 947.688px; height: 60.624px;">TEN TS1</div>
-                <div class="text-box dap-an" id="dap_an_ts1" style="left: 602.223px; top: 358.704px; width: 947.688px; height: 60.624px;">DAP AN TS1</div>
+                <div class="text-box dap-an" id="dap_an_ts1" style="left: 602.223px; top: 358.704px; width: 947.688px; height: 60.624px;"></div>
                 
                 <div class="text-box" id="thoi_gian_ts2" style="left: 412.138px; top: 463.824px; width: 190.085px; height: 141.696px;">00.00</div>
                 <div class="text-box" id="ten_ts2" style="left: 602.223px; top: 473.04px; width: 947.688px; height: 60.624px;">TEN TS2</div>
-                <div class="text-box dap-an" id="dap_an_ts2" style="left: 602.223px; top: 533.664px; width: 947.688px; height: 60.624px;">DAP AN TS2</div>
+                <div class="text-box dap-an" id="dap_an_ts2" style="left: 602.223px; top: 533.664px; width: 947.688px; height: 60.624px;"></div>
                 
                 <div class="text-box" id="thoi_gian_ts3" style="left: 412.138px; top: 635.76px; width: 190.085px; height: 141.696px;">00.00</div>
                 <div class="text-box" id="ten_ts3" style="left: 602.223px; top: 644.976px; width: 947.688px; height: 60.624px;">TEN TS3</div>
-                <div class="text-box dap-an" id="dap_an_ts3" style="left: 602.223px; top: 705.6px; width: 947.688px; height: 60.624px;">DAP AN TS3</div>
+                <div class="text-box dap-an" id="dap_an_ts3" style="left: 602.223px; top: 705.6px; width: 947.688px; height: 60.624px;"></div>
                 
                 <div class="text-box" id="thoi_gian_ts4" style="left: 412.138px; top: 803.808px; width: 190.085px; height: 141.696px;">00.00</div>
                 <div class="text-box" id="ten_ts4" style="left: 602.223px; top: 813.024px; width: 947.688px; height: 60.624px;">TEN TS4</div>
-                <div class="text-box dap-an" id="dap_an_ts4" style="left: 602.223px; top: 873.648px; width: 947.688px; height: 60.624px;">DAP AN TS4</div>
+                <div class="text-box dap-an" id="dap_an_ts4" style="left: 602.223px; top: 873.648px; width: 947.688px; height: 60.624px;"></div>
             </div>
         </div>
 

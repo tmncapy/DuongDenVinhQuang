@@ -58,6 +58,17 @@ const wsClients = new Set();
 let serverState = {
   roomCode: 'DDVQ2026',
   roomAuth: '123456',
+  slotAuth: {
+    1: '101234',
+    2: '202345',
+    3: '303456',
+    4: '404567'
+  },
+  activeRound: 'XUAT_PHAT',
+  currentTimer: null,
+  currentQuestion: null,
+  vuotSong: null,
+  vuotSongRow: 0,
   contestants: [
     { name: 'Thí sinh 1', score: 0 },
     { name: 'Thí sinh 2', score: 0 },
@@ -79,12 +90,12 @@ let serverState = {
   },
   playerAnswers: {},
   connectedClients: {
-    ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
-    ts2: { connected: false, name: 'Thí sinh 2', lastSeen: 0 },
-    ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
-    ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
-    host: { connected: false, name: 'Máy MC', lastSeen: 0 },
-    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
+    ts1: { connected: false, sessionId: null, name: 'Thí sinh 1', lastSeen: 0 },
+    ts2: { connected: false, sessionId: null, name: 'Thí sinh 2', lastSeen: 0 },
+    ts3: { connected: false, sessionId: null, name: 'Thí sinh 3', lastSeen: 0 },
+    ts4: { connected: false, sessionId: null, name: 'Thí sinh 4', lastSeen: 0 },
+    host: { connected: false, sessionId: null, name: 'Máy MC', lastSeen: 0 },
+    projector: { connected: false, sessionId: null, name: 'Máy Chiếu', lastSeen: 0 }
   },
   buzzerState: {
     buzzerUnlocked: false,
@@ -93,6 +104,69 @@ let serverState = {
   latestAction: null,
   lastUpdated: Date.now()
 };
+
+function computeSlotAuth(masterAuth, slot) {
+  if (!masterAuth) masterAuth = '123456';
+  let hash = 5381;
+  const str = `${masterAuth}_SLOT_${slot}_DDVQ2026_SECRET`;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const pin = Math.abs(hash % 900000) + 100000;
+  return `${pin}`;
+}
+
+function getSlotAuth(slot) {
+  const s = parseInt(slot) || 1;
+  if (serverState.slotAuth && serverState.slotAuth[s]) {
+    return serverState.slotAuth[s];
+  }
+  return computeSlotAuth(serverState.roomAuth, s);
+}
+
+function getAllSlotAuths() {
+  return {
+    1: getSlotAuth(1),
+    2: getSlotAuth(2),
+    3: getSlotAuth(3),
+    4: getSlotAuth(4)
+  };
+}
+
+function isValidAuthForSlot(slot, auth) {
+  if (!auth) return false;
+  const s = parseInt(slot) || 0;
+  const cleanAuth = auth.toString().trim();
+  if (serverState.roomAuth && cleanAuth === serverState.roomAuth) {
+    return true; // Master room password can authenticate any slot (admin privilege)
+  }
+  if (s >= 1 && s <= 4) {
+    const expected = getSlotAuth(s);
+    return cleanAuth === expected;
+  }
+  return false;
+}
+
+function getActiveTimerPayload() {
+  if (!serverState.currentTimer) return null;
+  const now = Date.now();
+  const remaining = Math.max(0, Math.ceil((serverState.currentTimer.targetTime - now) / 1000));
+  if (remaining > 0) {
+    return {
+      round: serverState.currentTimer.round,
+      duration: serverState.currentTimer.duration,
+      startTime: serverState.currentTimer.startTime,
+      targetTime: serverState.currentTimer.targetTime,
+      remaining: remaining,
+      elapsed: Math.floor((now - serverState.currentTimer.startTime) / 1000),
+      questionText: serverState.currentTimer.questionText || ''
+    };
+  } else {
+    serverState.currentTimer = null;
+    return null;
+  }
+}
 
 // Function to broadcast messages to all connected WebSocket & SSE clients (LAN & Web)
 function broadcastToClients(data, senderWs = null) {
@@ -135,6 +209,7 @@ function handleIncomingAction(action, senderWs = null) {
     if (role && serverState.connectedClients[role]) {
       serverState.connectedClients[role].connected = true;
       serverState.connectedClients[role].lastSeen = now;
+      if (action.sessionId) serverState.connectedClients[role].sessionId = action.sessionId;
       if (action.name) serverState.connectedClients[role].name = action.name;
     }
   }
@@ -144,11 +219,13 @@ function handleIncomingAction(action, senderWs = null) {
     const targetRole = action.role || action.target || (action.contestantId ? `ts${action.contestantId}` : null);
     if (targetRole && serverState.connectedClients[targetRole]) {
       serverState.connectedClients[targetRole].connected = false;
+      serverState.connectedClients[targetRole].sessionId = null;
       serverState.connectedClients[targetRole].lastSeen = 0;
       serverState.connectedClients[targetRole].name = '';
     } else if (targetRole === 'all') {
       Object.keys(serverState.connectedClients).forEach(r => {
         serverState.connectedClients[r].connected = false;
+        serverState.connectedClients[r].sessionId = null;
         serverState.connectedClients[r].lastSeen = 0;
         serverState.connectedClients[r].name = '';
       });
@@ -161,6 +238,22 @@ function handleIncomingAction(action, senderWs = null) {
     if (action.roomAuth !== undefined || action.auth !== undefined) {
       serverState.roomAuth = (action.roomAuth || action.auth || '').trim();
     }
+    if (action.slotAuth && typeof action.slotAuth === 'object') {
+      serverState.slotAuth = Object.assign({}, serverState.slotAuth, action.slotAuth);
+    }
+    // Invalidate all existing player connections when room credentials change
+    Object.keys(serverState.connectedClients).forEach(r => {
+      serverState.connectedClients[r].connected = false;
+      serverState.connectedClients[r].sessionId = null;
+      serverState.connectedClients[r].lastSeen = 0;
+    });
+    broadcastToClients({
+      type: 'ROOM_CREDENTIALS_CHANGED',
+      roomCode: serverState.roomCode,
+      roomAuth: serverState.roomAuth,
+      slotAuth: getAllSlotAuths(),
+      timestamp: now
+    });
   }
 
   // Handle Contestant updates
@@ -249,6 +342,135 @@ function handleIncomingAction(action, senderWs = null) {
     action.buzzerState = serverState.buzzerState;
   }
 
+  // Track Active Round across scenes
+  if (action.activeRound) {
+    serverState.activeRound = action.activeRound;
+  } else if (type.startsWith('XUAT_PHAT_')) {
+    serverState.activeRound = 'XUAT_PHAT';
+  } else if (type.startsWith('RA_KHOI_')) {
+    serverState.activeRound = 'RA_KHOI';
+  } else if (type.startsWith('VUOT_SONG_')) {
+    serverState.activeRound = 'VUOT_SONG';
+  } else if (type.startsWith('VINH_QUANG_')) {
+    serverState.activeRound = 'VINH_QUANG';
+  } else if (type === 'SWITCH_VIEW') {
+    if (action.viewNum === 1) serverState.activeRound = 'XUAT_PHAT';
+    else if (action.viewNum === 2) serverState.activeRound = 'RA_KHOI';
+    else if (action.viewNum === 3 || action.viewNum === 4 || action.viewNum === 5) serverState.activeRound = 'VUOT_SONG';
+    else if (action.viewNum === 6 || action.viewNum === 7 || action.viewNum === 8) serverState.activeRound = 'VINH_QUANG';
+  }
+
+  // Allow external state syncs (from projector or controller) to update currentTimer directly
+  if (action.currentTimer && typeof action.currentTimer === 'object') {
+    serverState.currentTimer = action.currentTimer;
+  }
+
+  // Track Question & Grid Info
+  if (action.questionText) {
+    serverState.currentQuestion = {
+      questionText: action.questionText,
+      questionIndex: action.questionIndex || 1,
+      round: serverState.activeRound
+    };
+  }
+  if (action.vuotSong) {
+    serverState.vuotSong = action.vuotSong;
+  }
+  if (action.row !== undefined) {
+    serverState.vuotSongRow = action.row;
+  }
+
+  // Track Active Timers & Instant Resumption
+  if (type === 'XUAT_PHAT_START_TIMER' || type === 'XUAT_PHAT_BAT_DAU_CAU_HOI') {
+    const dur = action.duration || 60;
+    const start = action.startTime || now;
+    serverState.currentTimer = {
+      round: 'XUAT_PHAT',
+      duration: dur,
+      startTime: start,
+      targetTime: start + dur * 1000,
+      questionText: action.questionText || ''
+    };
+  } else if (type === 'RA_KHOI_START_TIMER') {
+    const dur = action.duration || 30;
+    const start = action.startTime || now;
+    serverState.currentTimer = {
+      round: 'RA_KHOI',
+      duration: dur,
+      startTime: start,
+      targetTime: start + dur * 1000,
+      questionText: action.questionText || ''
+    };
+  } else if (type === 'VUOT_SONG_START_TIMER') {
+    const dur = action.duration || 20;
+    const start = action.startTime || now;
+    serverState.currentTimer = {
+      round: 'VUOT_SONG',
+      duration: dur,
+      startTime: start,
+      targetTime: start + dur * 1000,
+      questionText: action.questionText || ''
+    };
+  } else if (type === 'VINH_QUANG_START_TIMER') {
+    const dur = action.duration || 20;
+    const start = action.startTime || now;
+    serverState.currentTimer = {
+      round: 'VINH_QUANG',
+      duration: dur,
+      startTime: start,
+      targetTime: start + dur * 1000,
+      questionText: action.questionText || ''
+    };
+  } else if (type === 'VINH_QUANG_START_TIMER_5S') {
+    const dur = 5;
+    const start = action.startTime || now;
+    serverState.currentTimer = {
+      round: 'VINH_QUANG',
+      duration: dur,
+      startTime: start,
+      targetTime: start + 5000,
+      questionText: action.questionText || ''
+    };
+  } else if (
+    type === 'XUAT_PHAT_RESET' ||
+    type === 'RA_KHOI_RESET' ||
+    type === 'VUOT_SONG_RESET' ||
+    type === 'VINH_QUANG_RESET' ||
+    type === 'RA_KHOI_SHOW_QUESTION' ||
+    type === 'VUOT_SONG_SHOW_QUESTION' ||
+    type === 'VUOT_SONG_SELECT_ROW' ||
+    type === 'VINH_QUANG_SHOW_QUESTION' ||
+    type === 'VINH_QUANG_SELECT_PACK' ||
+    type === 'STOP_TIMER' ||
+    type === 'RESET_ALL_DATA'
+  ) {
+    serverState.currentTimer = null;
+  }
+
+  // Handle Explicit Request for Current State (e.g. from player reloading with F5)
+  if (type === 'REQUEST_CURRENT_STATE') {
+    const timerPayload = getActiveTimerPayload();
+    const fullStateSync = {
+      type: 'FULL_STATE_SYNC',
+      activeRound: serverState.activeRound,
+      currentRound: serverState.activeRound,
+      currentTimer: timerPayload,
+      currentQuestion: serverState.currentQuestion,
+      questionText: serverState.currentQuestion?.questionText || '',
+      questionIndex: serverState.currentQuestion?.questionIndex || 1,
+      vuotSong: serverState.vuotSong,
+      vuotSongRow: serverState.vuotSongRow,
+      contestants: serverState.contestants,
+      playerAnswers: serverState.playerAnswers,
+      buzzerState: serverState.buzzerState,
+      timestamp: Date.now()
+    };
+    broadcastToClients(fullStateSync);
+    if (senderWs && senderWs.readyState === WebSocket.OPEN) {
+      try { senderWs.send(JSON.stringify(fullStateSync)); } catch(e) {}
+    }
+  }
+
   // Broadcast to all WebSocket and SSE clients (skip raw heartbeats to prevent network flooding)
   if (type !== 'CLIENT_HEARTBEAT') {
     broadcastToClients(action, senderWs);
@@ -272,6 +494,14 @@ wss.on('connection', (ws, req) => {
       event: 'buzzer-state-sync',
       roomCode: serverState.roomCode,
       roomAuth: serverState.roomAuth,
+      activeRound: serverState.activeRound,
+      currentRound: serverState.activeRound,
+      currentTimer: getActiveTimerPayload(),
+      currentQuestion: serverState.currentQuestion,
+      questionText: serverState.currentQuestion?.questionText || '',
+      questionIndex: serverState.currentQuestion?.questionIndex || 1,
+      vuotSong: serverState.vuotSong,
+      vuotSongRow: serverState.vuotSongRow,
       contestants: serverState.contestants,
       gameData: serverState.gameData,
       connectedClients: serverState.connectedClients,
@@ -439,6 +669,7 @@ const handleSseConnection = (req, res) => {
     event: 'buzzer-state-sync',
     roomCode: serverState.roomCode,
     roomAuth: serverState.roomAuth,
+    slotAuth: getAllSlotAuths(),
     contestants: serverState.contestants,
     gameData: serverState.gameData,
     connectedClients: serverState.connectedClients,
@@ -460,8 +691,18 @@ app.get('/events', handleSseConnection);
 // GET /api/state & /state - Retrieve current authoritative game state
 const handleGetState = (req, res) => {
   res.json({
+    type: 'FULL_STATE_SYNC',
     roomCode: serverState.roomCode,
     roomAuth: serverState.roomAuth,
+    slotAuth: getAllSlotAuths(),
+    activeRound: serverState.activeRound,
+    currentRound: serverState.activeRound,
+    currentTimer: getActiveTimerPayload(),
+    currentQuestion: serverState.currentQuestion,
+    questionText: serverState.currentQuestion?.questionText || '',
+    questionIndex: serverState.currentQuestion?.questionIndex || 1,
+    vuotSong: serverState.vuotSong,
+    vuotSongRow: serverState.vuotSongRow,
     contestants: serverState.contestants,
     gameData: serverState.gameData,
     connectedClients: serverState.connectedClients,
@@ -492,6 +733,9 @@ const handlePostState = (req, res) => {
   if (body.roomAuth !== undefined || body.auth !== undefined) {
     serverState.roomAuth = (body.roomAuth || body.auth || '').trim();
   }
+  if (body.slotAuth && typeof body.slotAuth === 'object') {
+    serverState.slotAuth = Object.assign({}, serverState.slotAuth, body.slotAuth);
+  }
   serverState.lastUpdated = Date.now();
 
   const updateMsg = {
@@ -500,12 +744,13 @@ const handlePostState = (req, res) => {
     gameData: serverState.gameData,
     roomCode: serverState.roomCode,
     roomAuth: serverState.roomAuth,
+    slotAuth: getAllSlotAuths(),
     timestamp: serverState.lastUpdated
   };
 
   broadcastToClients(updateMsg);
 
-  res.json({ success: true, state: serverState });
+  res.json({ success: true, state: serverState, slotAuth: getAllSlotAuths() });
 };
 app.post('/api/state', handlePostState);
 app.post('/state', handlePostState);
@@ -513,16 +758,114 @@ app.post('/state', handlePostState);
 // POST /api/action & /action - Handle game commands, answer submissions, client heartbeats & buzzer events
 const handlePostAction = (req, res) => {
   const action = req.body || {};
+  const clientRoom = (action.roomCode || '').trim().toUpperCase();
+  const clientAuth = (action.auth || action.roomAuth || '').trim();
+  const slot = action.contestantId || (action.role ? parseInt(action.role.replace(/\D/g, '')) : 0);
+  const clientSessionId = (action.sessionId || '').trim();
+  const now = Date.now();
+
   if (action.type === 'CLIENT_JOIN') {
-    const clientRoom = (action.roomCode || '').trim().toUpperCase();
-    const clientAuth = (action.auth || action.roomAuth || '').trim();
-    if (clientRoom && clientRoom !== serverState.roomCode) {
-      return res.status(400).json({ success: false, error: 'Mã phòng không chính xác!' });
+    if (!clientRoom || clientRoom !== serverState.roomCode) {
+      return res.status(400).json({
+        success: false,
+        error: `Mã phòng "${clientRoom || 'Trống'}" không chính xác hoặc đã hết hạn! Mã phòng hiện tại là "${serverState.roomCode}".`
+      });
     }
-    if (serverState.roomAuth && clientAuth && clientAuth !== serverState.roomAuth) {
-      return res.status(400).json({ success: false, error: 'Mật khẩu phòng không chính xác!' });
+    if (slot >= 1 && slot <= 4) {
+      if (!isValidAuthForSlot(slot, clientAuth)) {
+        return res.status(403).json({
+          success: false,
+          error: `Mật khẩu / Mã xác thực không hợp lệ cho Thí sinh ${slot}! Vui lòng quét mã QR mới nhất hoặc liên hệ Ban Tổ Chức.`
+        });
+      }
+
+      // Check single active occupant constraint
+      const roleKey = `ts${slot}`;
+      const occupant = serverState.connectedClients[roleKey];
+      const isOccupied = occupant && occupant.connected && (now - (occupant.lastSeen || 0) < 15000);
+
+      if (isOccupied && occupant.sessionId && clientSessionId && occupant.sessionId !== clientSessionId) {
+        const occupantName = occupant.name || `Thí sinh ${slot}`;
+        return res.status(409).json({
+          success: false,
+          occupied: true,
+          error: `⚠️ Vị trí Thí sinh ${slot} (${occupantName}) hiện ĐÃ CÓ NGƯỜI VÀO và đang thi đấu! Bạn không thể truy cập vị trí này. Vui lòng chọn vị trí khác hoặc báo Ban Tổ Chức giải phóng vị trí.`
+        });
+      }
+
+      // Assign/claim slot for this session
+      const assignedSessionId = clientSessionId || occupant?.sessionId || `sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      serverState.connectedClients[roleKey] = {
+        connected: true,
+        sessionId: assignedSessionId,
+        name: action.name || serverState.contestants[slot - 1]?.name || `Thí sinh ${slot}`,
+        lastSeen: now,
+        ip: req.ip || req.socket.remoteAddress
+      };
+
+      handleIncomingAction(action);
+
+      return res.json({
+        success: true,
+        slot: slot,
+        sessionId: assignedSessionId,
+        roomCode: serverState.roomCode,
+        roomAuth: serverState.roomAuth,
+        slotAuth: getAllSlotAuths(),
+        contestants: serverState.contestants
+      });
+    } else if (serverState.roomAuth && clientAuth && clientAuth !== serverState.roomAuth) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu phòng MC / Admin không chính xác!' });
+    }
+  } else if (action.type === 'CLIENT_HEARTBEAT') {
+    if (clientRoom && clientRoom !== serverState.roomCode) {
+      return res.status(400).json({ success: false, error: 'Mã phòng đã thay đổi hoặc hết hạn!' });
+    }
+    if (slot >= 1 && slot <= 4) {
+      if (!isValidAuthForSlot(slot, clientAuth)) {
+        return res.status(403).json({ success: false, error: 'Mật khẩu xác thực đã thay đổi hoặc không hợp lệ!' });
+      }
+      const roleKey = `ts${slot}`;
+      const occupant = serverState.connectedClients[roleKey];
+      if (occupant && occupant.connected && occupant.sessionId && clientSessionId && occupant.sessionId !== clientSessionId) {
+        return res.status(409).json({
+          success: false,
+          occupied: true,
+          error: `⚠️ Vị trí Thí sinh ${slot} đã có thiết bị khác đăng nhập!`
+        });
+      }
+      if (occupant) {
+        occupant.connected = true;
+        occupant.lastSeen = now;
+        if (clientSessionId && !occupant.sessionId) occupant.sessionId = clientSessionId;
+        if (action.name) occupant.name = action.name;
+      }
+    }
+  } else if (action.type === 'PLAYER_SUBMIT_ANSWER' || action.type === 'PLAYER_BUZZER_PRESS') {
+    if (clientRoom && clientRoom !== serverState.roomCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'Mã phòng không chính xác hoặc đã thay đổi!'
+      });
+    }
+    if (slot >= 1 && slot <= 4) {
+      if (!isValidAuthForSlot(slot, clientAuth)) {
+        return res.status(403).json({
+          success: false,
+          error: `Xác thực thất bại! Bạn không có quyền thao tác cho Thí sinh ${slot}.`
+        });
+      }
+      const roleKey = `ts${slot}`;
+      const occupant = serverState.connectedClients[roleKey];
+      if (occupant && occupant.connected && occupant.sessionId && clientSessionId && occupant.sessionId !== clientSessionId) {
+        return res.status(409).json({
+          success: false,
+          error: `Thiết bị này không còn là phiên đăng nhập hợp lệ của Thí sinh ${slot}.`
+        });
+      }
     }
   }
+
   handleIncomingAction(action);
   res.json({
     success: true,
@@ -531,6 +874,7 @@ const handlePostAction = (req, res) => {
     sseReceivers: sseClients.size,
     roomCode: serverState.roomCode,
     roomAuth: serverState.roomAuth,
+    slotAuth: getAllSlotAuths(),
     contestants: serverState.contestants
   });
 };

@@ -315,7 +315,13 @@ function onClickVQDatLai() {
     if (aEl) aEl.innerText = "Đáp án: ...";
 
     sendToProjector('VINH_QUANG_RESET');
-    showToast('Đã đặt lại vòng thi Vinh Quang');
+    
+    // Reset all other rounds
+    sendToProjector('XUAT_PHAT_RESET');
+    sendToProjector('RA_KHOI_RESET');
+    sendToProjector('VUOT_SONG_RESET');
+
+    showToast('Đã đặt lại vòng Vinh Quang và toàn bộ các vòng khác');
 }
 
 function cycleVQQuestion() {

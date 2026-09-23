@@ -40,7 +40,7 @@ let gameData = {
     ]
 };
 
-let currentXuatPhatTurn = 1;
+let currentXuatPhatTurn = 0;
 let editingXuatPhatDe = 1;
 let currentVinhQuangPack = 10;
 
@@ -56,6 +56,14 @@ window.addEventListener('DOMContentLoaded', () => {
         selectRKQuestion(1);
     }
 });
+
+// Track current active round and running timer
+window.currentActiveRound = localStorage.getItem('ddvq_active_round') || 'XUAT_PHAT';
+window.currentActiveTimer = null;
+try {
+    const tStr = localStorage.getItem('ddvq_current_timer');
+    if (tStr) window.currentActiveTimer = JSON.parse(tStr);
+} catch(e) {}
 
 // Switch main tabs
 function switchTab(index) {
@@ -78,18 +86,49 @@ function switchTab(index) {
         }
     });
 
+    let roundName = 'HE_THONG';
+    if (index === 1) roundName = 'XUAT_PHAT';
+    else if (index === 2) roundName = 'RA_KHOI';
+    else if (index === 3) roundName = 'VUOT_SONG';
+    else if (index === 4) roundName = 'VINH_QUANG';
+    else if (index === 5) roundName = 'CAU_HOI_PHU';
+
+    window.currentActiveRound = roundName;
+    window.currentActiveTimer = null;
+    try {
+        localStorage.setItem('ddvq_active_round', roundName);
+        localStorage.removeItem('ddvq_current_timer');
+    } catch(e) {}
+
     if (typeof syncContestantsUI === 'function') {
         syncContestantsUI();
     }
 
-    if (index === 1 && typeof updateTab1Preview === 'function') {
-        updateTab1Preview();
+    if (index === 1) {
+        currentXuatPhatTurn = 0;
+        for (let i = 1; i <= 4; i++) {
+            const btn = document.getElementById(`btn_luot_${i}`);
+            if (btn) btn.classList.remove('active');
+        }
+        if (typeof updateTab1Preview === 'function') updateTab1Preview();
+        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0 });
+        sendToProjector('SWITCH_VIEW', { viewNum: 1, turnIndex: 0 });
     }
-    if (index === 2 && typeof selectRKQuestion === 'function') {
-        selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
+    if (index === 2) {
+        if (typeof selectRKQuestion === 'function') {
+            selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
+        }
+        sendToProjector('RA_KHOI_RESET');
+        sendToProjector('SWITCH_VIEW', { viewNum: 2 });
     }
     if (index === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
+        sendToProjector('VUOT_SONG_RESET');
+        sendToProjector('SWITCH_VIEW', { viewNum: 3 });
+    }
+    if (index === 4) {
+        sendToProjector('VINH_QUANG_RESET');
+        sendToProjector('SWITCH_VIEW', { viewNum: 6 });
     }
 }
 
@@ -744,26 +783,24 @@ function markVSContestantSubmitted(tsIdx, timeStr) {
         }
     }
 
+    // Save bell time (kể từ lúc bắt đầu vòng thi đến lúc bấm chuông)
     window.vsSubmissions[tsIdx] = cleanTime;
 
-    const extraInput = document.getElementById(`ts${tsIdx}_extra_vs`);
-    if (extraInput) {
-        extraInput.value = cleanTime;
-    }
+    // Do NOT overwrite tsX_extra_vs (ô màu trắng dành riêng cho thời gian 20s trả lời câu hỏi)
 
     const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
     if (nameInput) {
         const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
-        const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
-        nameInput.value = `${baseName} (${cleanTime}s)`;
+        const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+        nameInput.value = `${baseName} (${cleanTime}S)`;
         nameInput.style.color = '#dc2626';
         nameInput.style.fontWeight = 'bold';
     }
 
     const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
-    const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây)?\)/gi, '').trim();
+    const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
     if (typeof showToast === 'function') {
-        showToast(`${baseName} đã trả lời đáp án vòng thi (${cleanTime}s)!`);
+        showToast(`🔔 ${baseName} đã bấm chuông / trả lời đáp án vòng thi (${cleanTime}S)!`);
     }
 }
 
@@ -782,7 +819,7 @@ function syncContestantsUI() {
             if (tab3Input) {
                 const baseName = c.name || `Thí sinh ${idx}`;
                 if (window.vsSubmissions && window.vsSubmissions[idx]) {
-                    tab3Input.value = `${baseName} (${window.vsSubmissions[idx]}s)`;
+                    tab3Input.value = `${baseName} (${window.vsSubmissions[idx]}S)`;
                     tab3Input.style.color = '#dc2626';
                     tab3Input.style.fontWeight = 'bold';
                 } else {
@@ -1061,10 +1098,16 @@ function handleIncomingPlayerAnswer(data) {
         if (data.round === 'VS' || !data.round) {
             const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
             const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
-            if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
-            if (inputAns && inputAns.value !== ans) inputAns.value = ans;
-            if (data.round === 'VS' && data.isVongThi !== false) {
+            if (data.isVongThi === false) {
+                // Thời gian trong ô màu trắng: tính từ lúc 20s trả lời câu hỏi hàng ngang
+                if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
+                if (inputAns && inputAns.value !== ans) inputAns.value = ans;
+            } else {
+                // Thời gian màu đỏ: kể từ lúc bắt đầu vòng thi đến lúc bấm chuông trả lời đáp án vòng thi
                 markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                if (ans && inputAns && (!inputAns.value || inputAns.value === '[CNV] Bấm chuông')) {
+                    inputAns.value = `[CNV] ${ans}`;
+                }
             }
         }
         if (data.round === 'VQ' || !data.round) {
@@ -1097,10 +1140,14 @@ function handleIncomingPlayerAnswer(data) {
                 if (ansObj.round === 'VS' || !ansObj.round) {
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
                     const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
-                    if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
-                    if (inputAns && inputAns.value !== ans) inputAns.value = ans;
-                    if (ansObj.round === 'VS' && ansObj.isVongThi !== false) {
+                    if (ansObj.isVongThi === false) {
+                        if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
+                        if (inputAns && inputAns.value !== ans) inputAns.value = ans;
+                    } else {
                         markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                        if (ans && inputAns && (!inputAns.value || inputAns.value === '[CNV] Bấm chuông')) {
+                            inputAns.value = `[CNV] ${ans}`;
+                        }
                     }
                 }
                 if (ansObj.round === 'VQ' || !ansObj.round) {
@@ -1234,7 +1281,46 @@ window.kickClientSlot = function(role) {
     showToast(`🚫 Đã ngắt kết nối / mời ra slot ${label}!`);
 };
 
-function updateRoomCodeFromController() {
+function computeSlotAuth(masterAuth, slot) {
+    if (!masterAuth) masterAuth = '123456';
+    let hash = 5381;
+    const str = `${masterAuth}_SLOT_${slot}_DDVQ2026_SECRET`;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    const pin = Math.abs(hash % 900000) + 100000;
+    return `${pin}`;
+}
+
+function getSlotAuth(slot) {
+    if (!slot || slot < 1 || slot > 4) {
+        const authInput = document.getElementById('room_auth_input');
+        return (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
+    }
+    let slotAuths = {};
+    try {
+        slotAuths = JSON.parse(localStorage.getItem('ddvq_slot_auths') || '{}');
+    } catch(e) {}
+
+    if (slotAuths[slot]) {
+        return slotAuths[slot];
+    }
+    const authInput = document.getElementById('room_auth_input');
+    const masterAuth = (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
+    return computeSlotAuth(masterAuth, slot);
+}
+
+function getAllSlotAuths() {
+    return {
+        1: getSlotAuth(1),
+        2: getSlotAuth(2),
+        3: getSlotAuth(3),
+        4: getSlotAuth(4)
+    };
+}
+
+function updateRoomCodeFromController(isRandomGen = false) {
     const input = document.getElementById('room_code_input');
     const authInput = document.getElementById('room_auth_input');
     if (!input) return;
@@ -1245,42 +1331,47 @@ function updateRoomCodeFromController() {
     localStorage.setItem('ddvq_room_code', newCode);
     localStorage.setItem('ddvq_room_auth', newAuth);
 
+    const slotAuths = getAllSlotAuths();
+    localStorage.setItem('ddvq_slot_auths', JSON.stringify(slotAuths));
+
     const badge = document.getElementById('room_code_badge');
-    if (badge) badge.innerText = `Đang hoạt động: ${newCode} | Pass: ${newAuth}`;
+    if (badge) badge.innerText = `Đang hoạt động: ${newCode} | Pass MC: ${newAuth}`;
 
     updateAllLinkPreviews();
 
+    const payload = {
+        type: 'SET_ROOM_CODE',
+        roomCode: newCode,
+        roomAuth: newAuth,
+        slotAuth: slotAuths,
+        auth: newAuth
+    };
+
     if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction({
-            type: 'SET_ROOM_CODE',
-            roomCode: newCode,
-            roomAuth: newAuth,
-            auth: newAuth
-        });
+        sendSupabaseAction(payload);
     }
 
     if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
         fetch(getApiUrl('/api/action'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: 'SET_ROOM_CODE',
-                roomCode: newCode,
-                roomAuth: newAuth,
-                auth: newAuth
-            })
+            body: JSON.stringify(payload)
         })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng: ${newCode} (Pass: ${newAuth})`);
+                if (typeof showToast === 'function') {
+                    showToast(isRandomGen ? `🎲 Đã tạo mới & ngẫu nhiên Mã Phòng (${newCode}) và 4 Auth riêng biệt!` : `✅ Đã cập nhật Mã Phòng: ${newCode}`);
+                }
             }
         })
         .catch(err => {
             console.error("Room code update error:", err);
         });
     } else {
-        if (typeof showToast === 'function') showToast(`Đã cập nhật Mã Phòng: ${newCode} (Pass: ${newAuth})`);
+        if (typeof showToast === 'function') {
+            showToast(isRandomGen ? `🎲 Đã tạo mới & ngẫu nhiên Mã Phòng (${newCode}) và 4 Auth riêng biệt!` : `✅ Đã cập nhật Mã Phòng: ${newCode}`);
+        }
     }
 }
 
@@ -1317,30 +1408,79 @@ function onLinkDomainSelectChange() {
 }
 
 function generateRandomRoomCredentials() {
+    // Generate new random 4-digit room code
     const randomCode = 'DDVQ' + Math.floor(1000 + Math.random() * 9000);
+    // Generate new random 6-digit master password for MC
     const randomAuth = '' + Math.floor(100000 + Math.random() * 900000);
-    
+
+    // Generate 4 completely distinct random 6-digit PINs for TS1, TS2, TS3, TS4
+    const generatedPins = new Set();
+    generatedPins.add(randomAuth);
+    const newSlotAuths = {};
+    for (let i = 1; i <= 4; i++) {
+        let pin;
+        do {
+            pin = '' + Math.floor(100000 + Math.random() * 900000);
+        } while (generatedPins.has(pin));
+        generatedPins.add(pin);
+        newSlotAuths[i] = pin;
+    }
+
+    localStorage.setItem('ddvq_slot_auths', JSON.stringify(newSlotAuths));
+    localStorage.setItem('ddvq_room_code', randomCode);
+    localStorage.setItem('ddvq_room_auth', randomAuth);
+
     const roomInput = document.getElementById('room_code_input');
     const authInput = document.getElementById('room_auth_input');
     if (roomInput) roomInput.value = randomCode;
     if (authInput) authInput.value = randomAuth;
 
-    updateRoomCodeFromController();
-    if (typeof showToast === 'function') showToast(`🎲 Đã tạo mã phòng ngẫu nhiên: ${randomCode} (Pass: ${randomAuth})`);
+    // Reset all client status indicators in Controller
+    for (let i = 1; i <= 4; i++) {
+        const role = `ts${i}`;
+        if (controllerConnectedClients[role]) {
+            controllerConnectedClients[role].connected = false;
+            controllerConnectedClients[role].lastSeen = 0;
+            controllerConnectedClients[role].name = '';
+        }
+        const badge = document.getElementById(`status_badge_${role}`);
+        if (badge) {
+            badge.className = 'status-indicator disconnected';
+            badge.innerHTML = '🔴 Chưa kết nối';
+            badge.style.color = '#dc2626';
+            badge.style.background = '#fee2e2';
+            badge.style.borderColor = '#fca5a5';
+        }
+    }
+
+    updateRoomCodeFromController(true);
+
+    // Broadcast kick to all old sessions so players cannot use the old room/auth
+    const kickPayload = {
+        type: 'KICK_CLIENT',
+        target: 'all',
+        role: 'all',
+        timestamp: Date.now()
+    };
+    sendToProjector('KICK_CLIENT', kickPayload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(kickPayload);
+    }
 }
 
 function getPlayerDirectLink(slot) {
     const roomInput = document.getElementById('room_code_input');
-    const authInput = document.getElementById('room_auth_input');
     const code = (roomInput ? roomInput.value.trim().toUpperCase() : '') || localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
-    const auth = (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
     const baseUrl = getPlayerBaseUrl();
     
-    let url = `${baseUrl}/player.html?roomid=${encodeURIComponent(code)}&auth=${encodeURIComponent(auth)}`;
     if (slot && parseInt(slot) >= 1 && parseInt(slot) <= 4) {
-        url += `&slot=${parseInt(slot)}`;
+        const slotNum = parseInt(slot);
+        const slotAuth = getSlotAuth(slotNum);
+        return `${baseUrl}/player.html?roomid=${encodeURIComponent(code)}&slot=${slotNum}&auth=${encodeURIComponent(slotAuth)}`;
     }
-    return url;
+    const authInput = document.getElementById('room_auth_input');
+    const masterAuth = (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
+    return `${baseUrl}/player.html?roomid=${encodeURIComponent(code)}&auth=${encodeURIComponent(masterAuth)}`;
 }
 
 function copyPlayerDirectLink(slot) {
@@ -1399,6 +1539,15 @@ function updateAllLinkPreviews() {
         if (slotPreview) {
             slotPreview.innerText = getPlayerDirectLink(i);
         }
+        const authBadge = document.getElementById(`slot_auth_badge_${i}`);
+        if (authBadge) {
+            authBadge.innerText = `Auth: ${getSlotAuth(i)}`;
+        }
+        const titleEl = document.getElementById(`controller_ts${i}_link_title`);
+        if (titleEl && typeof gameData !== 'undefined' && gameData.contestants && gameData.contestants[i - 1]) {
+            const name = gameData.contestants[i - 1].name || `Thí sinh ${i}`;
+            titleEl.innerText = `👤 TS ${i}: ${name}`;
+        }
     }
 }
 
@@ -1434,12 +1583,73 @@ function stopSoundController() {
     if (typeof showToast === 'function') showToast('Đã dừng âm thanh!');
 }
 
+function respondToStateRequest() {
+    let timerPayload = null;
+    if (window.currentActiveTimer) {
+        const remaining = Math.max(0, Math.ceil((window.currentActiveTimer.targetTime - Date.now()) / 1000));
+        if (remaining > 0) {
+            timerPayload = {
+                ...window.currentActiveTimer,
+                remaining: remaining
+            };
+        } else {
+            window.currentActiveTimer = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
+        }
+    }
+
+    let qText = '';
+    let qIdx = 1;
+    if (window.currentActiveRound === 'XUAT_PHAT') {
+        const questions = gameData.xuatPhat ? (gameData.xuatPhat[currentXuatPhatDe] || []) : [];
+        const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
+        qText = currentQ.q || '';
+        qIdx = currentXuatPhatQIndex + 1;
+    } else if (window.currentActiveRound === 'RA_KHOI') {
+        const qItem = gameData.raKhoi ? (gameData.raKhoi[(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1) - 1] || { q: '', a: '' }) : { q: '', a: '' };
+        qText = qItem.q || '';
+        qIdx = typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1;
+    } else if (window.currentActiveRound === 'VUOT_SONG') {
+        const row = typeof currentVSRow !== 'undefined' ? currentVSRow : 0;
+        if (row >= 1 && row <= 4) {
+            qText = gameData.vuotSong?.[`h${row}`]?.q || '';
+        } else if (row === 5) {
+            qText = gameData.vuotSong?.center?.q || '';
+        }
+        qIdx = row;
+    } else if (window.currentActiveRound === 'VINH_QUANG') {
+        const pack = typeof currentVinhQuangPack !== 'undefined' ? currentVinhQuangPack : 20;
+        const qIdxVQ = typeof currentVinhQuangIndex !== 'undefined' ? currentVinhQuangIndex : 0;
+        const packList = gameData.vinhQuang ? (gameData.vinhQuang[pack] || []) : [];
+        const qItem = packList[qIdxVQ] || { q: '', a: '' };
+        qText = qItem.q || '';
+        qIdx = qIdxVQ + 1;
+    }
+
+    const statePayload = {
+        type: 'FULL_STATE_SYNC',
+        activeRound: window.currentActiveRound || 'XUAT_PHAT',
+        currentRound: window.currentActiveRound || 'XUAT_PHAT',
+        currentTimer: timerPayload,
+        questionText: qText,
+        questionIndex: qIdx,
+        contestants: gameData.contestants,
+        vuotSong: gameData.vuotSong,
+        vuotSongRow: typeof currentVSRow !== 'undefined' ? currentVSRow : 0,
+        timestamp: Date.now()
+    };
+
+    sendToProjector('FULL_STATE_SYNC', statePayload);
+}
+
 try {
     if (typeof BroadcastChannel !== 'undefined') {
         controllerChannel = new BroadcastChannel('ddvq_game_channel');
         controllerChannel.onmessage = function(event) {
             if (!event.data) return;
-            if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
+            if (event.data.type === 'REQUEST_CURRENT_STATE') {
+                respondToStateRequest();
+            } else if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
                 lastProjectorPing = Date.now();
                 updateProjectorStatus(true);
             } else if (event.data.type === 'PLAYER_SUBMIT_ANSWER') {
@@ -1524,7 +1734,9 @@ window.addEventListener('storage', function(event) {
 
 window.addEventListener('message', function(event) {
     if (!event.data) return;
-    if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
+    if (event.data.type === 'REQUEST_CURRENT_STATE') {
+        respondToStateRequest();
+    } else if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
         lastProjectorPing = Date.now();
         updateProjectorStatus(true);
     } else if (event.data.type === 'PLAYER_SUBMIT_ANSWER') {
@@ -1584,7 +1796,54 @@ function updateProjectorStatus(isConnected) {
 }
 
 function sendToProjector(type, payload = {}) {
-    const message = { type, ...payload, timestamp: Date.now(), id: Math.random().toString(36).substring(2, 9) };
+    let round = window.currentActiveRound;
+    if (type.startsWith('XUAT_PHAT_')) round = 'XUAT_PHAT';
+    else if (type.startsWith('RA_KHOI_')) round = 'RA_KHOI';
+    else if (type.startsWith('VUOT_SONG_')) round = 'VUOT_SONG';
+    else if (type.startsWith('VINH_QUANG_')) round = 'VINH_QUANG';
+    else if (type === 'SWITCH_VIEW') {
+        if (payload.viewNum === 1) round = 'XUAT_PHAT';
+        else if (payload.viewNum === 2) round = 'RA_KHOI';
+        else if (payload.viewNum === 3 || payload.viewNum === 4 || payload.viewNum === 5) round = 'VUOT_SONG';
+        else if (payload.viewNum === 6 || payload.viewNum === 7) round = 'VINH_QUANG';
+    }
+    if (round) {
+        window.currentActiveRound = round;
+        try { localStorage.setItem('ddvq_active_round', round); } catch(e) {}
+    }
+
+    if (type.endsWith('_START_TIMER') || type === 'VINH_QUANG_START_TIMER_5S' || type === 'XUAT_PHAT_BAT_DAU_CAU_HOI') {
+        const dur = payload.duration || (type === 'VINH_QUANG_START_TIMER_5S' ? 5 : (round === 'RA_KHOI' ? 30 : (round === 'VUOT_SONG' ? 20 : 60)));
+        const startTime = payload.startTime || Date.now();
+        payload.startTime = startTime;
+        payload.duration = dur;
+        window.currentActiveTimer = {
+            round: round,
+            duration: dur,
+            startTime: startTime,
+            targetTime: startTime + dur * 1000,
+            questionText: payload.questionText || ''
+        };
+        try { localStorage.setItem('ddvq_current_timer', JSON.stringify(window.currentActiveTimer)); } catch(e) {}
+    } else if (
+        type.endsWith('_RESET') ||
+        type.includes('SHOW_QUESTION') ||
+        type.includes('SELECT_ROW') ||
+        type.includes('SELECT_PACK') ||
+        type === 'STOP_TIMER' ||
+        type === 'RESET_ALL_DATA'
+    ) {
+        window.currentActiveTimer = null;
+        try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
+    }
+
+    const message = {
+        type,
+        activeRound: round,
+        ...payload,
+        timestamp: Date.now(),
+        id: Math.random().toString(36).substring(2, 9)
+    };
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(message);
     }
@@ -1701,8 +1960,20 @@ function stopIntroVideo() {
 }
 
 window.adjustScore = function(idx, delta) {
-    if (!gameData.contestants || !gameData.contestants[idx - 1]) return;
-    const current = gameData.contestants[idx - 1].score || 0;
+    if (!gameData) gameData = {};
+    if (!gameData.contestants || !Array.isArray(gameData.contestants)) {
+        gameData.contestants = [
+            { name: "Thí sinh 1", score: 0 },
+            { name: "Thí sinh 2", score: 0 },
+            { name: "Thí sinh 3", score: 0 },
+            { name: "Thí sinh 4", score: 0 }
+        ];
+    }
+    while (gameData.contestants.length < idx) {
+        gameData.contestants.push({ name: `Thí sinh ${gameData.contestants.length + 1}`, score: 0 });
+    }
+    
+    const current = parseInt(gameData.contestants[idx - 1].score) || 0;
     const newScore = current + delta;
     gameData.contestants[idx - 1].score = newScore;
     
@@ -1713,6 +1984,48 @@ window.adjustScore = function(idx, delta) {
         const contestantName = gameData.contestants[idx - 1].name || `Thí sinh ${idx}`;
         const sign = delta >= 0 ? "+" : "";
         showToast(`Đã điều chỉnh điểm ${contestantName}: ${sign}${delta} (Hiện tại: ${newScore})`);
+    }
+}
+
+window.adjustScoreAll = function(delta) {
+    if (!gameData) gameData = {};
+    if (!gameData.contestants || !Array.isArray(gameData.contestants)) {
+        gameData.contestants = [
+            { name: "Thí sinh 1", score: 0 },
+            { name: "Thí sinh 2", score: 0 },
+            { name: "Thí sinh 3", score: 0 },
+            { name: "Thí sinh 4", score: 0 }
+        ];
+    }
+    for (let i = 1; i <= 4; i++) {
+        if (!gameData.contestants[i - 1]) {
+            gameData.contestants[i - 1] = { name: `Thí sinh ${i}`, score: 0 };
+        }
+        gameData.contestants[i - 1].score = (parseInt(gameData.contestants[i - 1].score) || 0) + delta;
+    }
+    syncContestantsUI();
+    saveAllData();
+    if (typeof showToast === 'function') {
+        showToast(`Đã cộng ${delta} điểm cho cả 4 thí sinh!`);
+    }
+}
+
+window.promptToAdjustScore = function(delta) {
+    if (!gameData || !gameData.contestants) return;
+    let msg = `Cộng ${delta} điểm cho thí sinh nào?\n`;
+    for (let i = 1; i <= 4; i++) {
+        const name = gameData.contestants[i-1]?.name || `Thí sinh ${i}`;
+        const currentScore = gameData.contestants[i-1]?.score || 0;
+        msg += `Nhấn ${i}: ${name} (${currentScore}đ)\n`;
+    }
+    const ans = prompt(msg, "1");
+    if (ans) {
+        const idx = parseInt(ans);
+        if (idx >= 1 && idx <= 4) {
+            adjustScore(idx, delta);
+        } else {
+            alert("Số thứ tự không hợp lệ! Vui lòng chọn từ 1 đến 4.");
+        }
     }
 }
 

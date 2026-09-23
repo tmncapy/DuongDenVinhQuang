@@ -667,7 +667,7 @@
 
                 <!-- Answer input & Controls BELOW Question Box -->
                 <div class="s2-answer-box">
-                    <input type="text" id="s2_answer_input" class="s2-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
+                    <input type="text" id="s2_answer_input" class="s2-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
                 </div>
                 <div class="s2-time-box" id="s2_time_box">Thời gian</div>
                 <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
@@ -711,7 +711,7 @@
 
                 <div class="s3-bottom-controls">
                     <div class="s3-answer-input-box">
-                        <input type="text" id="s3_answer_input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
+                        <input type="text" id="s3_answer_input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
                     </div>
                     <button class="s3-submit-btn" onclick="submitScene3Answer(true)">TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
                 </div>
@@ -734,7 +734,7 @@
 
                 <!-- Answer input & Controls BELOW Question Box -->
                 <div class="s4-answer-box" style="top: 42%;">
-                    <input type="text" id="s4_answer_input" class="s4-answer-input" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene4Answer()" disabled>
+                    <input type="text" id="s4_answer_input" class="s4-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene4Answer()" disabled>
                 </div>
                 <div class="s4-time-box" id="s4_time_box" style="top: 42%;">Thời gian</div>
                 <button class="s4-submit-btn" onclick="submitScene4Answer()" style="top: 42%;">GỬI ĐÁP ÁN</button>
