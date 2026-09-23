@@ -66,7 +66,8 @@ function onClickVQTinhThoiGian() {
 }
 
 function onClickVQAnCauHoi() {
-    sendToProjector('VINH_QUANG_HIDE_QUESTION');
+    window.vqQuestionIsShown = false;
+    sendToProjector('VINH_QUANG_HIDE_QUESTION', { vqQuestionShown: false });
     showToast('Ẩn câu hỏi trên Projector');
 }
 
@@ -164,18 +165,18 @@ function onClickVQChonGoiDiem(pack) {
     }
     sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VQ' });
 
+    window.vqQuestionIsShown = false;
     sendToProjector('VINH_QUANG_SELECT_PACK', {
         round: 'VQ',
         pack: pack,
-        subject: currentVQSubject,
-        questionText: currentVQQuestionText,
-        answerText: currentVQAnswerText
+        subject: currentVQSubject
     });
 
     showToast(`Đã chọn Gói ${pack} Điểm: Môn ${currentVQSubject}`);
 }
 
 function onClickVQHienChonGoiDiem() {
+    window.vqQuestionIsShown = false;
     currentVQPack = null;
     currentVQSubject = "";
     currentVQQuestionText = "";
@@ -202,13 +203,24 @@ function onClickVQHienChonGoiDiem() {
 }
 
 function onClickVQAnChonGoiDiem() {
-    sendToProjector('VINH_QUANG_HIDE_PACK');
+    window.vqQuestionIsShown = true;
+    const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
+    sendToProjector('VINH_QUANG_HIDE_PACK', {
+        round: 'VQ',
+        pack: currentVQPack,
+        subject: currentVQSubject,
+        questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
+        vqQuestionShown: true,
+        hasStar: anyStarActive,
+        starActive: anyStarActive
+    });
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Đã ẩn chọn gói";
-    showToast('Ẩn giao diện chọn gói điểm trên Projector (fly out)');
+    if (statusEl) statusEl.innerText = "Đã ẩn chọn gói (Hiện câu hỏi trên Player)";
+    showToast('Ẩn giao diện chọn gói điểm & Hiện câu hỏi cho thí sinh');
 }
 
 function onClickVQHienCauHoi() {
+    window.vqQuestionIsShown = true;
     // Clear contestant inputs on controller for the new question
     for (let i = 1; i <= 5; i++) {
         const ansEl = document.getElementById(`ts${i}_ans_vq`);
@@ -224,6 +236,7 @@ function onClickVQHienCauHoi() {
         pack: currentVQPack,
         subject: currentVQSubject,
         questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
+        vqQuestionShown: true,
         hasStar: anyStarActive,
         starActive: anyStarActive
     });
@@ -314,7 +327,7 @@ function onClickVQDatLai() {
     const aEl = document.getElementById('vq_preview_a_text');
     if (aEl) aEl.innerText = "Đáp án: ...";
 
-    sendToProjector('VINH_QUANG_RESET');
+    sendToProjector('VINH_QUANG_RESET', { vqQuestionShown: false });
     
     // Reset all other rounds
     sendToProjector('XUAT_PHAT_RESET');

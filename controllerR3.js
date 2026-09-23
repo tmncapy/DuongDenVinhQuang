@@ -211,7 +211,7 @@ function onClickVSShowAnswers() {
         }
 
         const rawBase = gameData.contestants?.[i-1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`;
-        const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+        const baseName = rawBase.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
 
         contestants.push({
             name: baseName,
@@ -245,13 +245,19 @@ function resetVSContestantBell(tsIdx) {
             if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.startsWith('[CNV]'))) {
                 ansInput.value = '';
             }
-            const nameInput = document.getElementById(`ts${i}_name_vs`);
-            if (nameInput) {
-                const rawBase = gameData.contestants?.[i - 1]?.name || `Thí sinh ${i}`;
-                const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
-                nameInput.value = baseName;
-                nameInput.style.color = '#000';
-                nameInput.style.fontWeight = 'bold';
+        }
+        if (typeof updateVSBuzzerLabels === 'function') {
+            updateVSBuzzerLabels();
+        } else {
+            for (let i = 1; i <= 4; i++) {
+                const nameInput = document.getElementById(`ts${i}_name_vs`);
+                if (nameInput) {
+                    const rawBase = gameData.contestants?.[i - 1]?.name || `Thí sinh ${i}`;
+                    const baseName = rawBase.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+                    nameInput.value = baseName;
+                    nameInput.style.color = '#000';
+                    nameInput.style.fontWeight = 'bold';
+                }
             }
         }
         sendToProjector('RESET_VS_BELL', { contestantId: 'ALL' });
@@ -262,13 +268,17 @@ function resetVSContestantBell(tsIdx) {
         if (ansInput && (ansInput.value === '[CNV] Bấm chuông' || ansInput.value.startsWith('[CNV]'))) {
             ansInput.value = '';
         }
-        const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
-        if (nameInput) {
-            const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
-            const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
-            nameInput.value = baseName;
-            nameInput.style.color = '#000';
-            nameInput.style.fontWeight = 'bold';
+        if (typeof updateVSBuzzerLabels === 'function') {
+            updateVSBuzzerLabels();
+        } else {
+            const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
+            if (nameInput) {
+                const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
+                const baseName = rawBase.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+                nameInput.value = baseName;
+                nameInput.style.color = '#000';
+                nameInput.style.fontWeight = 'bold';
+            }
         }
         sendToProjector('RESET_VS_BELL', { contestantId: tsIdx });
         if (typeof showToast === 'function') showToast(`Đã reset nút chuông cho Thí sinh ${tsIdx}`);

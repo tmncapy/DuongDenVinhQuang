@@ -1240,6 +1240,69 @@ function handleProjectorMessage(data) {
         handleVSReset();
         resetVQProjector();
         switchView(1);
+    } else if (data.type === 'START_ROUND_CLEAN') {
+        const roundIdx = data.roundIndex || 1;
+        // 1. Dừng toàn bộ video và âm thanh đang chạy
+        const overlay = document.getElementById('intro_video_overlay');
+        const vplayer = document.getElementById('intro_video_player');
+        if (overlay && vplayer) {
+            overlay.style.display = 'none';
+            vplayer.pause();
+            vplayer.src = '';
+        }
+        if (typeof stopAllAudio1 === 'function') stopAllAudio1();
+        if (typeof stopAllAudioRK === 'function') stopAllAudioRK();
+        if (typeof stopAllAudioVS === 'function') stopAllAudioVS();
+        if (typeof stopAllAudioVQ === 'function') stopAllAudioVQ();
+
+        // 2. Chuyển sang view tương ứng và ẩn sạch toàn bộ graphic/overlay
+        if (roundIdx === 1) {
+            switchView(1);
+            const scd = document.getElementById('scene-chon-de');
+            const scq = document.getElementById('scene-cau-hoi1');
+            if (scd) scd.classList.remove('active');
+            if (scq) scq.classList.remove('active');
+            const xp = document.getElementById('xuatPhatContainer');
+            if (xp) xp.style.display = 'none';
+            const ri = document.getElementById('randomImg1');
+            const nb = document.getElementById('numberBox1');
+            const bd = document.getElementById('btnBamDe1');
+            const cl = document.getElementById('contestantList1');
+            const dn = document.getElementById('displayContestantName1');
+            if (ri) ri.style.display = 'none';
+            if (nb) nb.style.display = 'none';
+            if (bd) bd.style.display = 'none';
+            if (cl) cl.style.display = 'none';
+            if (dn) dn.style.display = 'none';
+            const ansBox = document.querySelector('#view-file-1 .answer-box');
+            if (ansBox) ansBox.style.display = 'none';
+        } else if (roundIdx === 2) {
+            switchView(2);
+            const ansScene = document.getElementById('rk-scene-answers');
+            if (ansScene) ansScene.style.display = 'none';
+            const mediaOverlay = document.getElementById('rk-media-overlay');
+            if (mediaOverlay) mediaOverlay.style.display = 'none';
+            const videoEl = document.getElementById('rk-media-video');
+            if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+        } else if (roundIdx === 3) {
+            switchView(3);
+            const vsAnsScene = document.getElementById('vs-scene-answers');
+            if (vsAnsScene) vsAnsScene.style.display = 'none';
+            const vsQuesScene = document.getElementById('scene-cau-hoi-vs');
+            if (vsQuesScene) vsQuesScene.classList.remove('active');
+        } else if (roundIdx === 4) {
+            switchView(6);
+            resetVQProjector();
+            const pageWrapper = document.getElementById('pageWrapper');
+            if (pageWrapper) {
+                pageWrapper.classList.remove('show');
+                pageWrapper.classList.add('fly-down');
+            }
+            const subjContainer = document.querySelector('.subject-container');
+            if (subjContainer) subjContainer.classList.remove('show');
+            const vqQuesBox = document.querySelector('#view-file-7 .question-box');
+            if (vqQuesBox) vqQuesBox.innerText = '';
+        }
     } else if (data.type === 'RELOAD_CLIENT') {
         if (data.target === 'projector' || data.target === 'graphic' || data.target === 'all' || data.role === 'projector' || data.role === 'graphic') {
             setTimeout(() => { window.location.reload(); }, 300);

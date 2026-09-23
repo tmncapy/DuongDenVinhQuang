@@ -111,26 +111,98 @@ function switchTab(index) {
             if (btn) btn.classList.remove('active');
         }
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
-        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0 });
-        sendToProjector('SWITCH_VIEW', { viewNum: 1, turnIndex: 0 });
-    }
-    if (index === 2) {
+        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT' });
+        sendToProjector('SWITCH_VIEW', { viewNum: 1, turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT' });
+    } else if (index === 2) {
         if (typeof selectRKQuestion === 'function') {
             selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
         }
-        sendToProjector('RA_KHOI_RESET');
-        sendToProjector('SWITCH_VIEW', { viewNum: 2 });
-    }
-    if (index === 3) {
+        sendToProjector('RA_KHOI_RESET', { round: 'RA_KHOI', activeRound: 'RA_KHOI' });
+        sendToProjector('SWITCH_VIEW', { viewNum: 2, round: 'RA_KHOI', activeRound: 'RA_KHOI' });
+    } else if (index === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
-        sendToProjector('VUOT_SONG_RESET');
-        sendToProjector('SWITCH_VIEW', { viewNum: 3 });
-    }
-    if (index === 4) {
-        sendToProjector('VINH_QUANG_RESET');
-        sendToProjector('SWITCH_VIEW', { viewNum: 6 });
+        sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG' });
+        sendToProjector('SWITCH_VIEW', { viewNum: 3, round: 'VUOT_SONG', activeRound: 'VUOT_SONG' });
+    } else if (index === 4) {
+        sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
+        sendToProjector('SWITCH_VIEW', { viewNum: 6, round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
+    } else if (index === 5) {
+        sendToProjector('SWITCH_VIEW', { viewNum: 6, round: 'CAU_HOI_PHU', activeRound: 'CAU_HOI_PHU' });
+    } else if (index === 0) {
+        sendToProjector('SWITCH_ROUND', { round: 'HE_THONG', activeRound: 'HE_THONG', tabIndex: 0 });
     }
 }
+
+// Bắt đầu vòng thi: Đồng bộ chuyển cảnh trên máy Thí sinh (Player) đồng thời ẩn sạch toàn bộ Graphic trên Graphic & Projector
+window.startRoundAndCleanGraphics = function(roundIndex) {
+    let roundName = 'XUAT_PHAT';
+    let viewNum = 1;
+    let label = 'Xuất Phát';
+    if (roundIndex === 1) {
+        roundName = 'XUAT_PHAT';
+        viewNum = 1;
+        label = 'Xuất Phát';
+    } else if (roundIndex === 2) {
+        roundName = 'RA_KHOI';
+        viewNum = 2;
+        label = 'Ra Khơi';
+    } else if (roundIndex === 3) {
+        roundName = 'VUOT_SONG';
+        viewNum = 3;
+        label = 'Vượt Sóng';
+    } else if (roundIndex === 4) {
+        roundName = 'VINH_QUANG';
+        viewNum = 6;
+        label = 'Vinh Quang';
+    }
+
+    window.currentActiveRound = roundName;
+    window.currentActiveTimer = null;
+    window.vqQuestionIsShown = false;
+    try {
+        localStorage.setItem('ddvq_active_round', roundName);
+        localStorage.setItem('ddvq_vq_question_shown', 'false');
+        localStorage.removeItem('ddvq_current_timer');
+        localStorage.removeItem('ddvq_vq_question_text');
+    } catch(e) {}
+
+    // Gửi tín hiệu chuyển vòng và dọn sạch graphic
+    const payload = {
+        type: 'START_ROUND_CLEAN',
+        round: roundName,
+        activeRound: roundName,
+        roundIndex: roundIndex,
+        sceneNum: roundIndex,
+        viewNum: viewNum,
+        vqQuestionShown: false,
+        timestamp: Date.now()
+    };
+    sendToProjector('START_ROUND_CLEAN', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+
+    if (roundIndex === 1) {
+        currentXuatPhatTurn = 0;
+        for (let i = 1; i <= 4; i++) {
+            const btn = document.getElementById(`btn_luot_${i}`);
+            if (btn) btn.classList.remove('active');
+        }
+        if (typeof updateTab1Preview === 'function') updateTab1Preview();
+        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT', vqQuestionShown: false });
+    } else if (roundIndex === 2) {
+        if (typeof selectRKQuestion === 'function') selectRKQuestion(1);
+        sendToProjector('RA_KHOI_RESET', { round: 'RA_KHOI', activeRound: 'RA_KHOI' });
+    } else if (roundIndex === 3) {
+        if (typeof updateVuotSongState === 'function') updateVuotSongState();
+        sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG' });
+    } else if (roundIndex === 4) {
+        sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG', vqQuestionShown: false });
+        sendToProjector('VINH_QUANG_HIDE_PACK', { round: 'VINH_QUANG', vqQuestionShown: false });
+    }
+
+    showToast(`🚀 Đã Bắt đầu Vòng ${roundIndex}: ${label}! Đã chuyển tab Player & ẩn toàn bộ Graphic.`);
+};
 
 // Show Toast Notification
 function showToast(msg) {
@@ -768,6 +840,60 @@ function saveAllData(notify = false) {
 
 window.vsSubmissions = window.vsSubmissions || {};
 
+function updateVSBuzzerLabels() {
+    window.vsSubmissions = window.vsSubmissions || {};
+    
+    // Collect all contestants who have buzzed
+    const activeList = [];
+    for (let i = 1; i <= 4; i++) {
+        const t = window.vsSubmissions[i];
+        if (t !== undefined && t !== null && t !== '') {
+            activeList.push({
+                idx: i,
+                timeNum: parseFloat(t) || 999999,
+                timeStr: t
+            });
+        }
+    }
+    
+    // Sort by time ascending (fastest/earliest first)
+    activeList.sort((a, b) => a.timeNum - b.timeNum);
+    
+    // Map tsIdx -> rank (1, 2, 3, 4)
+    const rankMap = {};
+    activeList.forEach((item, index) => {
+        rankMap[item.idx] = index + 1;
+    });
+    
+    const count = activeList.length;
+
+    // Update all 4 contestants' inputs
+    for (let i = 1; i <= 4; i++) {
+        const nameInput = document.getElementById(`ts${i}_name_vs`);
+        if (!nameInput) continue;
+        
+        const rawBase = gameData.contestants?.[i - 1]?.name || `Thí sinh ${i}`;
+        const baseName = rawBase.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+        
+        if (window.vsSubmissions[i]) {
+            const timeStr = window.vsSubmissions[i];
+            const rank = rankMap[i] || 1;
+            if (count > 1) {
+                nameInput.value = `${baseName} (${rank}) (${timeStr}S)`;
+            } else {
+                nameInput.value = `${baseName} (${timeStr}S)`;
+            }
+            nameInput.style.color = '#dc2626';
+            nameInput.style.fontWeight = 'bold';
+        } else {
+            nameInput.value = baseName;
+            nameInput.style.color = '#000';
+            nameInput.style.fontWeight = 'bold';
+        }
+    }
+}
+window.updateVSBuzzerLabels = updateVSBuzzerLabels;
+
 function markVSContestantSubmitted(tsIdx, timeStr) {
     if (!tsIdx || tsIdx < 1 || tsIdx > 4) return;
     
@@ -786,21 +912,17 @@ function markVSContestantSubmitted(tsIdx, timeStr) {
     // Save bell time (kể từ lúc bắt đầu vòng thi đến lúc bấm chuông)
     window.vsSubmissions[tsIdx] = cleanTime;
 
-    // Do NOT overwrite tsX_extra_vs (ô màu trắng dành riêng cho thời gian 20s trả lời câu hỏi)
-
-    const nameInput = document.getElementById(`ts${tsIdx}_name_vs`);
-    if (nameInput) {
-        const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
-        const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
-        nameInput.value = `${baseName} (${cleanTime}S)`;
-        nameInput.style.color = '#dc2626';
-        nameInput.style.fontWeight = 'bold';
-    }
+    updateVSBuzzerLabels();
 
     const rawBase = gameData.contestants?.[tsIdx - 1]?.name || `Thí sinh ${tsIdx}`;
-    const baseName = rawBase.replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+    const baseName = rawBase.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
     if (typeof showToast === 'function') {
-        showToast(`🔔 ${baseName} đã bấm chuông / trả lời đáp án vòng thi (${cleanTime}S)!`);
+        const totalBuzzed = Object.values(window.vsSubmissions).filter(v => v !== undefined && v !== null && v !== '').length;
+        if (totalBuzzed > 1) {
+            showToast(`🔔 ${baseName} đã bấm chuông / trả lời CNV (${cleanTime}S)!`);
+        } else {
+            showToast(`🔔 ${baseName} đã bấm chuông / trả lời đáp án vòng thi (${cleanTime}S)!`);
+        }
     }
 }
 
@@ -817,12 +939,8 @@ function syncContestantsUI() {
             
             const tab3Input = document.getElementById(`ts${idx}_name_vs`);
             if (tab3Input) {
-                const baseName = c.name || `Thí sinh ${idx}`;
-                if (window.vsSubmissions && window.vsSubmissions[idx]) {
-                    tab3Input.value = `${baseName} (${window.vsSubmissions[idx]}S)`;
-                    tab3Input.style.color = '#dc2626';
-                    tab3Input.style.fontWeight = 'bold';
-                } else {
+                const baseName = (c.name || `Thí sinh ${idx}`).replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+                if (!window.vsSubmissions || !window.vsSubmissions[idx]) {
                     tab3Input.value = baseName;
                     tab3Input.style.color = '#000';
                     tab3Input.style.fontWeight = 'normal';
@@ -842,6 +960,7 @@ function syncContestantsUI() {
             const dispVQ = document.getElementById(`ts${idx}_score_disp_vq`);
             if (dispVQ) dispVQ.innerText = scoreVal;
         });
+        updateVSBuzzerLabels();
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
         sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
     }
@@ -1224,9 +1343,11 @@ function getClientRoleLabel(role) {
     if (role === 'ts2') return 'Thí sinh 2';
     if (role === 'ts3') return 'Thí sinh 3';
     if (role === 'ts4') return 'Thí sinh 4';
-    if (role === 'host') return 'Máy MC';
+    if (role === 'players') return 'Tất cả 4 Thí sinh';
+    if (role === 'host') return 'Máy MC (Host)';
     if (role === 'projector') return 'Máy Chiếu';
-    if (role === 'all') return 'Tất cả các máy';
+    if (role === 'graphic') return 'Màn hình Graphic';
+    if (role === 'all') return 'Tất cả các máy / vai trò';
     return role;
 }
 
@@ -1243,7 +1364,7 @@ window.reloadClientSlot = function(role) {
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(payload);
     }
-    showToast(`🔄 Đã gửi yêu cầu Reload cho ${label}!`);
+    showToast(`🔄 Đã gửi yêu cầu Tải lại (Reload) cho ${label}!`);
 };
 
 window.kickClientSlot = function(role) {
@@ -1618,11 +1739,11 @@ function respondToStateRequest() {
         }
         qIdx = row;
     } else if (window.currentActiveRound === 'VINH_QUANG') {
-        const pack = typeof currentVinhQuangPack !== 'undefined' ? currentVinhQuangPack : 20;
-        const qIdxVQ = typeof currentVinhQuangIndex !== 'undefined' ? currentVinhQuangIndex : 0;
+        const pack = typeof currentVinhQuangPack !== 'undefined' ? currentVinhQuangPack : (typeof currentVQPack !== 'undefined' ? currentVQPack : 20);
+        const qIdxVQ = typeof currentVinhQuangIndex !== 'undefined' ? currentVinhQuangIndex : (typeof currentVQQuestionIndex !== 'undefined' ? currentVQQuestionIndex : 0);
         const packList = gameData.vinhQuang ? (gameData.vinhQuang[pack] || []) : [];
         const qItem = packList[qIdxVQ] || { q: '', a: '' };
-        qText = qItem.q || '';
+        qText = (window.vqQuestionIsShown || window.currentActiveTimer?.round === 'VINH_QUANG') ? (currentVQQuestionText || qItem.q || '') : '';
         qIdx = qIdxVQ + 1;
     }
 
@@ -1796,7 +1917,7 @@ function updateProjectorStatus(isConnected) {
 }
 
 function sendToProjector(type, payload = {}) {
-    let round = window.currentActiveRound;
+    let round = payload.activeRound || payload.round || window.currentActiveRound;
     if (type.startsWith('XUAT_PHAT_')) round = 'XUAT_PHAT';
     else if (type.startsWith('RA_KHOI_')) round = 'RA_KHOI';
     else if (type.startsWith('VUOT_SONG_')) round = 'VUOT_SONG';
@@ -1805,7 +1926,7 @@ function sendToProjector(type, payload = {}) {
         if (payload.viewNum === 1) round = 'XUAT_PHAT';
         else if (payload.viewNum === 2) round = 'RA_KHOI';
         else if (payload.viewNum === 3 || payload.viewNum === 4 || payload.viewNum === 5) round = 'VUOT_SONG';
-        else if (payload.viewNum === 6 || payload.viewNum === 7) round = 'VINH_QUANG';
+        else if (payload.viewNum === 6 || payload.viewNum === 7 || payload.viewNum === 8) round = 'VINH_QUANG';
     }
     if (round) {
         window.currentActiveRound = round;
@@ -1840,6 +1961,7 @@ function sendToProjector(type, payload = {}) {
     const message = {
         type,
         activeRound: round,
+        round: round,
         ...payload,
         timestamp: Date.now(),
         id: Math.random().toString(36).substring(2, 9)

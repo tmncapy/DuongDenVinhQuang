@@ -343,8 +343,8 @@ function handleIncomingAction(action, senderWs = null) {
   }
 
   // Track Active Round across scenes
-  if (action.activeRound) {
-    serverState.activeRound = action.activeRound;
+  if (action.activeRound || action.round) {
+    serverState.activeRound = action.activeRound || action.round;
   } else if (type.startsWith('XUAT_PHAT_')) {
     serverState.activeRound = 'XUAT_PHAT';
   } else if (type.startsWith('RA_KHOI_')) {
@@ -363,6 +363,29 @@ function handleIncomingAction(action, senderWs = null) {
   // Allow external state syncs (from projector or controller) to update currentTimer directly
   if (action.currentTimer && typeof action.currentTimer === 'object') {
     serverState.currentTimer = action.currentTimer;
+  }
+
+  // Track Vinh Quang question visibility
+  if (type === 'VINH_QUANG_SHOW_QUESTION' || type === 'VINH_QUANG_HIDE_PACK') {
+    serverState.vqQuestionShown = true;
+  } else if (
+    type === 'VINH_QUANG_SELECT_PACK' ||
+    type === 'VINH_QUANG_SHOW_PACKS' ||
+    type === 'VINH_QUANG_HIDE_QUESTION' ||
+    type === 'VINH_QUANG_RESET' ||
+    type === 'VINH_QUANG_INTRO' ||
+    type === 'VINH_QUANG_PHAN_THI' ||
+    type === 'SWITCH_VIEW' ||
+    type === 'SWITCH_ROUND' ||
+    type === 'START_ROUND_CLEAN' ||
+    type === 'RESET_ALL_DATA'
+  ) {
+    serverState.vqQuestionShown = false;
+    serverState.currentTimer = null;
+    if (action.round) serverState.activeRound = action.round;
+    if (serverState.activeRound === 'VINH_QUANG' || type.startsWith('VINH_QUANG_')) {
+      serverState.currentQuestion = null;
+    }
   }
 
   // Track Question & Grid Info
@@ -450,14 +473,17 @@ function handleIncomingAction(action, senderWs = null) {
   // Handle Explicit Request for Current State (e.g. from player reloading with F5)
   if (type === 'REQUEST_CURRENT_STATE') {
     const timerPayload = getActiveTimerPayload();
+    const isVQ = serverState.activeRound === 'VINH_QUANG';
+    const effectiveQText = (isVQ && !serverState.vqQuestionShown) ? '' : (serverState.currentQuestion?.questionText || '');
     const fullStateSync = {
       type: 'FULL_STATE_SYNC',
       activeRound: serverState.activeRound,
       currentRound: serverState.activeRound,
       currentTimer: timerPayload,
-      currentQuestion: serverState.currentQuestion,
-      questionText: serverState.currentQuestion?.questionText || '',
+      currentQuestion: isVQ && !serverState.vqQuestionShown ? null : serverState.currentQuestion,
+      questionText: effectiveQText,
       questionIndex: serverState.currentQuestion?.questionIndex || 1,
+      vqQuestionShown: !!serverState.vqQuestionShown,
       vuotSong: serverState.vuotSong,
       vuotSongRow: serverState.vuotSongRow,
       contestants: serverState.contestants,
@@ -690,6 +716,8 @@ app.get('/events', handleSseConnection);
 
 // GET /api/state & /state - Retrieve current authoritative game state
 const handleGetState = (req, res) => {
+  const isVQ = serverState.activeRound === 'VINH_QUANG';
+  const effectiveQText = (isVQ && !serverState.vqQuestionShown) ? '' : (serverState.currentQuestion?.questionText || '');
   res.json({
     type: 'FULL_STATE_SYNC',
     roomCode: serverState.roomCode,
@@ -698,9 +726,10 @@ const handleGetState = (req, res) => {
     activeRound: serverState.activeRound,
     currentRound: serverState.activeRound,
     currentTimer: getActiveTimerPayload(),
-    currentQuestion: serverState.currentQuestion,
-    questionText: serverState.currentQuestion?.questionText || '',
+    currentQuestion: isVQ && !serverState.vqQuestionShown ? null : serverState.currentQuestion,
+    questionText: effectiveQText,
     questionIndex: serverState.currentQuestion?.questionIndex || 1,
+    vqQuestionShown: !!serverState.vqQuestionShown,
     vuotSong: serverState.vuotSong,
     vuotSongRow: serverState.vuotSongRow,
     contestants: serverState.contestants,

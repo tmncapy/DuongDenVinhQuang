@@ -530,14 +530,45 @@
 
     <div id="toast-msg">Thông báo</div>
 
-    <!-- Thanh điều hướng trên cùng -->
-    <div class="navbar">
-        <div class="nav-item active" onclick="switchTab(0)">HỆ THỐNG</div>
-        <div class="nav-item" onclick="switchTab(1)">XUẤT PHÁT</div>
-        <div class="nav-item" onclick="switchTab(2)">RA KHƠI</div>
-        <div class="nav-item" onclick="switchTab(3)">VƯỢT SÓNG</div>
-        <div class="nav-item" onclick="switchTab(4)">VINH QUANG</div>
-        <div class="nav-item" onclick="switchTab(5)">CÂU HỎI PHỤ</div>
+    <!-- Thanh điều hướng trên cùng & Thanh Tải lại Vai trò nhanh (Reload Roles) -->
+    <div style="background: #1e293b; border-bottom: 2px solid #3b82f6; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 0 10px; gap: 8px;">
+        <!-- Tabs Navigation -->
+        <div class="navbar" style="background: transparent; border: none; margin: 0; flex: 1; min-width: 500px; max-width: 650px;">
+            <div class="nav-item active" onclick="switchTab(0)">HỆ THỐNG</div>
+            <div class="nav-item" onclick="switchTab(1)">XUẤT PHÁT</div>
+            <div class="nav-item" onclick="switchTab(2)">RA KHƠI</div>
+            <div class="nav-item" onclick="switchTab(3)">VƯỢT SÓNG</div>
+            <div class="nav-item" onclick="switchTab(4)">VINH QUANG</div>
+            <div class="nav-item" onclick="switchTab(5)">CÂU HỎI PHỤ</div>
+        </div>
+
+        <!-- Quick Role Reload Bar (Luôn hiển thị ở tất cả các vòng thi) -->
+        <div style="display: flex; align-items: center; gap: 5px; padding: 6px 0; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
+                🔄 RELOAD ROLE:
+            </span>
+            <button class="btn" onclick="reloadClientSlot('all')" style="background: linear-gradient(135deg, #e11d48, #be123c); color: white; border: none; font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 4px rgba(225,29,72,0.4);" title="Tải lại tất cả màn hình: Thí sinh 1-4, Máy MC, Máy Chiếu, Graphic">
+                🔄 TẤT CẢ
+            </button>
+            <button class="btn" onclick="reloadClientSlot('players')" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 4px rgba(37,99,235,0.3);" title="Tải lại 4 máy Thí sinh 1, 2, 3, 4">
+                👥 4 TS
+            </button>
+            <div style="display: inline-flex; background: #0f172a; padding: 2px; border-radius: 5px; border: 1px solid #334155; gap: 2px;">
+                <button class="btn" onclick="reloadClientSlot('ts1')" style="background: #3b82f6; color: white; border: none; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 3px; cursor: pointer;" title="Tải lại Thí sinh 1">TS1</button>
+                <button class="btn" onclick="reloadClientSlot('ts2')" style="background: #3b82f6; color: white; border: none; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 3px; cursor: pointer;" title="Tải lại Thí sinh 2">TS2</button>
+                <button class="btn" onclick="reloadClientSlot('ts3')" style="background: #3b82f6; color: white; border: none; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 3px; cursor: pointer;" title="Tải lại Thí sinh 3">TS3</button>
+                <button class="btn" onclick="reloadClientSlot('ts4')" style="background: #3b82f6; color: white; border: none; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 3px; cursor: pointer;" title="Tải lại Thí sinh 4">TS4</button>
+            </div>
+            <button class="btn" onclick="reloadClientSlot('host')" style="background: linear-gradient(135deg, #d97706, #b45309); color: white; border: none; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 4px rgba(217,119,6,0.3);" title="Tải lại màn hình Người dẫn chương trình (MC)">
+                🎙️ MC
+            </button>
+            <button class="btn" onclick="reloadClientSlot('projector')" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: none; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 4px rgba(5,150,105,0.3);" title="Tải lại Màn hình Máy Chiếu">
+                🖥️ MÁY CHIẾU
+            </button>
+            <button class="btn" onclick="reloadClientSlot('graphic')" style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; border: none; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 4px rgba(8,145,178,0.3);" title="Tải lại Màn hình Graphic OBS">
+                🎨 GRAPHIC
+            </button>
+        </div>
     </div>
 
     <!-- TAB 0: HỆ THỐNG (Hiển thị đầy đủ giao diện) -->
@@ -713,12 +744,11 @@
                     <label><input type="checkbox" checked> Khóa kết nối Máy MC</label>
                 </div>
 
-                <div class="conn-bottom">
-                    <button class="btn">▼</button>
-                    <button class="btn">📁</button>
+                <div class="conn-bottom" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <button class="btn" onclick="updateContestantNames()">Cập nhật tên thí sinh</button>
-                    <button class="btn" onclick="reloadClientSlot('all')" style="background: #0284c7; color: white; border-color: #0369a1; font-weight: bold;" title="Tải lại tất cả các máy thí sinh và máy chiếu">🔄 Tải lại tất cả máy</button>
-                    <input type="text" id="statusMessage" placeholder="Thông báo hệ thống...">
+                    <button class="btn" onclick="reloadClientSlot('all')" style="background: #e11d48; color: white; border-color: #be123c; font-weight: bold;" title="Tải lại tất cả các máy thí sinh, MC và máy chiếu">🔄 Tải lại tất cả máy</button>
+                    <button class="btn" onclick="reloadClientSlot('players')" style="background: #2563eb; color: white; border-color: #1d4ed8; font-weight: bold;" title="Tải lại cả 4 máy thí sinh">👥 Tải lại 4 Thí sinh</button>
+                    <input type="text" id="statusMessage" placeholder="Thông báo hệ thống..." style="flex: 1; min-width: 150px;">
                     <button class="btn" onclick="showToast('Đã gửi thông báo thành công!')">Gửi</button>
                     <button class="btn" onclick="showToast('Kiểm tra kết nối: Tất cả các máy phản hồi tốt!')">Kiểm tra kết nối</button>
                 </div>
@@ -1237,6 +1267,13 @@
                     </div>
                 </div>
 
+                <!-- NÚT BẮT ĐẦU VÒNG 1: XUẤT PHÁT -->
+                <div style="display: flex; gap: 6px; margin: 2px 0;">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(1)" style="flex: 1; background: linear-gradient(135deg, #1d4ed8, #1e40af); color: #ffffff; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(29,78,216,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Xuất Phát & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🚀 BẮT ĐẦU VÒNG 1 (XUẤT PHÁT)
+                    </button>
+                </div>
+
                 <!-- BUTTON ACTIONS ROW 1: Graphic chọn đề, Graphic câu hỏi, Random, Bắt đầu, Đúng, Sai, Chuyển câu, Âm thanh -->
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <button class="ctrl-btn-action" onclick="onClickHienGraphicChonDe()" style="flex: 1; background: #3b82f6; color: white;">
@@ -1486,6 +1523,13 @@
                         <div style="font-size: 11px; font-weight: bold;">TRẠNG THÁI</div>
                         <div id="rk_preview_status" style="font-size: 18px; font-weight: bold; color: #ffeb3b;">Sẵn sàng</div>
                     </div>
+                </div>
+
+                <!-- NÚT BẮT ĐẦU VÒNG 2: RA KHƠI -->
+                <div style="display: flex; gap: 6px; margin: 2px 0;">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(2)" style="flex: 1; background: linear-gradient(135deg, #1d4ed8, #1e40af); color: #ffffff; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(29,78,216,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Ra Khơi & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🚀 BẮT ĐẦU VÒNG 2 (RA KHƠI)
+                    </button>
                 </div>
 
                 <!-- ROW 1 CONTROLS: BLUE BAR + HIỆN ĐÁP ÁN + SOUND -->
@@ -1742,6 +1786,13 @@
                     </div>
                 </div>
 
+                <!-- NÚT BẮT ĐẦU VÒNG 3: VƯỢT SÓNG -->
+                <div style="display: flex; gap: 6px; margin: 2px 0;">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(3)" style="flex: 1; background: linear-gradient(135deg, #1d4ed8, #1e40af); color: #ffffff; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(29,78,216,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Vượt Sóng & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🚀 BẮT ĐẦU VÒNG 3 (VƯỢT SÓNG)
+                    </button>
+                </div>
+
                 <!-- ACTION BUTTONS ROW 1 -->
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <button class="ctrl-btn-action" onclick="onClickVSFlipRow()" style="flex: 1; background: #3b82f6; color: white;">
@@ -1989,6 +2040,13 @@
                         <div style="font-size: 11px; font-weight: bold;">TRẠNG THÁI</div>
                         <div id="vq_preview_status" style="font-size: 16px; font-weight: bold; color: #ffeb3b;">Sẵn sàng</div>
                     </div>
+                </div>
+
+                <!-- NÚT BẮT ĐẦU VÒNG 4: VINH QUANG -->
+                <div style="display: flex; gap: 6px; margin: 2px 0;">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(4)" style="flex: 1; background: linear-gradient(135deg, #1d4ed8, #1e40af); color: #ffffff; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(29,78,216,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🚀 BẮT ĐẦU VÒNG 4 (VINH QUANG)
+                    </button>
                 </div>
 
                 <!-- ROW 1 CONTROLS: BLUE BAR + CHECKBOX + WRONG/RIGHT SOUND -->
