@@ -184,6 +184,7 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
 
     if (roundIndex === 1) {
         currentXuatPhatTurn = 0;
+        if (typeof isXuatPhatStarted !== 'undefined') isXuatPhatStarted = false;
         for (let i = 1; i <= 4; i++) {
             const btn = document.getElementById(`btn_luot_${i}`);
             if (btn) btn.classList.remove('active');

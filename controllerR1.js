@@ -3,10 +3,12 @@ let currentXuatPhatDe = 1;
 let currentXuatPhatQIndex = 0;
 let xuatPhatTimerInterval = null;
 let xuatPhatTimeLeft = 60;
+let isXuatPhatStarted = false;
 
 function changeXuatPhatDe(val) {
     currentXuatPhatDe = parseInt(val) || 1;
     currentXuatPhatQIndex = 0;
+    isXuatPhatStarted = false;
     updateTab1Preview();
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[0] || { q: '', a: '' };
@@ -22,6 +24,7 @@ function changeXuatPhatDe(val) {
 function selectLuotThi(turnIndex) {
     currentXuatPhatTurn = Math.min(4, Math.max(1, turnIndex));
     currentXuatPhatQIndex = 0;
+    isXuatPhatStarted = false;
 
     for (let i = 1; i <= 4; i++) {
         const btn = document.getElementById(`btn_luot_${i}`);
@@ -78,8 +81,13 @@ function updateTab1Preview() {
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
 
-    if (qTextEl) qTextEl.innerText = currentQ.q ? `Câu ${currentXuatPhatQIndex + 1}: ${currentQ.q}` : `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`;
-    if (aTextEl) aTextEl.innerText = `Đáp án: ${currentQ.a || '...'}`;
+    if (!isXuatPhatStarted) {
+        if (qTextEl) qTextEl.innerText = '🔒 Đang chờ bấm Bắt đầu thi (Câu hỏi đầu tiên đang ẩn)...';
+        if (aTextEl) aTextEl.innerText = 'Đáp án: 🔒 [Đang ẩn - Bấm Bắt đầu để xem]';
+    } else {
+        if (qTextEl) qTextEl.innerText = currentQ.q ? `Câu ${currentXuatPhatQIndex + 1}: ${currentQ.q}` : `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`;
+        if (aTextEl) aTextEl.innerText = `Đáp án: ${currentQ.a || '...'}`;
+    }
 }
 
 function onClickIntroXuatPhat() {
@@ -146,6 +154,9 @@ function onClickBatDau60s() {
         showToast('⚠️ Vui lòng chọn Lượt thi của Thí sinh trước (TS1, TS2, TS3, hoặc TS4)!');
         return;
     }
+    isXuatPhatStarted = true;
+    updateTab1Preview();
+
     clearInterval(xuatPhatTimerInterval);
     xuatPhatTimeLeft = 60;
     const timerEl = document.getElementById('preview_timer');
@@ -245,6 +256,7 @@ function onClickDatLaiVongThi() {
     xuatPhatTimeLeft = 60;
     currentXuatPhatQIndex = 0;
     currentXuatPhatTurn = 0;
+    isXuatPhatStarted = false;
     for (let i = 1; i <= 4; i++) {
         const btn = document.getElementById(`btn_luot_${i}`);
         if (btn) btn.classList.remove('active');
@@ -272,6 +284,8 @@ function onClickDungNhac() {
 }
 
 function onClickHoanThanh() {
+    isXuatPhatStarted = false;
+    updateTab1Preview();
     sendToProjector('XUAT_PHAT_FINISH');
     sendToProjector('XUAT_PHAT_STOP_SOUND');
     const statusEl = document.getElementById('preview_status_text');
