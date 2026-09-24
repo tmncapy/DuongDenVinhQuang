@@ -157,6 +157,9 @@ function onSelectContestant(val) {
         startHeartbeat();
     }
     updateS1RandomDeButtonUI();
+    if (typeof fetchCurrentState === 'function') {
+        fetchCurrentState();
+    }
 }
 
 function chooseContestantSlot(slotId) {
@@ -472,28 +475,42 @@ function applyPlayerGameState(data) {
 
     // 4. Sync Question Text & Index
     const qText = data.questionText || data.currentQuestion?.questionText;
-    if (qText) {
-        if (sceneNum === 1 || !sceneNum) {
-            const el = document.getElementById('s1_question_text');
-            if (el) el.innerText = qText;
+    if (sceneNum === 1 || !sceneNum) {
+        const el = document.getElementById('s1_question_text');
+        if (el) {
+            const isXPRunning = !!(data.xpQuestionShown === true || (data.currentTimer && data.currentTimer.round === 'XUAT_PHAT'));
+            if (isXPRunning && qText) {
+                el.innerText = qText;
+                window.s1IsQuestionActive = true;
+            } else {
+                el.innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
+                window.s1IsQuestionActive = false;
+            }
         }
-        if (sceneNum === 2) {
-            const el = document.getElementById('s2_question_text');
-            if (el) el.innerText = qText;
+    }
+    if (sceneNum === 2) {
+        const el = document.getElementById('s2_question_text');
+        if (el && qText) el.innerText = qText;
+    }
+    if (sceneNum === 3) {
+        const el = document.getElementById('s3_question_text');
+        if (el) {
+            const isVSShown = (data.vsQuestionShown === true) || (localStorage.getItem('ddvq_vs_question_shown') === 'true');
+            if (isVSShown && qText) {
+                el.innerText = qText;
+            } else {
+                el.innerText = "Đang chờ câu hỏi Vượt Sóng...";
+            }
         }
-        if (sceneNum === 3) {
-            const el = document.getElementById('s3_question_text');
-            if (el) el.innerText = qText;
-        }
-        if (sceneNum === 4) {
-            const el = document.getElementById('s4_question_text');
-            if (el) {
-                const isShown = (data.vqQuestionShown === true) || (data.currentTimer && data.currentTimer.round === 'VINH_QUANG');
-                if (isShown && qText) {
-                    el.innerText = qText;
-                } else {
-                    el.innerText = "Đang chờ câu hỏi Vinh Quang...";
-                }
+    }
+    if (sceneNum === 4) {
+        const el = document.getElementById('s4_question_text');
+        if (el) {
+            const isVQShown = (data.vqQuestionShown === true) || (localStorage.getItem('ddvq_vq_question_shown') === 'true');
+            if (isVQShown && qText) {
+                el.innerText = qText;
+            } else {
+                el.innerText = "Đang chờ câu hỏi Vinh Quang...";
             }
         }
     }
@@ -566,7 +583,8 @@ function applyPlayerGameState(data) {
                 updateMasterRemainingTime("HẾT GIỜ");
                 const s3Input = document.getElementById('s3_answer_input');
                 if (s3Input) {
-                    s3Input.placeholder = "Hàng ngang đã khóa. Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+                    s3Input.disabled = true;
+                    s3Input.placeholder = "Hết giờ - Ô nhập hàng ngang đã khóa";
                 }
             } else if (timerRound === 'VINH_QUANG' || sceneNum === 4) {
                 clearInterval(s4TimerInterval);
@@ -580,6 +598,23 @@ function applyPlayerGameState(data) {
                     s4Input.placeholder = "Đang khóa (Hết thời gian trả lời)";
                 }
             }
+        }
+    } else {
+        // No timer running: ensure inputs for all rounds are locked outside answering time
+        const s2Input = document.getElementById('s2_answer_input');
+        if (s2Input && (!s2TimerInterval || s2TimeLeft <= 0)) {
+            s2Input.disabled = true;
+            s2Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)";
+        }
+        const s3Input = document.getElementById('s3_answer_input');
+        if (s3Input && (!s3TimerInterval || s3TimeLeft <= 0)) {
+            s3Input.disabled = true;
+            s3Input.placeholder = "Nhập đáp án hàng ngang";
+        }
+        const s4Input = document.getElementById('s4_answer_input');
+        if (s4Input && (!s4TimerInterval || s4TimeLeft <= 0)) {
+            s4Input.disabled = true;
+            s4Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)";
         }
     }
 }
@@ -778,20 +813,6 @@ function showToast(msg) {
     }, 3000);
 }
 
-function onSelectContestant(val) {
-    contestantId = parseInt(val) || 1;
-    localStorage.setItem('contestant_id', contestantId);
-    const myName = playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`;
-    if (document.getElementById('s1_badge_box')) document.getElementById('s1_badge_box').innerText = `TS ${contestantId}: ${myName}`;
-    if (document.getElementById('s2_badge_box')) document.getElementById('s2_badge_box').innerText = `TS ${contestantId}: ${myName}`;
-    if (document.getElementById('s3_badge_box')) document.getElementById('s3_badge_box').innerText = `TS ${contestantId}: ${myName}`;
-    if (document.getElementById('s4_badge_box')) document.getElementById('s4_badge_box').innerText = `TS ${contestantId}: ${myName}`;
-    showToast(`Đã chọn Thí sinh ${contestantId}: ${myName}`);
-    if (typeof fetchCurrentState === 'function') {
-        fetchCurrentState();
-    }
-}
-
 function resetS2SubmissionUI() {
     const badge = document.getElementById('s2_status_badge');
     if (badge) {
@@ -976,17 +997,40 @@ function displaySceneView(sceneNum) {
     if (t3) t3.className = sceneNum === 3 ? 'scene-tab active' : 'scene-tab';
     if (t4) t4.className = sceneNum === 4 ? 'scene-tab active' : 'scene-tab';
 
-    if (sceneNum === 3) {
+    if (sceneNum === 2) {
+        const s2Input = document.getElementById('s2_answer_input');
+        if (s2Input) {
+            if (s2TimerInterval && s2TimeLeft > 0) {
+                s2Input.disabled = false;
+            } else {
+                s2Input.disabled = true;
+                s2Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)";
+            }
+        }
+    } else if (sceneNum === 3) {
         const s3Input = document.getElementById('s3_answer_input');
         if (s3Input) {
-            s3Input.disabled = false;
-            if (!s3TimerStartTime || s3TimeLeft <= 0) {
-                s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+            if (s3TimerInterval && s3TimeLeft > 0) {
+                s3Input.disabled = false;
+                s3Input.placeholder = `Nhập đáp án hàng ngang... (Còn lại ${s3TimeLeft}s)`;
+            } else {
+                s3Input.disabled = true;
+                s3Input.placeholder = "Nhập đáp án hàng ngang";
             }
         }
         if (!s3RoundStartTime) {
             s3RoundStartTime = Date.now();
             localStorage.setItem('s3_round_start_time', s3RoundStartTime);
+        }
+    } else if (sceneNum === 4) {
+        const s4Input = document.getElementById('s4_answer_input');
+        if (s4Input) {
+            if (s4TimerInterval && s4TimeLeft > 0) {
+                s4Input.disabled = false;
+            } else {
+                s4Input.disabled = true;
+                s4Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)";
+            }
         }
     }
 }
@@ -999,7 +1043,7 @@ function autoSwitchScene(sceneNum) {
 // Submissions
 function submitScene2Answer() {
     const s2Input = document.getElementById('s2_answer_input');
-    if (s2Input && s2Input.disabled) {
+    if ((s2Input && s2Input.disabled) || !s2TimerStartTime || s2TimeLeft <= 0) {
         showToast("Ngoài thời gian quy định - Ô trả lời đang khóa!");
         return;
     }
@@ -1072,8 +1116,8 @@ function submitScene3Answer(isVongThi = false) {
     
     if (!isVongThi) {
         // Horizontal row answer: check if horizontal row timer is running
-        if (!s3TimerStartTime || s3TimeLeft <= 0) {
-            showToast("Hàng ngang đang khóa! Để gửi Chướng ngại vật, vui lòng nhấn nút TRẢ LỜI ĐÁP ÁN VÒNG THI");
+        if (!s3TimerStartTime || s3TimeLeft <= 0 || (s3Input && s3Input.disabled)) {
+            showToast("Hàng ngang đang khóa! Ngoài thời gian trả lời.");
             return;
         }
         const ans = s3Input ? s3Input.value.trim() : "";
@@ -1264,7 +1308,7 @@ function startS2Timer(sec, customStartTime = null) {
 
 function submitScene4Answer() {
     const s4Input = document.getElementById('s4_answer_input');
-    if (s4Input && s4Input.disabled) {
+    if ((s4Input && s4Input.disabled) || !s4TimerStartTime || s4TimeLeft <= 0) {
         showToast("Ngoài thời gian quy định - Ô trả lời đang khóa!");
         return;
     }
@@ -1346,7 +1390,11 @@ function clearPlayerSubmissionStatus(round) {
     if (!round || round === 'VS') {
         resetS3SubmitBtn();
         const input = document.getElementById('s3_answer_input');
-        if (input) input.value = "";
+        if (input) {
+            input.value = "";
+            input.disabled = true;
+            input.placeholder = "Nhập đáp án hàng ngang";
+        }
         const badge = document.getElementById('s3_status_badge');
         if (badge) { badge.innerText = "CHƯA GỬI"; badge.style.background = "#64748b"; }
         const txt = document.getElementById('s3_submitted_text');
@@ -1409,7 +1457,7 @@ function startS3Timer(sec, customStartTime = null) {
     const s3Input = document.getElementById('s3_answer_input');
     if (s3Input) {
         s3Input.disabled = false;
-        s3Input.placeholder = `Nhập câu trả lời Hàng ngang... (Còn lại ${s3TimeLeft}s)`;
+        s3Input.placeholder = `Nhập đáp án hàng ngang... (Còn lại ${s3TimeLeft}s)`;
         s3Input.focus();
     }
 
@@ -1417,14 +1465,16 @@ function startS3Timer(sec, customStartTime = null) {
         s3TimeLeft--;
         if (s3TimeLeft <= 0) {
             clearInterval(s3TimerInterval);
+            s3TimerInterval = null;
             updateMasterRemainingTime("HẾT GIỜ");
             if (s3Input) {
-                s3Input.placeholder = "Hàng ngang đã khóa. Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+                s3Input.disabled = true;
+                s3Input.placeholder = "Hết giờ - Ô nhập hàng ngang đã khóa";
             }
         } else {
             updateMasterRemainingTime(`${s3TimeLeft}s`);
             if (s3Input) {
-                s3Input.placeholder = `Nhập câu trả lời Hàng ngang... (Còn lại ${s3TimeLeft}s)`;
+                s3Input.placeholder = `Nhập đáp án hàng ngang... (Còn lại ${s3TimeLeft}s)`;
             }
         }
     }, 1000);
@@ -1547,10 +1597,15 @@ function handlePlayerMessage(data) {
 
             if (roundIdx === 1) {
                 currentS1TurnIndex = 0;
+                window.s1IsQuestionActive = false;
                 clearPlayerSubmissionStatus('S1');
+                try {
+                    localStorage.setItem('ddvq_xp_question_shown', 'false');
+                    localStorage.removeItem('ddvq_xp_question_text');
+                } catch(e) {}
                 if (document.getElementById('s1_contestant_name')) document.getElementById('s1_contestant_name').innerText = "Thí sinh";
                 if (document.getElementById('s1_score_box')) document.getElementById('s1_score_box').innerText = "Điểm: 0";
-                if (document.getElementById('s1_question_box')) document.getElementById('s1_question_box').innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
+                if (document.getElementById('s1_question_text')) document.getElementById('s1_question_text').innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
                 const s1Input = document.getElementById('s1_answer_input');
                 if (s1Input) { s1Input.value = ""; s1Input.disabled = true; s1Input.placeholder = "Đang khóa (Chờ câu hỏi...)"; }
             } else if (roundIdx === 2) {
@@ -1559,10 +1614,14 @@ function handlePlayerMessage(data) {
                 const s2Input = document.getElementById('s2_answer_input');
                 if (s2Input) { s2Input.value = ""; s2Input.disabled = true; s2Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)"; }
             } else if (roundIdx === 3) {
+                try {
+                    localStorage.setItem('ddvq_vs_question_shown', 'false');
+                    localStorage.removeItem('ddvq_vs_question_text');
+                } catch(e) {}
                 clearPlayerSubmissionStatus('VS');
                 if (document.getElementById('s3_question_text')) document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
                 const s3Input = document.getElementById('s3_answer_input');
-                if (s3Input) { s3Input.value = ""; s3Input.disabled = true; s3Input.placeholder = "Đang khóa (Chờ thời gian bắt đầu...)"; }
+                if (s3Input) { s3Input.value = ""; s3Input.disabled = true; s3Input.placeholder = "Nhập đáp án hàng ngang"; }
             } else if (roundIdx === 4) {
                 try {
                     localStorage.setItem('ddvq_vq_question_shown', 'false');
@@ -1618,8 +1677,25 @@ function handlePlayerMessage(data) {
 
         updateS1RandomDeButtonUI();
 
-        if (data.questionText) {
-            document.getElementById('s1_question_text').innerText = data.questionText;
+        if (data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI') {
+            window.s1IsQuestionActive = true;
+            if (data.questionText) {
+                document.getElementById('s1_question_text').innerText = data.questionText;
+            }
+        } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
+            if (window.s1IsQuestionActive && data.questionText) {
+                document.getElementById('s1_question_text').innerText = data.questionText;
+            }
+        } else if (
+            data.type === 'XUAT_PHAT_RESET' ||
+            data.type === 'XUAT_PHAT_FINISH' ||
+            data.type === 'XUAT_PHAT_SELECT_CONTESTANT' ||
+            data.type === 'XUAT_PHAT_SHOW_QUESTION' ||
+            data.type === 'XUAT_PHAT_RANDOM_DE' ||
+            data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE'
+        ) {
+            window.s1IsQuestionActive = false;
+            document.getElementById('s1_question_text').innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
         }
 
         if (data.score !== undefined) {
@@ -1729,15 +1805,19 @@ function handlePlayerMessage(data) {
             highlightS3Row(data.row);
         }
 
-        if (data.questionText) {
-            document.getElementById('s3_question_text').innerText = data.questionText;
-        }
-
         if (data.vuotSong) {
             renderPlayerVSGrid(data.vuotSong);
         }
 
-        if (data.type === 'VUOT_SONG_SELECT_ROW' || data.type === 'VUOT_SONG_SHOW_QUESTION') {
+        if (data.type === 'VUOT_SONG_SHOW_QUESTION') {
+            const q = data.questionText || "Nội dung câu hỏi Vượt Sóng...";
+            try {
+                localStorage.setItem('ddvq_vs_question_shown', 'true');
+                localStorage.setItem('ddvq_vs_question_text', q);
+            } catch(e) {}
+            if (document.getElementById('s3_question_text')) {
+                document.getElementById('s3_question_text').innerText = q;
+            }
             clearPlayerSubmissionStatus('VS');
             s3TimerStartTime = 0;
             clearInterval(s3TimerInterval);
@@ -1747,8 +1827,28 @@ function handlePlayerMessage(data) {
             const s3Input = document.getElementById('s3_answer_input');
             if (s3Input) {
                 s3Input.value = "";
-                s3Input.disabled = false;
-                s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+                s3Input.disabled = true;
+                s3Input.placeholder = "Nhập đáp án hàng ngang";
+            }
+        } else if (data.type === 'VUOT_SONG_SELECT_ROW') {
+            try {
+                localStorage.setItem('ddvq_vs_question_shown', 'false');
+                localStorage.removeItem('ddvq_vs_question_text');
+            } catch(e) {}
+            if (document.getElementById('s3_question_text')) {
+                document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
+            }
+            clearPlayerSubmissionStatus('VS');
+            s3TimerStartTime = 0;
+            clearInterval(s3TimerInterval);
+            s3TimerInterval = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
+            updateMasterRemainingTime('--');
+            const s3Input = document.getElementById('s3_answer_input');
+            if (s3Input) {
+                s3Input.value = "";
+                s3Input.disabled = true;
+                s3Input.placeholder = "Nhập đáp án hàng ngang";
             }
         } else if (data.type === 'VUOT_SONG_START_TIMER') {
             const startTime = data.startTime || Date.now();
@@ -1763,6 +1863,29 @@ function handlePlayerMessage(data) {
                     targetTime: startTime + duration * 1000
                 }));
             } catch(e) {}
+        } else if (data.type === 'VUOT_SONG_RETURN_GRID') {
+            autoSwitchScene(3);
+            clearInterval(s3TimerInterval);
+            s3TimerInterval = null;
+            s3TimerStartTime = 0;
+            try {
+                localStorage.removeItem('ddvq_current_timer');
+                localStorage.setItem('ddvq_vs_question_shown', 'false');
+            } catch(e) {}
+            updateMasterRemainingTime('--');
+            if (document.getElementById('s3_question_text')) {
+                document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
+            }
+            const s3Input = document.getElementById('s3_answer_input');
+            if (s3Input) {
+                s3Input.value = "";
+                s3Input.disabled = true;
+                s3Input.placeholder = "Nhập đáp án hàng ngang";
+            }
+            if (data.row) {
+                highlightS3Row(data.row);
+            }
+            renderPlayerVSGrid(data.vuotSong || playerVsData, playerOpenedRows);
         } else if (data.type === 'VUOT_SONG_RESET') {
             highlightS3Row(0);
             playerOpenedRows = {};
@@ -1770,16 +1893,22 @@ function handlePlayerMessage(data) {
             clearInterval(s3TimerInterval);
             s3TimerInterval = null;
             s3TimerStartTime = 0;
-            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
+            try {
+                localStorage.removeItem('ddvq_current_timer');
+                localStorage.setItem('ddvq_vs_question_shown', 'false');
+                localStorage.removeItem('ddvq_vs_question_text');
+            } catch(e) {}
             updateMasterRemainingTime('--');
             s3RoundStartTime = Date.now();
             localStorage.setItem('s3_round_start_time', s3RoundStartTime);
-            document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
+            if (document.getElementById('s3_question_text')) {
+                document.getElementById('s3_question_text').innerText = "Đang chờ câu hỏi Vượt Sóng...";
+            }
             const s3Input = document.getElementById('s3_answer_input');
             if (s3Input) {
                 s3Input.value = "";
-                s3Input.disabled = false;
-                s3Input.placeholder = "Nhập đáp án Chướng ngại vật (Ấn nút màu xanh lá)...";
+                s3Input.disabled = true;
+                s3Input.placeholder = "Nhập đáp án hàng ngang";
             }
         }
     }
@@ -1789,7 +1918,7 @@ function handlePlayerMessage(data) {
         autoSwitchScene(4);
         currentS2Round = 'VQ';
 
-        if (data.type === 'VINH_QUANG_SHOW_QUESTION' || data.type === 'VINH_QUANG_HIDE_PACK') {
+        if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
             const qContent = data.questionText || "Nội dung câu hỏi Vinh Quang...";
             try {
                 localStorage.setItem('ddvq_vq_question_shown', 'true');
@@ -1814,9 +1943,11 @@ function handlePlayerMessage(data) {
             }
             if (document.getElementById('s4_time_box')) document.getElementById('s4_time_box').innerText = "Thời gian";
         } else if (data.type === 'VINH_QUANG_START_TIMER' || data.type === 'VINH_QUANG_START_TIMER_5S') {
+            const isShown = (data.vqQuestionShown === true) || (localStorage.getItem('ddvq_vq_question_shown') === 'true');
             if (data.questionText && document.getElementById('s4_question_text')) {
-                document.getElementById('s4_question_text').innerText = data.questionText;
-                try { localStorage.setItem('ddvq_vq_question_shown', 'true'); } catch(e) {}
+                if (isShown) {
+                    document.getElementById('s4_question_text').innerText = data.questionText;
+                }
             }
             const duration = data.type === 'VINH_QUANG_START_TIMER_5S' ? 5 : (data.duration || 25);
             const startTime = data.startTime || Date.now();

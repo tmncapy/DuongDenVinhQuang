@@ -1123,6 +1123,8 @@ function handleProjectorMessage(data) {
         handleVSOpenKeywordLetters(data);
     } else if (data.type === 'VUOT_SONG_OPEN_ALL_ANSWERS') {
         handleVSOpenAllAnswers(data);
+    } else if (data.type === 'VUOT_SONG_RETURN_GRID') {
+        handleVSReturnGrid(data);
     } else if (data.type === 'VINH_QUANG_SHOW_PACKS' || data.type === 'VINH_QUANG_SHOW_PACK_SELECTION') {
         showPack6();
     } else if (data.type === 'VINH_QUANG_SELECT_PACK') {
@@ -1457,6 +1459,7 @@ function handleVSOpenAllAnswers(data) {
 
 function handleVSReset() {
     switchView(3);
+    window.currentSelectedVSRow = null;
     window.vsOpenedRows = { 1: false, 2: false, 3: false, 4: false, center: false, keyword: false };
     window.vsRevealedIndices = [];
     ensureVSGridSynced();
@@ -1501,7 +1504,78 @@ function handleVSReset() {
     }
 }
 
+function handleVSReturnGrid(data) {
+    switchView(3);
+    ensureVSGridSynced();
+
+    const vqAudio4 = document.getElementById('vongThiAudio4');
+    if (vqAudio4) { try { vqAudio4.pause(); vqAudio4.currentTime = 0; } catch(e) {} }
+    const ansAudio5 = document.getElementById('soundVSAnswer');
+    if (ansAudio5) { try { ansAudio5.pause(); ansAudio5.currentTime = 0; } catch(e) {} }
+    if (countdown4) clearInterval(countdown4);
+    isRunning4 = false;
+    if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
+
+    const selectedRow = data && data.row ? data.row : (window.currentSelectedVSRow || null);
+    if (selectedRow) {
+        window.currentSelectedVSRow = selectedRow;
+    }
+
+    // 1. Maintain indicators (selected row highlighted with c{h}c.png)
+    for (let h = 1; h <= 4; h++) {
+        const ind = document.getElementById(`vs_ind_${h}`);
+        if (ind) {
+            if (selectedRow && (h === selectedRow || h == selectedRow)) {
+                ind.style.backgroundImage = `url('Images/c${h}c.png')`;
+            } else {
+                ind.style.backgroundImage = `url('Images/c${h}.png')`;
+            }
+        }
+    }
+
+    // 2. Maintain row answers & selected row appearance
+    const rowsContainer = document.getElementById('file3-rows-container');
+    if (rowsContainer && windowCurrentVsData) {
+        for (let h = 1; h <= 4; h++) {
+            const items = rowsContainer.querySelectorAll(`.row-${h}-item`);
+            const isOpened = !!(window.vsOpenedRows && window.vsOpenedRows[h]);
+            const isSelected = !!(selectedRow && (h === selectedRow || h == selectedRow));
+            const ans = (windowCurrentVsData[`h${h}`]?.a || windowCurrentVsData[`h${h}`]?.q || '').replace(/\s+/g, '').toUpperCase();
+
+            items.forEach((item, index) => {
+                if (isOpened) {
+                    item.style.backgroundImage = "url('Images/LetterDefault.png')";
+                    item.innerText = index < ans.length ? ans[index] : "";
+                } else if (isSelected) {
+                    item.style.backgroundImage = "url('Images/LetterChoose.png')";
+                    item.innerText = "";
+                } else {
+                    item.style.backgroundImage = "url('Images/LetterDefault.png')";
+                    item.innerText = "";
+                }
+            });
+        }
+    }
+
+    // 3. Maintain revealed keyword letters
+    const keysContainer = document.getElementById('file3-keys-container');
+    if (keysContainer && windowCurrentVsData) {
+        const kw = (windowCurrentVsData.keyword || windowCurrentVsData.center?.a || '').trim();
+        const cleanKw = removeVietnameseTones(kw).replace(/\s+/g, '').toUpperCase();
+        const isKwAllOpened = !!(window.vsOpenedRows && (window.vsOpenedRows.keyword || window.vsOpenedRows.center));
+        const kwItems = keysContainer.querySelectorAll('.key-item');
+        kwItems.forEach((item, index) => {
+            if (index < cleanKw.length) {
+                const isOpened = isKwAllOpened || (window.vsRevealedIndices && window.vsRevealedIndices.includes(index));
+                item.style.backgroundImage = isOpened ? "url('Images/LetterKeyOpen.png')" : "url('Images/LetterKey.png')";
+                item.innerText = isOpened ? (cleanKw[index] || '') : "";
+            }
+        });
+    }
+}
+
 function flashVuotSongRow(row) {
+    window.currentSelectedVSRow = row;
     switchView(3);
     ensureVSGridSynced();
     safePlay(soundChooseQues);

@@ -189,20 +189,80 @@ function onClickRKDatLai() {
     
     sendToProjector('RA_KHOI_RESET', {
         questionIndex: currentRKQuestion,
+        round: 'RA_KHOI',
+        activeRound: 'RA_KHOI',
         timestamp: Date.now()
     });
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction({
             type: 'RA_KHOI_RESET',
             questionIndex: currentRKQuestion,
+            round: 'RA_KHOI',
+            activeRound: 'RA_KHOI',
             timestamp: Date.now()
         });
     }
 
-    // Reset all other rounds
-    sendToProjector('XUAT_PHAT_RESET');
-    sendToProjector('VUOT_SONG_RESET');
-    sendToProjector('VINH_QUANG_RESET');
-
-    showToast('Đã đặt lại vòng Ra Khơi và toàn bộ các vòng khác');
+    showToast('Đã đặt lại vòng Ra Khơi');
 }
+
+function onClickRKAutoScore() {
+    const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+    const correctAns = (qItem.a || '').trim();
+    
+    // Gather all 4 contestants with their names, answers, and times
+    const list = [];
+    for (let i = 1; i <= 4; i++) {
+        const rawName = gameData.contestants?.[i - 1]?.name || document.getElementById(`ts${i}_name_rk`)?.value || `Thí sinh ${i}`;
+        const cleanName = rawName.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+        const ansVal = (document.getElementById(`ts${i}_ans_rk`)?.value || '').trim();
+        let timeVal = (document.getElementById(`ts${i}_extra_rk`)?.value || '00.00').trim();
+        
+        let numTime = parseFloat(timeVal.replace(/s|giây/gi, ''));
+        if (isNaN(numTime) || numTime <= 0) numTime = 999;
+        
+        list.push({ idx: i, name: cleanName, ans: ansVal, timeStr: timeVal, timeNum: numTime });
+    }
+    
+    // Sort by response time ascending (fastest first)
+    list.sort((a, b) => a.timeNum - b.timeNum);
+
+    let promptMsg = `⚡ CHẤM ĐIỂM RA KHƠI (Thang điểm: 40 - 30 - 20 - 10)\n`;
+    if (correctAns) {
+        promptMsg += `Đáp án đúng: "${correctAns}"\n\n`;
+    }
+    promptMsg += `Thứ tự thời gian trả lời của 4 thí sinh:\n`;
+    list.forEach((item, pos) => {
+        promptMsg += `${pos + 1}. [TS ${item.idx}] ${item.name} (${item.timeStr}s) - Đáp án: "${item.ans || '(chưa nhập)'}"\n`;
+    });
+    promptMsg += `\nNhập số thứ tự Thí sinh trả lời ĐÚNG (theo số TS 1, 2, 3, 4; cách nhau bằng dấu phẩy, ví dụ: 1, 3):\n(Thí sinh nhanh nhất trong số người đúng nhận 40đ, tiếp theo là 30đ, 20đ, 10đ)`;
+
+    const input = prompt(promptMsg, "");
+    if (input === null || input.trim() === '') return;
+
+    const chosenIdxs = input.split(/[,+\s]+/).map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 4);
+    if (chosenIdxs.length === 0) {
+        if (typeof showToast === 'function') showToast('Không chọn thí sinh nào.');
+        return;
+    }
+
+    // Filter list preserving the time-sorted order
+    const correctContestants = list.filter(item => chosenIdxs.includes(item.idx));
+    const pointScale = [40, 30, 20, 10];
+    const results = [];
+
+    correctContestants.forEach((item, rank) => {
+        const pts = pointScale[rank] || 10;
+        if (typeof adjustScore === 'function') {
+            adjustScore(item.idx, pts);
+        }
+        results.push(`TS${item.idx} (+${pts}đ)`);
+    });
+
+    if (typeof showToast === 'function') {
+        showToast(`Đã cộng điểm Ra Khơi: ${results.join(', ')}`);
+    }
+}
+window.onClickRKAutoScore = onClickRKAutoScore;
+
+

@@ -67,6 +67,9 @@ let serverState = {
   activeRound: 'XUAT_PHAT',
   currentTimer: null,
   currentQuestion: null,
+  xpQuestionShown: false,
+  vsQuestionShown: false,
+  vqQuestionShown: false,
   vuotSong: null,
   vuotSongRow: 0,
   contestants: [
@@ -365,12 +368,46 @@ function handleIncomingAction(action, senderWs = null) {
     serverState.currentTimer = action.currentTimer;
   }
 
-  // Track Vinh Quang question visibility
-  if (type === 'VINH_QUANG_SHOW_QUESTION' || type === 'VINH_QUANG_HIDE_PACK') {
+  // Track Question Visibility across rounds
+  // 1. Xuat Phat: Only visible when timer starts or next question is triggered
+  if (type === 'XUAT_PHAT_START_TIMER' || type === 'XUAT_PHAT_BAT_DAU_CAU_HOI' || type === 'XUAT_PHAT_NEXT_QUESTION') {
+    serverState.xpQuestionShown = true;
+  } else if (
+    type === 'XUAT_PHAT_RESET' ||
+    type === 'XUAT_PHAT_FINISH' ||
+    type === 'XUAT_PHAT_SELECT_CONTESTANT' ||
+    type === 'XUAT_PHAT_SHOW_QUESTION' ||
+    type === 'XUAT_PHAT_RANDOM_DE' ||
+    type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE' ||
+    type === 'SWITCH_ROUND' ||
+    type === 'START_ROUND_CLEAN' ||
+    type === 'RESET_ALL_DATA'
+  ) {
+    serverState.xpQuestionShown = false;
+  }
+
+  // 2. Vuot Song: Only visible when VUOT_SONG_SHOW_QUESTION is explicitly called
+  if (type === 'VUOT_SONG_SHOW_QUESTION') {
+    serverState.vsQuestionShown = true;
+  } else if (
+    type === 'VUOT_SONG_SELECT_ROW' ||
+    type === 'VUOT_SONG_RETURN_GRID' ||
+    type === 'VUOT_SONG_RESET' ||
+    type === 'VUOT_SONG_INTRO' ||
+    type === 'SWITCH_ROUND' ||
+    type === 'START_ROUND_CLEAN' ||
+    type === 'RESET_ALL_DATA'
+  ) {
+    serverState.vsQuestionShown = false;
+  }
+
+  // 3. Vinh Quang: Only visible when VINH_QUANG_SHOW_QUESTION is explicitly called
+  if (type === 'VINH_QUANG_SHOW_QUESTION') {
     serverState.vqQuestionShown = true;
   } else if (
     type === 'VINH_QUANG_SELECT_PACK' ||
     type === 'VINH_QUANG_SHOW_PACKS' ||
+    type === 'VINH_QUANG_HIDE_PACK' ||
     type === 'VINH_QUANG_HIDE_QUESTION' ||
     type === 'VINH_QUANG_RESET' ||
     type === 'VINH_QUANG_INTRO' ||
@@ -470,19 +507,29 @@ function handleIncomingAction(action, senderWs = null) {
     serverState.currentTimer = null;
   }
 
+  // Helper to determine if question is permitted to be shown on player
+  const isQuestionVisibleForActiveRound = () => {
+    if (serverState.activeRound === 'XUAT_PHAT') return !!serverState.xpQuestionShown;
+    if (serverState.activeRound === 'VUOT_SONG') return !!serverState.vsQuestionShown;
+    if (serverState.activeRound === 'VINH_QUANG') return !!serverState.vqQuestionShown;
+    return true; // RA_KHOI
+  };
+
   // Handle Explicit Request for Current State (e.g. from player reloading with F5)
   if (type === 'REQUEST_CURRENT_STATE') {
     const timerPayload = getActiveTimerPayload();
-    const isVQ = serverState.activeRound === 'VINH_QUANG';
-    const effectiveQText = (isVQ && !serverState.vqQuestionShown) ? '' : (serverState.currentQuestion?.questionText || '');
+    const isQVisible = isQuestionVisibleForActiveRound();
+    const effectiveQText = isQVisible ? (serverState.currentQuestion?.questionText || '') : '';
     const fullStateSync = {
       type: 'FULL_STATE_SYNC',
       activeRound: serverState.activeRound,
       currentRound: serverState.activeRound,
       currentTimer: timerPayload,
-      currentQuestion: isVQ && !serverState.vqQuestionShown ? null : serverState.currentQuestion,
+      currentQuestion: isQVisible ? serverState.currentQuestion : null,
       questionText: effectiveQText,
       questionIndex: serverState.currentQuestion?.questionIndex || 1,
+      xpQuestionShown: !!serverState.xpQuestionShown,
+      vsQuestionShown: !!serverState.vsQuestionShown,
       vqQuestionShown: !!serverState.vqQuestionShown,
       vuotSong: serverState.vuotSong,
       vuotSongRow: serverState.vuotSongRow,
@@ -513,6 +560,15 @@ wss.on('connection', (ws, req) => {
   const ip = req.socket.remoteAddress;
   console.log(`⚡ [WebSocket] Client connected from ${ip}. Total WS clients: ${wsClients.size}`);
 
+  // Helper for initial connection check
+  const isQVisible = () => {
+    if (serverState.activeRound === 'XUAT_PHAT') return !!serverState.xpQuestionShown;
+    if (serverState.activeRound === 'VUOT_SONG') return !!serverState.vsQuestionShown;
+    if (serverState.activeRound === 'VINH_QUANG') return !!serverState.vqQuestionShown;
+    return true;
+  };
+  const showQ = isQVisible();
+
   // Send immediate initial state sync to newly connected WebSocket client
   try {
     ws.send(JSON.stringify({
@@ -523,9 +579,12 @@ wss.on('connection', (ws, req) => {
       activeRound: serverState.activeRound,
       currentRound: serverState.activeRound,
       currentTimer: getActiveTimerPayload(),
-      currentQuestion: serverState.currentQuestion,
-      questionText: serverState.currentQuestion?.questionText || '',
+      currentQuestion: showQ ? serverState.currentQuestion : null,
+      questionText: showQ ? (serverState.currentQuestion?.questionText || '') : '',
       questionIndex: serverState.currentQuestion?.questionIndex || 1,
+      xpQuestionShown: !!serverState.xpQuestionShown,
+      vsQuestionShown: !!serverState.vsQuestionShown,
+      vqQuestionShown: !!serverState.vqQuestionShown,
       vuotSong: serverState.vuotSong,
       vuotSongRow: serverState.vuotSongRow,
       contestants: serverState.contestants,
@@ -989,6 +1048,17 @@ app.get('/controller', (req, res) => { res.sendFile(path.join(__dirname, 'contro
 app.get('/projector', (req, res) => { res.sendFile(path.join(__dirname, 'projector.html')); });
 app.get('/graphic', (req, res) => { res.sendFile(path.join(__dirname, 'graphic.html')); });
 app.get('/scoreboard', (req, res) => { res.sendFile(path.join(__dirname, 'Scoreboard.html')); });
+app.get('/guide', (req, res) => { res.sendFile(path.join(__dirname, 'guide.html')); });
+app.get('/huong-dan', (req, res) => { res.sendFile(path.join(__dirname, 'guide.html')); });
+app.get('/huong_dan_controller.pdf', (req, res) => {
+  const filePath = path.join(__dirname, 'huong_dan_controller.pdf');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="huong_dan_controller.pdf"');
+    return res.sendFile(filePath);
+  }
+  res.status(404).send('File PDF không tồn tại');
+});
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 
 // Start HTTP + WebSocket server

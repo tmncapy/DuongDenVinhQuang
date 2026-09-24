@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>So Tay Huong Dan Su Dung Ban Dieu Khien (Controller) - Duong Den Vinh Quang</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #2563eb;
+            --accent: #f59e0b;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f1f5f9;
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px 10px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Top Header Action Bar */
+        .top-bar {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 18px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .top-title h1 {
+            font-size: 20px;
+            color: #f8fafc;
+            letter-spacing: 0.5px;
+        }
+
+        .top-title p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-pdf {
+            background: #dc2626;
+            color: white;
+            padding: 9px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #b91c1c;
+            transition: all 0.2s;
+        }
+
+        .btn-pdf:hover {
+            background: #b91c1c;
+        }
+
+        .btn-print {
+            background: #2563eb;
+            color: white;
+            padding: 9px 16px;
+            border-radius: 4px;
+            border: 1px solid #1d4ed8;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-print:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-back {
+            background: #334155;
+            color: #e2e8f0;
+            padding: 9px 14px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid #475569;
+        }
+
+        .content {
+            padding: 30px 35px;
+        }
+
+        h2 {
+            font-size: 16.5px;
+            color: #1e3a8a;
+            border-left: 5px solid #2563eb;
+            padding-left: 10px;
+            margin: 28px 0 14px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        h3 {
+            font-size: 14.5px;
+            color: #0369a1;
+            margin: 18px 0 8px 0;
+            text-transform: uppercase;
+        }
+
+        p, li {
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.65;
+        }
+
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 14px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        .btn-tag {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+            border-radius: 3px;
+            padding: 2px 7px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 12.5px;
+        }
+
+        .btn-tag-green {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        .btn-tag-blue {
+            background: #dbeafe;
+            color: #1e40af;
+            border-color: #93c5fd;
+        }
+
+        .btn-tag-red {
+            background: #fee2e2;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        /* Callout Boxes */
+        .callout {
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 13.5px;
+            border-left: 4px solid;
+        }
+
+        .callout-info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .callout-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .callout-tip {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        /* Step cards */
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .step-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            background: #0284c7;
+            color: white;
+            font-weight: bold;
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .step-text h4 {
+            font-size: 14px;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .step-text p {
+            font-size: 13.2px;
+            color: #475569;
+            margin: 0;
+        }
+
+        .step-action {
+            margin-top: 5px;
+            font-size: 12.8px;
+            color: #b45309;
+            font-weight: 600;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 22px 0;
+            background: #ffffff;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+        }
+
+        th, td {
+            padding: 9px 12px;
+            text-align: left;
+            font-size: 13px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #1e293b;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .badge-score {
+            display: inline-block;
+            font-weight: bold;
+            padding: 2px 7px;
+            border-radius: 3px;
+            color: white;
+            font-size: 11.5px;
+        }
+
+        .score-40 { background: #1e3a8a; }
+        .score-30 { background: #2563eb; }
+        .score-20 { background: #16a34a; }
+        .score-10 { background: #ca8a04; }
+        .score-50 { background: #dc2626; }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                max-width: 100%;
+            }
+            .top-bar {
+                background: #1e293b !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .action-btns {
+                display: none;
+            }
+            .content {
+                padding: 15px;
+            }
+            h2 {
+                page-break-after: avoid;
+            }
+            table, .step-card {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Top Action Bar -->
+    <div class="top-bar">
+        <div class="top-title">
+            <h1>SO TAY HUONG DAN BAN DIEU KHIEN (CONTROLLER)</h1>
+            <p>He thong Duong Den Vinh Quang 2026 - Quy trinh thao tac chi tiet</p>
+        </div>
+        <div class="action-btns">
+            <a href="/huong_dan_controller.pdf" download class="btn-pdf" title="Tai file PDF chuan khong loi font">
+                TAI FILE PDF (90 KB)
+            </a>
+            <button onclick="window.print()" class="btn-print" title="In hoac luu PDF truc tiep">
+                IN TAI LIEU / LUU PDF
+            </button>
+            <a href="/controller" class="btn-back">
+                VE CONTROLLER
+            </a>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="callout callout-info">
+            <strong>Luu y ve font chu:</strong> Tai lieu nay da duoc loai bo toan bo ky tu icon va emoji de dam bao khong bi loi font hien thi, khong bi o vuong khi in ra may in hoac xuat file PDF.
+        </div>
+
+        <!-- Section 1 -->
+        <h2>1. GIAO DIEN DAU TRANG VA THANH RELOAD ROLE</h2>
+        <p>Phia tren cung cua ban dieu khien gom 2 thanh cong cu chinh:</p>
+        
+        <h3>Cac nut chuyen Tab vong thi:</h3>
+        <ul>
+            <li><span class="btn-tag">[HE THONG]</span>: Mo man hinh cai dat tong the, quan ly cau hoi va kiem tra ket noi.</li>
+            <li><span class="btn-tag">[XUAT PHAT]</span>: Mo ban dieu khien vong 1 (Khoi dong 60s).</li>
+            <li><span class="btn-tag">[RA KHOI]</span>: Mo ban dieu khien vong 2 (Tang toc, thang diem 40-30-20-10).</li>
+            <li><span class="btn-tag">[VUOT SONG]</span>: Mo ban dieu khien vong 3 (Hang ngang va Tu khoa, thang diem 50-10).</li>
+            <li><span class="btn-tag">[VINH QUANG]</span>: Mo ban dieu khien vong 4 (Ve dich, goi cau hoi va ngoi sao).</li>
+            <li><span class="btn-tag">[CAU HOI PHU]</span>: Mo giao dien cau hoi phu phan dinh thang thua.</li>
+        </ul>
+
+        <h3>Cac nut tren thanh RELOAD ROLE (Tai lai tu xa khong mat du lieu):</h3>
+        <ul>
+            <li><span class="btn-tag btn-tag-red">[TAT CA]</span>: Gui lenh F5 tai lai toan bo tat ca man hinh dang ket noi.</li>
+            <li><span class="btn-tag btn-tag-blue">[4 TS]</span>: Gui lenh tai lai dong thoi ca 4 may thi sinh 1, 2, 3, 4.</li>
+            <li><span class="btn-tag">[TS1]</span>, <span class="btn-tag">[TS2]</span>, <span class="btn-tag">[TS3]</span>, <span class="btn-tag">[TS4]</span>: Tai lai rieng biet may cua tung thi sinh neu gap truc trac.</li>
+            <li><span class="btn-tag">[MC]</span>: Tai lai man hinh cua Nguoi dan chuong trinh.</li>
+            <li><span class="btn-tag">[MAY CHIEU]</span>: Tai lai man hinh may chieu san khau (Projector).</li>
+            <li><span class="btn-tag">[GRAPHIC]</span>: Tai lai man hinh do hoa livestream / OBS.</li>
+            <li><span class="btn-tag">[TAI PDF]</span> va <span class="btn-tag">[HUONG DAN]</span>: Mo va tai tai lieu huong dan nay.</li>
+        </ul>
+
+        <!-- Section 2 -->
+        <h2>2. TAB 0: HE THONG - CHUAN BI TRUOC TRAN DAU</h2>
+        <div class="step-list">
+            <div class="step-card">
+                <div class="step-num">B1</div>
+                <div class="step-text">
+                    <h4>Nhap danh sach thi sinh</h4>
+                    <p>Dien Ho ten, Truong/Lop vao 4 o: TS1, TS2, TS3, TS4 tai khung Thong Tin Thi Sinh.</p>
+                    <div class="step-action">-> Thao tac: Nhap chu truc tiep vao o, sau do bam nut [Luu du lieu].</div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B2</div>
+                <div class="step-text">
+                    <h4>Nap file cau hoi Excel</h4>
+                    <p>Bam nut [Tai file mau Excel] ve may neu chua co mau. Dien day du de thi 4 vong. Bam nut [Chon tep], chon file .xlsx roi bam nut [Nap file cau hoi Excel].</p>
+                    <div class="step-action">-> Thao tac: Kiem tra thong bao thanh cong xuat hien tren man hinh.</div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B3</div>
+                <div class="step-text">
+                    <h4>Ket noi may thi sinh</h4>
+                    <p>Huong dan 4 thi sinh quet ma QR tuong ung hoac truy cap link hien thi, nhap Room Code va PIN vi tri.</p>
+                    <div class="step-action">-> Thao tac: Quan sat den bao TS1, TS2, TS3, TS4 chuyen sang mau XANH LA CAY la ket noi tot.</div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B4</div>
+                <div class="step-text">
+                    <h4>Bat dau vong thi</h4>
+                    <p>Khi MC doc loi mo dau vong thi nao, bam nut [Bat dau vong thi] tuong ung de tat ca cac man hinh chuyen canh dong bo.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3 -->
+        <h2>3. VONG 1: XUAT PHAT (KHOI DONG 60 GIAY)</h2>
+        <p>Moi thi sinh co 60 giay tra loi goi cau hoi ca nhan. Dung moi cau duoc +10 diem, sai khong bi tru diem.</p>
+        <div class="step-list">
+            <div class="step-card">
+                <div class="step-num">B1</div>
+                <div class="step-text">
+                    <h4>Chon thi sinh thi dau</h4>
+                    <p>Bam vao the thi sinh [Thi sinh 1] (hoac 2, 3, 4) o hang tren cung cua Tab Xuat Phat.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B2</div>
+                <div class="step-text">
+                    <h4>Khoi dong 60 giay</h4>
+                    <p>Khi MC doc xong lenh bat dau, bam nut [Bat dau 60s] (nut mau xanh duong). Dong ho chay nguoc, nhac phat va cau hoi 1 hien len.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B3</div>
+                <div class="step-text">
+                    <h4>Cham dung / sai</h4>
+                    <p>Neu thi sinh tra loi dung: Bam nut [DUNG (+10d)] (nut mau xanh la). He thong tu dong cong 10 diem va nhay sang cau tiep theo.<br>
+                    Neu thi sinh tra loi sai: Bam nut [SAI / BO QUA] (nut mau do). He thong bo qua khong cong diem va nhay sang cau tiep theo.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B4</div>
+                <div class="step-text">
+                    <h4>Ket thuc luot thi</h4>
+                    <p>Dong ho ve 00s se tu dong bao het gio. Bam sang the thi sinh tiep theo de thuc hien luot thi moi.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4 -->
+        <h2>4. VONG 2: RA KHOI (TANG TOC - THANG DIEM 40 - 30 - 20 - 10)</h2>
+        <p>Gom 4 cau hoi kem clip/hinh anh. Ca 4 thi sinh cung suy nghi trong 30 giay. Thang diem ap dung:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Thu tu thoi gian nop bai dung</th>
+                    <th>Diem cong</th>
+                    <th>Nut bam tren Controller</th>
+                    <th>Quy tac ap dung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Dung nhanh nhat (Thu 1)</strong></td>
+                    <td><span class="badge-score score-40">+40 diem</span></td>
+                    <td>Nut [+40] hoac Nut Cham diem tu dong</td>
+                    <td>Thoi gian nop ngan nhat</td>
+                </tr>
+                <tr>
+                    <td><strong>Dung nhanh thu 2</strong></td>
+                    <td><span class="badge-score score-30">+30 diem</span></td>
+                    <td>Nut [+30] hoac Nut Cham diem tu dong</td>
+                    <td>Nhanh thu nhi</td>
+                </tr>
+                <tr>
+                    <td><strong>Dung nhanh thu 3</strong></td>
+                    <td><span class="badge-score score-20">+20 diem</span></td>
+                    <td>Nut [+20] hoac Nut Cham diem tu dong</td>
+                    <td>Nhanh thu ba</td>
+                </tr>
+                <tr>
+                    <td><strong>Dung nhanh thu 4</strong></td>
+                    <td><span class="badge-score score-10">+10 diem</span></td>
+                    <td>Nut [+10] hoac Nut Cham diem tu dong</td>
+                    <td>Nhanh thu tu</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Quy trinh 6 buoc dieu khien moi cau hoi Ra Khoi:</h3>
+        <div class="step-list">
+            <div class="step-card">
+                <div class="step-num">B1</div>
+                <div class="step-text">
+                    <h4>Chon cau hoi</h4>
+                    <p>Bam chon nut [Cau 1] (hoac Cau 2, Cau 3, Cau 4) tren thanh chon cau hoi.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B2</div>
+                <div class="step-text">
+                    <h4>Phat clip / Hien cau hoi</h4>
+                    <p>Bam nut [Phat clip / Hien cau hoi] de trinh chieu video hoac hinh anh len may chieu.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B3</div>
+                <div class="step-text">
+                    <h4>Bat dau 30 giay dem nguoc</h4>
+                    <p>Bam nut [Bat dau 30s] (nut mau xanh dam). Dong ho dem nguoc va 4 thi sinh nhap dap an.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B4</div>
+                <div class="step-text">
+                    <h4>Hien dap an thi sinh</h4>
+                    <p>Khi het gio, bam nut [Hien dap an thi sinh] de mo 4 khung dap an va thoi gian nop (vi du: 04.15s) len may chieu.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B5</div>
+                <div class="step-text">
+                    <h4>Cham diem tu dong thong minh</h4>
+                    <p>Bam nut <span class="btn-tag btn-tag-green">[Cham diem (40-30-20-10)]</span>. Hop thoai xuat hien liet ke san 4 thi sinh theo thu tu nop nhanh nhat. Nguoi dieu khien chi can nhap so thi sinh tra loi dung (vi du: 1, 3) roi bam OK. He thong tu dong cong 40d cho nguoi nhanh nhat, 30d cho nguoi tiep theo.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B6</div>
+                <div class="step-text">
+                    <h4>Hien bang diem</h4>
+                    <p>Bam nut [Diem TS] de may chieu hien thi bang tong diem sau cau hoi.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5 -->
+        <h2>5. VONG 3: VUOT SONG (THANG DIEM 50 - 40 - 30 - 20 - 10)</h2>
+        <p>Vong thi gom 4 cau hoi hang ngang, 1 cau hoi trung tam va 1 Tu khoa / Dap an vong thi.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Thoi diem tra loi Dap an vong thi</th>
+                    <th>Diem cong</th>
+                    <th>Nut thao tac tren ban dieu khien</th>
+                    <th>Dieu kien thoi diem</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Thoi diem 1</strong></td>
+                    <td><span class="badge-score score-50">+50 diem</span></td>
+                    <td>Nut [+50] hoac [Cham DA vong thi (50-10d)]</td>
+                    <td>Truoc hoac trong khi mo Hang ngang 1</td>
+                </tr>
+                <tr>
+                    <td><strong>Thoi diem 2</strong></td>
+                    <td><span class="badge-score score-40">+40 diem</span></td>
+                    <td>Nut [+40] hoac [Cham DA vong thi (50-10d)]</td>
+                    <td>Sau Hang ngang 1 / Truoc Hang ngang 2</td>
+                </tr>
+                <tr>
+                    <td><strong>Thoi diem 3</strong></td>
+                    <td><span class="badge-score score-30">+30 diem</span></td>
+                    <td>Nut [+30] hoac [Cham DA vong thi (50-10d)]</td>
+                    <td>Sau Hang ngang 2 / Truoc Hang ngang 3</td>
+                </tr>
+                <tr>
+                    <td><strong>Thoi diem 4</strong></td>
+                    <td><span class="badge-score score-20">+20 diem</span></td>
+                    <td>Nut [+20] hoac [Cham DA vong thi (50-10d)]</td>
+                    <td>Sau Hang ngang 3 / Truoc Hang ngang 4</td>
+                </tr>
+                <tr>
+                    <td><strong>Thoi diem 5</strong></td>
+                    <td><span class="badge-score score-10">+10 diem</span></td>
+                    <td>Nut [+10] hoac [Cham DA vong thi (50-10d)]</td>
+                    <td>Sau Hang ngang 4 / O trung tam</td>
+                </tr>
+                <tr>
+                    <td><strong>Dung cau hoi Hang ngang</strong></td>
+                    <td><span class="badge-score score-10">+10 diem</span></td>
+                    <td>Nut [+10] hoac [Cong 10d ca 4 TS]</td>
+                    <td>Cong cho thi sinh tra loi dung</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Thao tac khi co thi sinh bam chuong tra loi Dap an vong thi:</h3>
+        <ul>
+            <li>Khi thi sinh bam chuong, chuong reo to va tai o cua thi sinh do xuat hien chu DO hien thi thoi gian bam chuong (vi du: TS2 bam chuong giay thu 15.20S).</li>
+            <li>Bam nut <span class="btn-tag btn-tag-blue">[Cham DA vong thi (50-10d)]</span> tren thanh dieu khien:
+                <br>1. Nhap so thu tu thi sinh tra loi dung (1, 2, 3 hoac 4).
+                <br>2. Nhap moc thoi diem (1 la 50d, 2 la 40d, 3 la 30d, 4 la 20d, 5 la 10d).
+                <br>3. Bam OK -> He thong tu dong cong diem.
+            </li>
+            <li>Ngoai ra co the bam truc tiep cac nut [+50], [+40], [+30], [+20], [+10] o ngay cot cua thi sinh do.</li>
+            <li>Bam nut [Mo tu khoa] de lat mo toan bo tu khoa va mo hinh anh trung tam.</li>
+        </ul>
+
+        <!-- Section 6 -->
+        <h2>6. VONG 4: VINH QUANG (VE DICH)</h2>
+        <div class="step-list">
+            <div class="step-card">
+                <div class="step-num">B1</div>
+                <div class="step-text">
+                    <h4>Chon thi sinh va goi 3 cau hoi</h4>
+                    <p>Bam the thi sinh thi dau, sau do tich chon 3 cau hoi tu cac muc 10, 20 hoac 30 diem.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B2</div>
+                <div class="step-text">
+                    <h4>Dat Ngoi sao hy vong</h4>
+                    <p>Neu thi sinh yeu cau dat ngoi sao truoc cau hoi, bam nut [Ngoi sao hy vong] (nut mau vang). Dung: gap doi diem; Sai: bi tru dung so diem cau hoi.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B3</div>
+                <div class="step-text">
+                    <h4>Bat dau thoi gian va cham diem</h4>
+                    <p>Bam nut [Bat dau gio]. Dung: Bam [DUNG]; Sai: Bam [SAI]. Khi bam Sai, he thong tu dong mo chuong 5 giay cho 3 thi sinh con lai cuop quyen tra loi.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">B4</div>
+                <div class="step-text">
+                    <h4>Xu ly cuop diem</h4>
+                    <p>Thi sinh cuop diem bam truoc se duoc tra loi. Neu dung bam [DUNG CUOP DIEM] (nhan diem cau hoi); neu sai bam [SAI CUOP DIEM] (bi tru 50% diem).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 7 -->
+        <h2>7. XU LY SU CO KY THUAT VA THAO TAC KHAN CAP</h2>
+        <ul>
+            <li><strong>Sua diem truc tiep:</strong> Nhap dup chuot (Double Click) vao o diem so cua thi sinh tren Controller, go so diem moi va nhan Enter de sua diem ngay lap tuc.</li>
+            <li><strong>Mat mang may thi sinh:</strong> Bam nut [TS1], [TS2], [TS3] hoac [TS4] tren thanh Reload Role hoac cho thi sinh quet lai ma QR tren man hinh.</li>
+            <li><strong>Tat am thanh khan cap:</strong> Bam nut [Tat am thanh] / [Stop Sound] o goc tren ben phai de ngat toan bo am thanh neu bi lap tieng.</li>
+            <li><strong>Cau hoi phu:</strong> Chuyen sang tab [CAU HOI PHU] de bam chuong tranh ve di tiep khi co hai hay nhieu thi sinh bang diem.</li>
+        </ul>
+
+        <div style="text-align: center; margin-top: 35px; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12.5px;">
+            Ban Ky thuat He thong Duong Den Vinh Quang 2026 - So tay huong dan van hanh
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

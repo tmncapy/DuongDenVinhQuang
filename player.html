@@ -313,6 +313,13 @@
             padding: 0 12px;
         }
 
+        .s2-answer-input:disabled, .s4-answer-input:disabled, .s3-answer-input-box input:disabled {
+            cursor: not-allowed !important;
+            opacity: 0.55;
+            color: #94a3b8 !important;
+            user-select: none;
+        }
+
         .s2-time-box, .s4-time-box {
             position: absolute;
             left: calc(15% + 335px);
@@ -974,7 +981,7 @@
 
                 <div class="s3-bottom-controls">
                     <div class="s3-answer-input-box">
-                        <input type="text" id="s3_answer_input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
+                        <input type="text" id="s3_answer_input" maxlength="65" autocomplete="off" placeholder="Nhập đáp án hàng ngang" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
                     </div>
                     <button class="s3-submit-btn" onclick="submitScene3Answer(true)">TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
                 </div>

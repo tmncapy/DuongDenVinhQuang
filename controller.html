@@ -568,6 +568,12 @@
             <button class="btn" onclick="reloadClientSlot('graphic')" style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; border: none; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 4px rgba(8,145,178,0.3);" title="Tải lại Màn hình Graphic OBS">
                 🎨 GRAPHIC
             </button>
+            <a href="/huong_dan_controller.pdf" target="_blank" download="huong_dan_controller.pdf" class="btn" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 2px 4px rgba(220,38,38,0.4);" title="Tải xuống tài liệu Hướng Dẫn Sử Dụng Bàn Điều Khiển (File PDF)">
+                TẢI FILE PDF
+            </a>
+            <a href="/guide" target="_blank" class="btn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 2px 4px rgba(139,92,246,0.4);" title="Mở trang Hướng dẫn sử dụng chi tiết & In PDF">
+                HƯỚNG DẪN
+            </a>
         </div>
     </div>
 
@@ -587,6 +593,7 @@
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="font-size: 12px; color: #475569; font-weight: 600;">Địa chỉ máy chủ (Domain):</span>
                             <select id="link_domain_select" onchange="onLinkDomainSelectChange()" style="padding: 4px 8px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 12px; font-weight: bold; background: white; color: #1e3a8a; outline: none; cursor: pointer;">
+                                <option value="acestudio">https://acestudio.mooo.com/DuongDenVinhQuang-main/ (AceStudio Server)</option>
                                 <option value="render" selected>https://duongdenvinhquang.onrender.com (Render Cloud)</option>
                                 <option value="current">Máy chủ hiện tại (Current Host)</option>
                                 <option value="custom">Tùy chỉnh IP / Domain...</option>
@@ -1364,12 +1371,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(1, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
-                            <button onclick="adjustScore(1, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
+                            <button onclick="adjustScore(1, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
+                            <button onclick="adjustScore(1, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(1, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
-                            <button onclick="adjustScore(1, 15)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 15 điểm">+15</button>
+                            <button onclick="adjustScore(1, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
+                            <button onclick="adjustScore(1, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1392,12 +1399,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(2, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
-                            <button onclick="adjustScore(2, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
+                            <button onclick="adjustScore(2, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
+                            <button onclick="adjustScore(2, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(2, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
-                            <button onclick="adjustScore(2, 15)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 15 điểm">+15</button>
+                            <button onclick="adjustScore(2, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
+                            <button onclick="adjustScore(2, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1420,12 +1427,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(3, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
-                            <button onclick="adjustScore(3, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
+                            <button onclick="adjustScore(3, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
+                            <button onclick="adjustScore(3, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(3, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
-                            <button onclick="adjustScore(3, 15)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 15 điểm">+15</button>
+                            <button onclick="adjustScore(3, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
+                            <button onclick="adjustScore(3, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1448,12 +1455,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(4, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
-                            <button onclick="adjustScore(4, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
+                            <button onclick="adjustScore(4, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
+                            <button onclick="adjustScore(4, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(4, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
-                            <button onclick="adjustScore(4, 15)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 15 điểm">+15</button>
+                            <button onclick="adjustScore(4, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
+                            <button onclick="adjustScore(4, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1562,6 +1569,9 @@
                     <button class="btn" onclick="onClickRKDapAnTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
                         👥 Hiện đáp án thí sinh
                     </button>
+                    <button class="btn" onclick="onClickRKAutoScore()" style="background: #16a34a; color: white; font-weight: bold; padding: 6px 14px; border-radius: 3px;" title="Chấm điểm tự động theo thứ tự thời gian nộp bài: 40 - 30 - 20 - 10">
+                        ⚡ Chấm điểm (40-30-20-10)
+                    </button>
                     <button class="btn" onclick="onClickDiemTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
                         Điểm TS
                     </button>
@@ -1614,15 +1624,16 @@
                             <input type="text" id="ts1_ans_vs" placeholder="Đáp án hàng ngang / CNV của TS1" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
-                    <!-- 2x2 Score Adding Grid for VS -->
+                    <!-- Score Adding Grid for VS: 50, 40, 30, 20, 10 -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(1, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đúng Hàng Ngang)">+10</button>
-                            <button onclick="adjustScore(1, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đúng CNV muộn)">+20</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(1, 50)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 50 điểm (Đáp án vòng thi - Thời điểm 1: Trước/trong khi mở Hàng ngang 1)">+50</button>
+                            <button onclick="adjustScore(1, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ea580c; background: #ea580c; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đáp án vòng thi - Thời điểm 2: Sau Hàng ngang 1)">+40</button>
+                            <button onclick="adjustScore(1, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Đáp án vòng thi - Thời điểm 3: Sau Hàng ngang 2)">+30</button>
                         </div>
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(1, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đúng CNV sớm)">+40</button>
-                            <button onclick="adjustScore(1, 80)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 80 điểm (Đúng CNV trước hàng ngang 1)">+80</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(1, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #0284c7; background: #0284c7; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đáp án vòng thi - Thời điểm 4: Sau Hàng ngang 3)">+20</button>
+                            <button onclick="adjustScore(1, 10)" style="flex: 1; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đáp án vòng thi thời điểm 5 / Đúng Hàng Ngang)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1644,15 +1655,16 @@
                             <input type="text" id="ts2_ans_vs" placeholder="Đáp án hàng ngang / CNV của TS2" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
-                    <!-- 2x2 Score Adding Grid for VS -->
+                    <!-- Score Adding Grid for VS: 50, 40, 30, 20, 10 -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(2, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đúng Hàng Ngang)">+10</button>
-                            <button onclick="adjustScore(2, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đúng CNV muộn)">+20</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(2, 50)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 50 điểm (Đáp án vòng thi - Thời điểm 1: Trước/trong khi mở Hàng ngang 1)">+50</button>
+                            <button onclick="adjustScore(2, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ea580c; background: #ea580c; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đáp án vòng thi - Thời điểm 2: Sau Hàng ngang 1)">+40</button>
+                            <button onclick="adjustScore(2, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Đáp án vòng thi - Thời điểm 3: Sau Hàng ngang 2)">+30</button>
                         </div>
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(2, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đúng CNV sớm)">+40</button>
-                            <button onclick="adjustScore(2, 80)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 80 điểm (Đúng CNV trước hàng ngang 1)">+80</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(2, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #0284c7; background: #0284c7; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đáp án vòng thi - Thời điểm 4: Sau Hàng ngang 3)">+20</button>
+                            <button onclick="adjustScore(2, 10)" style="flex: 1; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đáp án vòng thi thời điểm 5 / Đúng Hàng Ngang)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1674,15 +1686,16 @@
                             <input type="text" id="ts3_ans_vs" placeholder="Đáp án hàng ngang / CNV của TS3" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
-                    <!-- 2x2 Score Adding Grid for VS -->
+                    <!-- Score Adding Grid for VS: 50, 40, 30, 20, 10 -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(3, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đúng Hàng Ngang)">+10</button>
-                            <button onclick="adjustScore(3, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đúng CNV muộn)">+20</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(3, 50)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 50 điểm (Đáp án vòng thi - Thời điểm 1: Trước/trong khi mở Hàng ngang 1)">+50</button>
+                            <button onclick="adjustScore(3, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ea580c; background: #ea580c; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đáp án vòng thi - Thời điểm 2: Sau Hàng ngang 1)">+40</button>
+                            <button onclick="adjustScore(3, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Đáp án vòng thi - Thời điểm 3: Sau Hàng ngang 2)">+30</button>
                         </div>
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(3, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đúng CNV sớm)">+40</button>
-                            <button onclick="adjustScore(3, 80)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 80 điểm (Đúng CNV trước hàng ngang 1)">+80</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(3, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #0284c7; background: #0284c7; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đáp án vòng thi - Thời điểm 4: Sau Hàng ngang 3)">+20</button>
+                            <button onclick="adjustScore(3, 10)" style="flex: 1; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đáp án vòng thi thời điểm 5 / Đúng Hàng Ngang)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1704,15 +1717,16 @@
                             <input type="text" id="ts4_ans_vs" placeholder="Đáp án hàng ngang / CNV của TS4" style="width: 100%; height: 100%; background: transparent; border: none; color: white; font-weight: bold; font-size: 13px; padding: 0 6px; outline: none;">
                         </div>
                     </div>
-                    <!-- 2x2 Score Adding Grid for VS -->
+                    <!-- Score Adding Grid for VS: 50, 40, 30, 20, 10 -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(4, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đúng Hàng Ngang)">+10</button>
-                            <button onclick="adjustScore(4, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đúng CNV muộn)">+20</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(4, 50)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 50 điểm (Đáp án vòng thi - Thời điểm 1: Trước/trong khi mở Hàng ngang 1)">+50</button>
+                            <button onclick="adjustScore(4, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ea580c; background: #ea580c; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đáp án vòng thi - Thời điểm 2: Sau Hàng ngang 1)">+40</button>
+                            <button onclick="adjustScore(4, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Đáp án vòng thi - Thời điểm 3: Sau Hàng ngang 2)">+30</button>
                         </div>
-                        <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(4, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Đúng CNV sớm)">+40</button>
-                            <button onclick="adjustScore(4, 80)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #b91c1c; background: #dc2626; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 80 điểm (Đúng CNV trước hàng ngang 1)">+80</button>
+                        <div style="display: flex; gap: 3px;">
+                            <button onclick="adjustScore(4, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #0284c7; background: #0284c7; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Đáp án vòng thi - Thời điểm 4: Sau Hàng ngang 3)">+20</button>
+                            <button onclick="adjustScore(4, 10)" style="flex: 1; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Đáp án vòng thi thời điểm 5 / Đúng Hàng Ngang)">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1816,18 +1830,18 @@
                 </div>
 
                 <!-- ACTION BUTTONS ROW 2 -->
-                <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                     <button class="btn" onclick="onClickVSStartTimer()" style="background: #2563eb; color: #ffffff; font-weight: bold; padding: 6px 16px;">
                         ▶ Bắt đầu 20s
                     </button>
-                    <button class="btn" onclick="promptToAdjustScore(10)" style="background: #16a34a; color: white; font-weight: bold; padding: 6px 12px;" title="Cộng 10 điểm cho thí sinh được chọn">
-                        ✔ Đúng (+10đ)
+                    <button class="btn" onclick="onClickVSReturnToGrid()" style="background: #0284c7; color: white; font-weight: bold; padding: 6px 14px;" title="Quay lại giao diện các hàng ngang Vượt Sóng">
+                        Quay lại giao diện hàng ngang
+                    </button>
+                    <button class="btn" onclick="onClickVSScoreKeyword()" style="background: #9333ea; color: white; font-weight: bold; padding: 6px 12px;" title="Chấm điểm Đáp án vòng thi theo thời điểm: 50 - 40 - 30 - 20 - 10">
+                        🎯 Chấm ĐA vòng thi (50-10đ)
                     </button>
                     <button class="btn" onclick="adjustScoreAll(10)" style="background: #10b981; color: white; font-weight: bold; padding: 6px 12px;" title="Cộng 10 điểm cho cả 4 thí sinh cùng lúc">
                         ➕ Cộng 10đ cả 4 TS
-                    </button>
-                    <button class="btn" onclick="showToast('Trả lời sai')" style="background: #d1d5db; color: #dc2626; font-weight: bold; padding: 6px 12px;">
-                        ✖ Sai
                     </button>
                     <button class="btn" onclick="showToast('Đã dừng nhạc')" style="background: #fff; border: 1px solid #ccc; padding: 6px 12px;">
                         Dừng nhạc

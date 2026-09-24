@@ -158,11 +158,17 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
 
     window.currentActiveRound = roundName;
     window.currentActiveTimer = null;
+    window.xpQuestionIsShown = false;
+    window.vsQuestionIsShown = false;
     window.vqQuestionIsShown = false;
     try {
         localStorage.setItem('ddvq_active_round', roundName);
+        localStorage.setItem('ddvq_xp_question_shown', 'false');
+        localStorage.setItem('ddvq_vs_question_shown', 'false');
         localStorage.setItem('ddvq_vq_question_shown', 'false');
         localStorage.removeItem('ddvq_current_timer');
+        localStorage.removeItem('ddvq_xp_question_text');
+        localStorage.removeItem('ddvq_vs_question_text');
         localStorage.removeItem('ddvq_vq_question_text');
     } catch(e) {}
 
@@ -174,6 +180,8 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
         roundIndex: roundIndex,
         sceneNum: roundIndex,
         viewNum: viewNum,
+        xpQuestionShown: false,
+        vsQuestionShown: false,
         vqQuestionShown: false,
         timestamp: Date.now()
     };
@@ -190,13 +198,13 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
             if (btn) btn.classList.remove('active');
         }
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
-        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT', vqQuestionShown: false });
+        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT', xpQuestionShown: false, vqQuestionShown: false });
     } else if (roundIndex === 2) {
         if (typeof selectRKQuestion === 'function') selectRKQuestion(1);
         sendToProjector('RA_KHOI_RESET', { round: 'RA_KHOI', activeRound: 'RA_KHOI' });
     } else if (roundIndex === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
-        sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG' });
+        sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG', vsQuestionShown: false });
     } else if (roundIndex === 4) {
         sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG', vqQuestionShown: false });
         sendToProjector('VINH_QUANG_HIDE_PACK', { round: 'VINH_QUANG', vqQuestionShown: false });
@@ -1500,24 +1508,26 @@ function updateRoomCodeFromController(isRandomGen = false) {
 function getPlayerBaseUrl() {
     const sel = document.getElementById('link_domain_select');
     const customInp = document.getElementById('custom_domain_input');
-    const val = sel ? sel.value : 'render';
+    const val = sel ? sel.value : 'acestudio';
 
-    if (val === 'render') {
+    if (val === 'acestudio') {
+        return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
+    } else if (val === 'render') {
         return 'https://duongdenvinhquang.onrender.com';
     } else if (val === 'current') {
         if (typeof window !== 'undefined' && window.location && window.location.origin) {
             return window.location.origin;
         }
-        return 'https://duongdenvinhquang.onrender.com';
+        return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
     } else if (val === 'custom') {
         let customVal = (customInp ? customInp.value.trim() : '');
-        if (!customVal) customVal = 'https://duongdenvinhquang.onrender.com';
+        if (!customVal) customVal = 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
         if (!customVal.startsWith('http://') && !customVal.startsWith('https://')) {
             customVal = 'http://' + customVal;
         }
         return customVal.replace(/\/+$/, '');
     }
-    return 'https://duongdenvinhquang.onrender.com';
+    return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
 }
 
 function onLinkDomainSelectChange() {

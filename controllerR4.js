@@ -87,7 +87,18 @@ function onClickVQ5sTraLoi() {
         }
     }, 1000);
 
-    sendToProjector('VINH_QUANG_START_TIMER_5S');
+    const payload = {
+        type: 'VINH_QUANG_START_TIMER_5S',
+        duration: 5,
+        round: 'VQ',
+        questionText: currentVQQuestionText,
+        vqQuestionShown: !!window.vqQuestionIsShown,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_START_TIMER_5S', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = "Đếm 5s";
     showToast('Bắt đầu 5s giành quyền trả lời!');
@@ -166,11 +177,18 @@ function onClickVQChonGoiDiem(pack) {
     sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VQ' });
 
     window.vqQuestionIsShown = false;
-    sendToProjector('VINH_QUANG_SELECT_PACK', {
+    const payload = {
+        type: 'VINH_QUANG_SELECT_PACK',
         round: 'VQ',
         pack: pack,
-        subject: currentVQSubject
-    });
+        subject: currentVQSubject,
+        vqQuestionShown: false,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_SELECT_PACK', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
 
     showToast(`Đã chọn Gói ${pack} Điểm: Môn ${currentVQSubject}`);
 }
@@ -196,27 +214,42 @@ function onClickVQHienChonGoiDiem() {
     const aEl = document.getElementById('vq_preview_a_text');
     if (aEl) aEl.innerText = "Đáp án: ...";
 
-    sendToProjector('VINH_QUANG_SHOW_PACKS');
+    const payload = {
+        type: 'VINH_QUANG_SHOW_PACKS',
+        round: 'VQ',
+        vqQuestionShown: false,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_SHOW_PACKS', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = "Hiện chọn gói";
     showToast('Hiển thị giao diện chọn mức điểm trên Projector (chưa chọn)');
 }
 
 function onClickVQAnChonGoiDiem() {
-    window.vqQuestionIsShown = true;
+    window.vqQuestionIsShown = false;
     const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
-    sendToProjector('VINH_QUANG_HIDE_PACK', {
+    const payload = {
+        type: 'VINH_QUANG_HIDE_PACK',
         round: 'VQ',
         pack: currentVQPack,
         subject: currentVQSubject,
         questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
-        vqQuestionShown: true,
+        vqQuestionShown: false,
         hasStar: anyStarActive,
-        starActive: anyStarActive
-    });
+        starActive: anyStarActive,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_HIDE_PACK', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Đã ẩn chọn gói (Hiện câu hỏi trên Player)";
-    showToast('Ẩn giao diện chọn gói điểm & Hiện câu hỏi cho thí sinh');
+    if (statusEl) statusEl.innerText = "Đã ẩn chọn gói (Chờ bấm Hiện câu hỏi)";
+    showToast('Đã ẩn giao diện chọn gói điểm trên Projector (Chờ bấm Hiện câu hỏi)');
 }
 
 function onClickVQHienCauHoi() {
@@ -231,18 +264,24 @@ function onClickVQHienCauHoi() {
     sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VQ' });
 
     const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
-    sendToProjector('VINH_QUANG_SHOW_QUESTION', {
+    const payload = {
+        type: 'VINH_QUANG_SHOW_QUESTION',
         round: 'VQ',
         pack: currentVQPack,
         subject: currentVQSubject,
         questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
         vqQuestionShown: true,
         hasStar: anyStarActive,
-        starActive: anyStarActive
-    });
+        starActive: anyStarActive,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_SHOW_QUESTION', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = "Hiện câu hỏi";
-    showToast('Hiển thị câu hỏi Vinh Quang trên Projector');
+    showToast('Hiển thị câu hỏi Vinh Quang trên Projector & Player');
 }
 
 function onClickVQ25s() {
@@ -264,7 +303,22 @@ function onClickVQ25s() {
         }
     }, 1000);
 
-    sendToProjector('VINH_QUANG_START_TIMER', { duration: 25 });
+    sendToProjector('VINH_QUANG_START_TIMER', {
+        duration: 25,
+        round: 'VQ',
+        questionText: currentVQQuestionText,
+        vqQuestionShown: !!window.vqQuestionIsShown
+    });
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({
+            type: 'VINH_QUANG_START_TIMER',
+            duration: 25,
+            round: 'VQ',
+            questionText: currentVQQuestionText,
+            vqQuestionShown: !!window.vqQuestionIsShown,
+            timestamp: Date.now()
+        });
+    }
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = "Đang đếm 25s";
     showToast('Bắt đầu đếm ngược 25 giây');
@@ -293,6 +347,7 @@ function onClickVQHienDapAnTS() {
 }
 
 function onClickVQDatLai() {
+    window.vqQuestionIsShown = false;
     clearInterval(vqTimerInterval);
     vqTimeLeft = 25;
     const timerEl = document.getElementById('vq_preview_timer');
@@ -327,14 +382,18 @@ function onClickVQDatLai() {
     const aEl = document.getElementById('vq_preview_a_text');
     if (aEl) aEl.innerText = "Đáp án: ...";
 
-    sendToProjector('VINH_QUANG_RESET', { vqQuestionShown: false });
-    
-    // Reset all other rounds
-    sendToProjector('XUAT_PHAT_RESET');
-    sendToProjector('RA_KHOI_RESET');
-    sendToProjector('VUOT_SONG_RESET');
+    sendToProjector('VINH_QUANG_RESET', { vqQuestionShown: false, round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({
+            type: 'VINH_QUANG_RESET',
+            vqQuestionShown: false,
+            round: 'VINH_QUANG',
+            activeRound: 'VINH_QUANG',
+            timestamp: Date.now()
+        });
+    }
 
-    showToast('Đã đặt lại vòng Vinh Quang và toàn bộ các vòng khác');
+    showToast('Đã đặt lại vòng Vinh Quang');
 }
 
 function cycleVQQuestion() {

@@ -10,14 +10,19 @@ function changeXuatPhatDe(val) {
     currentXuatPhatQIndex = 0;
     isXuatPhatStarted = false;
     updateTab1Preview();
-    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-    const currentQ = questions[0] || { q: '', a: '' };
-    sendToProjector('XUAT_PHAT_SHOW_QUESTION', {
+    const payload = {
+        type: 'XUAT_PHAT_SHOW_QUESTION',
         deIndex: currentXuatPhatDe,
         questionIndex: 1,
-        questionText: currentQ.q || `Nội dung câu hỏi số 1`,
-        contestants: gameData.contestants
-    });
+        questionText: '',
+        xpQuestionShown: false,
+        contestants: gameData.contestants,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_SHOW_QUESTION', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast(`Đã chọn Bộ đề ${currentXuatPhatDe}`);
 }
 
@@ -36,18 +41,23 @@ function selectLuotThi(turnIndex) {
 
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
-    const currentQ = questions[0] || { q: '', a: '' };
 
     updateTab1Preview();
-    sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', {
+    const payload = {
+        type: 'XUAT_PHAT_SELECT_CONTESTANT',
         turnIndex: currentXuatPhatTurn,
         name,
         score,
         questionIndex: 1,
-        questionText: currentQ.q || `Nội dung câu hỏi số 1`,
-        contestants: gameData.contestants
-    });
+        questionText: '',
+        xpQuestionShown: false,
+        contestants: gameData.contestants,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_SELECT_CONTESTANT', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
 }
 
 function updateTab1Preview() {
@@ -167,13 +177,20 @@ function onClickBatDau60s() {
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
-    sendToProjector('XUAT_PHAT_START_TIMER', {
+    const payload = {
+        type: 'XUAT_PHAT_START_TIMER',
         turnIndex: currentXuatPhatTurn,
         questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
         questionIndex: currentXuatPhatQIndex + 1,
         contestantName: name,
-        score: score
-    });
+        score: score,
+        xpQuestionShown: true,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_START_TIMER', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
 
     const targetTime = Date.now() + 60000;
     xuatPhatTimerInterval = setInterval(() => {
@@ -233,11 +250,18 @@ function onClickChuyenCau() {
         const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
         const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
         const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-        sendToProjector('XUAT_PHAT_NEXT_QUESTION', {
+        const payload = {
+            type: 'XUAT_PHAT_NEXT_QUESTION',
             questionIndex: currentXuatPhatQIndex + 1,
             questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
-            score
-        });
+            score,
+            xpQuestionShown: true,
+            timestamp: Date.now()
+        };
+        sendToProjector('XUAT_PHAT_NEXT_QUESTION', payload);
+        if (typeof sendSupabaseAction === 'function') {
+            sendSupabaseAction(payload);
+        }
         showToast(`Đã chuyển sang Câu ${currentXuatPhatQIndex + 1}`);
     } else {
         showToast('Đã hết 10 câu hỏi của lượt thi này');
@@ -267,15 +291,22 @@ function onClickDatLaiVongThi() {
     if (statusEl) statusEl.innerText = "Đã đặt lại";
     updateTab1Preview();
 
-    sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, score: 0 });
+    const payload = {
+        type: 'XUAT_PHAT_RESET',
+        turnIndex: 0,
+        score: 0,
+        round: 'XUAT_PHAT',
+        activeRound: 'XUAT_PHAT',
+        xpQuestionShown: false,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_RESET', payload);
     sendToProjector('RESET_S1_DE', { contestantId: 'ALL' });
-    
-    // Reset all other rounds
-    sendToProjector('RA_KHOI_RESET');
-    sendToProjector('VUOT_SONG_RESET');
-    sendToProjector('VINH_QUANG_RESET');
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
 
-    showToast('Đã đặt lại vòng thi Xuất Phát và toàn bộ các vòng khác');
+    showToast('Đã đặt lại vòng thi Xuất Phát');
 }
 
 function onClickDungNhac() {
@@ -286,10 +317,19 @@ function onClickDungNhac() {
 function onClickHoanThanh() {
     isXuatPhatStarted = false;
     updateTab1Preview();
-    sendToProjector('XUAT_PHAT_FINISH');
+    const payload = {
+        type: 'XUAT_PHAT_FINISH',
+        xpQuestionShown: false,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_FINISH', payload);
     sendToProjector('XUAT_PHAT_STOP_SOUND');
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     const statusEl = document.getElementById('preview_status_text');
     if (statusEl) statusEl.innerText = "Hoàn thành";
+    clearInterval(xuatPhatTimerInterval);
     showToast('Đã hoàn thành lượt thi - Đã ẩn màn hình Projector');
 }
 

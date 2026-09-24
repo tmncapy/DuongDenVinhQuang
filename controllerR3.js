@@ -71,7 +71,18 @@ function selectVSRow(row) {
         if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
         currentQText = q;
     }
-    sendToProjector('VUOT_SONG_SELECT_ROW', { row: row, round: 'VS', questionText: currentQText, contestants: gameData.contestants });
+    const payload = {
+        type: 'VUOT_SONG_SELECT_ROW',
+        row: row,
+        round: 'VS',
+        vsQuestionShown: false,
+        contestants: gameData.contestants,
+        timestamp: Date.now()
+    };
+    sendToProjector('VUOT_SONG_SELECT_ROW', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast(`Đã chọn Hàng ngang ${row}`);
 }
 
@@ -158,9 +169,24 @@ function onClickVSOpenAllAnswers() {
 }
 
 function onClickVSShowQuestion() {
+    if (!currentVSRow) {
+        showToast('⚠️ Vui lòng chọn Hàng ngang trước khi bấm Hiện câu hỏi!');
+        return;
+    }
     const q = currentVSRow === 'center' ? (document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm") : (document.getElementById(`vs_q_${currentVSRow}`)?.value || `Chưa nhập câu hỏi hàng ${currentVSRow}`);
-    sendToProjector('VUOT_SONG_SHOW_QUESTION', { row: currentVSRow, questionText: q });
-    showToast('Đã hiển thị câu hỏi Vượt Sóng trên Projector');
+    const payload = {
+        type: 'VUOT_SONG_SHOW_QUESTION',
+        row: currentVSRow,
+        questionText: q,
+        vsQuestionShown: true,
+        round: 'VS',
+        timestamp: Date.now()
+    };
+    sendToProjector('VUOT_SONG_SHOW_QUESTION', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+    showToast('Đã hiển thị câu hỏi Vượt Sóng trên Projector & Player');
 }
 
 function onClickVSStartTimer() {
@@ -179,6 +205,25 @@ function onClickVSStartTimer() {
 
     sendToProjector('VUOT_SONG_START_TIMER', { duration: 20 });
     showToast('Bắt đầu 20s Vượt Sóng trên Projector');
+}
+
+function onClickVSReturnToGrid() {
+    clearInterval(vsTimerInterval);
+    const timerEl = document.getElementById('vs_preview_timer');
+    if (timerEl) timerEl.innerText = vsTimeLeft;
+
+    const payload = {
+        type: 'VUOT_SONG_RETURN_GRID',
+        row: currentVSRow,
+        round: 'VS',
+        activeRound: 'VUOT_SONG',
+        timestamp: Date.now()
+    };
+    sendToProjector('VUOT_SONG_RETURN_GRID', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+    showToast('Đã quay lại giao diện hàng ngang (giữ nguyên trạng thái chọn & đáp án)');
 }
 
 function onClickVSShowAnswers() {
@@ -319,12 +364,91 @@ function onClickVSDatLai() {
     if (qTextEl) qTextEl.innerText = "Nội dung câu hỏi...";
     if (aTextEl) aTextEl.innerText = "Đáp án...";
     
-    sendToProjector('VUOT_SONG_RESET');
-    
-    // Reset all other rounds
-    sendToProjector('XUAT_PHAT_RESET');
-    sendToProjector('RA_KHOI_RESET');
-    sendToProjector('VINH_QUANG_RESET');
+    sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG', vsQuestionShown: false });
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({
+            type: 'VUOT_SONG_RESET',
+            round: 'VUOT_SONG',
+            activeRound: 'VUOT_SONG',
+            vsQuestionShown: false,
+            timestamp: Date.now()
+        });
+    }
 
-    showToast('Đã đặt lại vòng Vượt Sóng và toàn bộ các vòng khác');
+    showToast('Đã đặt lại vòng Vượt Sóng');
 }
+
+function onClickVSScoreKeyword() {
+    // List contestants with bell times if available
+    let buzzedList = [];
+    for (let i = 1; i <= 4; i++) {
+        const rawName = gameData.contestants?.[i - 1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`;
+        const cleanName = rawName.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+        const bellTime = window.vsSubmissions?.[i];
+        const ansVal = (document.getElementById(`ts${i}_ans_vs`)?.value || '').trim();
+        buzzedList.push({
+            idx: i,
+            name: cleanName,
+            bellTime: bellTime,
+            ans: ansVal
+        });
+    }
+
+    let defaultTs = "1";
+    // If someone buzzed first, suggest them
+    const buzzedOnly = buzzedList.filter(b => b.bellTime);
+    buzzedOnly.sort((a, b) => (parseFloat(a.bellTime) || 999) - (parseFloat(b.bellTime) || 999));
+    if (buzzedOnly.length > 0) {
+        defaultTs = buzzedOnly[0].idx.toString();
+    }
+
+    let msg = `🎯 CHẤM ĐIỂM ĐÁP ÁN VÒNG THI VƯỢT SÓNG\n`;
+    msg += `Thang điểm theo thời điểm trả lời: 50 - 40 - 30 - 20 - 10\n\n`;
+    msg += `Danh sách thí sinh:\n`;
+    buzzedList.forEach(b => {
+        const bellInfo = b.bellTime ? `🔔 Chuông: ${b.bellTime}s` : `Chưa bấm chuông`;
+        msg += `[TS ${b.idx}] ${b.name} (${bellInfo}) - Đáp án: "${b.ans}"\n`;
+    });
+    msg += `\nNhập số thứ tự Thí sinh trả lời đúng (1-4):`;
+
+    const tsInput = prompt(msg, defaultTs);
+    if (!tsInput) return;
+    const tsIdx = parseInt(tsInput.trim());
+    if (isNaN(tsIdx) || tsIdx < 1 || tsIdx > 4) {
+        alert("Số thứ tự thí sinh không hợp lệ (phải từ 1 đến 4)!");
+        return;
+    }
+
+    let timeMsg = `Chọn thời điểm trả lời cho [TS ${tsIdx}] (Thang điểm: 50, 40, 30, 20, 10):\n`;
+    timeMsg += `1: +50 điểm (Thời điểm 1: Trước hoặc khi đang mở Hàng ngang 1)\n`;
+    timeMsg += `2: +40 điểm (Thời điểm 2: Sau Hàng ngang 1 / Trước HN 2)\n`;
+    timeMsg += `3: +30 điểm (Thời điểm 3: Sau Hàng ngang 2 / Trước HN 3)\n`;
+    timeMsg += `4: +20 điểm (Thời điểm 4: Sau Hàng ngang 3 / Trước HN 4)\n`;
+    timeMsg += `5: +10 điểm (Thời điểm 5: Sau Hàng ngang 4 / Ô trung tâm)\n\n`;
+    timeMsg += `Nhập số 1-5 hoặc nhập trực tiếp số điểm (50, 40, 30, 20, 10):`;
+
+    const timeChoice = prompt(timeMsg, "1");
+    if (!timeChoice) return;
+
+    let pts = 0;
+    const cleanChoice = timeChoice.trim();
+    if (cleanChoice === '1' || cleanChoice === '50') pts = 50;
+    else if (cleanChoice === '2' || cleanChoice === '40') pts = 40;
+    else if (cleanChoice === '3' || cleanChoice === '30') pts = 30;
+    else if (cleanChoice === '4' || cleanChoice === '20') pts = 20;
+    else if (cleanChoice === '5' || cleanChoice === '10') pts = 10;
+    else {
+        alert("Lựa chọn thời điểm không hợp lệ!");
+        return;
+    }
+
+    if (typeof adjustScore === 'function') {
+        adjustScore(tsIdx, pts);
+    }
+    if (typeof showToast === 'function') {
+        showToast(`Đã cộng +${pts} điểm Đáp án vòng thi cho Thí sinh ${tsIdx}!`);
+    }
+}
+window.onClickVSScoreKeyword = onClickVSScoreKeyword;
+
+
