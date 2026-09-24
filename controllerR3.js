@@ -66,10 +66,16 @@ function selectVSRow(row) {
     if (qTextEl) qTextEl.innerText = "🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị nội dung cho Player & Máy chiếu";
     if (aTextEl) aTextEl.innerText = `Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem] | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
 
+    const q = row === 'center' ? (document.getElementById('vs_q_center')?.value || gameData.vuotSong?.center?.q || "") : (document.getElementById(`vs_q_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.q || "");
+    const a = row === 'center' ? (document.getElementById('vs_a_center')?.value || gameData.vuotSong?.center?.a || "") : (document.getElementById(`vs_a_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.a || "");
+
     const payload = {
         type: 'VUOT_SONG_SELECT_ROW',
         row: row,
         round: 'VS',
+        questionText: q,
+        answerText: a,
+        answer: a,
         vsQuestionShown: false,
         contestants: gameData.contestants,
         timestamp: Date.now()
@@ -181,6 +187,8 @@ function onClickVSShowQuestion() {
         type: 'VUOT_SONG_SHOW_QUESTION',
         row: currentVSRow,
         questionText: q,
+        answerText: a,
+        answer: a,
         vsQuestionShown: true,
         round: 'VS',
         timestamp: Date.now()
@@ -284,6 +292,75 @@ function onClickVSShowAnswers() {
     sendToProjector('VUOT_SONG_SHOW_CONTESTANT_ANSWERS', { contestants: contestants });
     showToast('Hiển thị đáp án thí sinh Vượt Sóng trên Projector');
 }
+
+function updateVSBuzzerLabels() {
+    if (!window.vsSubmissions) window.vsSubmissions = {};
+
+    const submissions = Object.keys(window.vsSubmissions).map(idxStr => {
+        const idx = parseInt(idxStr);
+        const sub = window.vsSubmissions[idxStr];
+        const timeVal = typeof sub === 'object' ? sub.time : sub;
+        const numTime = parseFloat(timeVal) || 999;
+        const timestamp = (typeof sub === 'object' && sub.timestamp) ? sub.timestamp : 0;
+        return { idx, timeVal, numTime, timestamp };
+    });
+
+    submissions.sort((a, b) => {
+        if (Math.abs(a.numTime - b.numTime) > 0.001) {
+            return a.numTime - b.numTime;
+        }
+        return a.timestamp - b.timestamp;
+    });
+
+    for (let i = 1; i <= 4; i++) {
+        const nameInput = document.getElementById(`ts${i}_name_vs`);
+        const rawBase = (typeof gameData !== 'undefined' && gameData.contestants?.[i - 1]?.name) || `Thí sinh ${i}`;
+        const baseName = rawBase
+            .replace(/\s*🔔.*$/gi, '')
+            .replace(/\s*\(Thứ \d+.*?\)/gi, '')
+            .replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '')
+            .trim();
+
+        const orderIdx = submissions.findIndex(s => s.idx === i);
+        if (orderIdx !== -1) {
+            const rank = orderIdx + 1;
+            const timeStr = submissions[orderIdx].timeVal;
+            if (nameInput) {
+                nameInput.value = `${baseName} 🔔 [Thứ ${rank} - ${timeStr}s]`;
+                nameInput.style.color = '#dc2626';
+                nameInput.style.fontWeight = 'bold';
+            }
+        } else {
+            if (nameInput) {
+                nameInput.value = baseName;
+                nameInput.style.color = '#000000';
+                nameInput.style.fontWeight = 'bold';
+            }
+        }
+    }
+}
+window.updateVSBuzzerLabels = updateVSBuzzerLabels;
+
+function markVSContestantSubmitted(tsIdx, timeStr) {
+    if (!window.vsSubmissions) window.vsSubmissions = {};
+    const idx = parseInt(tsIdx);
+    if (isNaN(idx) || idx < 1 || idx > 4) return;
+
+    if (!window.vsSubmissions[idx]) {
+        window.vsSubmissions[idx] = {
+            time: timeStr || '00.00',
+            timestamp: Date.now()
+        };
+    }
+
+    const ansInput = document.getElementById(`ts${idx}_ans_vs`);
+    if (ansInput && (!ansInput.value || ansInput.value === '[CNV] Bấm chuông')) {
+        ansInput.value = '[CNV] Bấm chuông';
+    }
+
+    updateVSBuzzerLabels();
+}
+window.markVSContestantSubmitted = markVSContestantSubmitted;
 
 function triggerVSBell(idx) {
     if (!window.vsRoundStartTime) window.vsRoundStartTime = Date.now();
@@ -402,8 +479,9 @@ function onClickVSScoreKeyword() {
     let buzzedList = [];
     for (let i = 1; i <= 4; i++) {
         const rawName = gameData.contestants?.[i - 1]?.name || document.getElementById(`ts${i}_name_vs`)?.value || `Thí sinh ${i}`;
-        const cleanName = rawName.replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
-        const bellTime = window.vsSubmissions?.[i];
+        const cleanName = rawName.replace(/\s*🔔.*$/gi, '').replace(/\s*\(Thứ \d+.*?\)/gi, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
+        const sub = window.vsSubmissions?.[i];
+        const bellTime = sub ? (typeof sub === 'object' ? sub.time : sub) : null;
         const ansVal = (document.getElementById(`ts${i}_ans_vs`)?.value || '').trim();
         buzzedList.push({
             idx: i,
@@ -425,7 +503,12 @@ function onClickVSScoreKeyword() {
     msg += `Thang điểm theo thời điểm trả lời: 50 - 40 - 30 - 20 - 10\n\n`;
     msg += `Danh sách thí sinh:\n`;
     buzzedList.forEach(b => {
-        const bellInfo = b.bellTime ? `🔔 Chuông: ${b.bellTime}s` : `Chưa bấm chuông`;
+        let rankStr = '';
+        if (b.bellTime && buzzedOnly.length > 0) {
+            const rank = buzzedOnly.findIndex(x => x.idx === b.idx) + 1;
+            rankStr = ` (Thứ ${rank})`;
+        }
+        const bellInfo = b.bellTime ? `🔔 Chuông: ${b.bellTime}s${rankStr}` : `Chưa bấm chuông`;
         msg += `[TS ${b.idx}] ${b.name} (${bellInfo}) - Đáp án: "${b.ans}"\n`;
     });
     msg += `\nNhập số thứ tự Thí sinh trả lời đúng (1-4):`;

@@ -10,11 +10,15 @@ function changeXuatPhatDe(val) {
     currentXuatPhatQIndex = 0;
     isXuatPhatStarted = false;
     updateTab1Preview();
+    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
+    const currentQ = questions[0] || { q: '', a: '' };
     const payload = {
         type: 'XUAT_PHAT_SHOW_QUESTION',
         deIndex: currentXuatPhatDe,
         questionIndex: 1,
-        questionText: '',
+        questionText: currentQ.q || '',
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
         xpQuestionShown: false,
         contestants: gameData.contestants,
         timestamp: Date.now()
@@ -182,7 +186,10 @@ function onClickBatDau60s() {
     const payload = {
         type: 'XUAT_PHAT_START_TIMER',
         turnIndex: currentXuatPhatTurn,
+        deIndex: currentXuatPhatDe,
         questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
         questionIndex: currentXuatPhatQIndex + 1,
         contestantName: name,
         score: score,
@@ -254,10 +261,16 @@ function onClickChuyenCau() {
         const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
         const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
         const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
+        const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
         const payload = {
             type: 'XUAT_PHAT_NEXT_QUESTION',
+            turnIndex: currentXuatPhatTurn,
+            deIndex: currentXuatPhatDe,
             questionIndex: currentXuatPhatQIndex + 1,
             questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
+            answerText: currentQ.a || '',
+            answer: currentQ.a || '',
+            contestantName: name,
             score,
             xpQuestionShown: true,
             timestamp: Date.now()

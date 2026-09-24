@@ -474,17 +474,17 @@ function applyPlayerGameState(data) {
     }
 
     // 4. Sync Question Text & Index
-    const qText = data.questionText || data.currentQuestion?.questionText;
+    const qText = data.questionText || data.currentQuestion?.questionText || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_xp_question_text') : '');
     if (sceneNum === 1 || !sceneNum) {
         const el = document.getElementById('s1_question_text');
         if (el) {
-            const isXPRunning = !!(data.xpQuestionShown === true || (data.currentTimer && data.currentTimer.round === 'XUAT_PHAT'));
+            const isXPShown = (data.xpQuestionShown === true) || (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_xp_question_shown') === 'true') || window.s1IsQuestionActive;
+            const isXPRunning = !!(isXPShown || (data.currentTimer && data.currentTimer.round === 'XUAT_PHAT'));
             if (isXPRunning && qText) {
                 el.innerText = qText;
                 window.s1IsQuestionActive = true;
-            } else {
+            } else if (!window.s1IsQuestionActive && !isXPShown) {
                 el.innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
-                window.s1IsQuestionActive = false;
             }
         }
     }
@@ -1677,14 +1677,15 @@ function handlePlayerMessage(data) {
 
         updateS1RandomDeButtonUI();
 
-        if (data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI') {
+        if (data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI' || data.type === 'XUAT_PHAT_NEXT_QUESTION') {
             window.s1IsQuestionActive = true;
+            try {
+                localStorage.setItem('ddvq_xp_question_shown', 'true');
+                if (data.questionText) localStorage.setItem('ddvq_xp_question_text', data.questionText);
+            } catch(e) {}
             if (data.questionText) {
-                document.getElementById('s1_question_text').innerText = data.questionText;
-            }
-        } else if (data.type === 'XUAT_PHAT_NEXT_QUESTION') {
-            if (window.s1IsQuestionActive && data.questionText) {
-                document.getElementById('s1_question_text').innerText = data.questionText;
+                const el = document.getElementById('s1_question_text');
+                if (el) el.innerText = data.questionText;
             }
         } else if (
             data.type === 'XUAT_PHAT_RESET' ||
@@ -1695,7 +1696,12 @@ function handlePlayerMessage(data) {
             data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE'
         ) {
             window.s1IsQuestionActive = false;
-            document.getElementById('s1_question_text').innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
+            try {
+                localStorage.setItem('ddvq_xp_question_shown', 'false');
+                localStorage.removeItem('ddvq_xp_question_text');
+            } catch(e) {}
+            const el = document.getElementById('s1_question_text');
+            if (el) el.innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
         }
 
         if (data.score !== undefined) {

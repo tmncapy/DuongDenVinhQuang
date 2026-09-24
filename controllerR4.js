@@ -186,7 +186,9 @@ function onClickVQChonGoiDiem(pack) {
         round: 'VQ',
         pack: pack,
         subject: currentVQSubject,
-        questionText: '',
+        questionText: currentVQQuestionText || '',
+        answerText: currentVQAnswerText || '',
+        answer: currentVQAnswerText || '',
         vqQuestionShown: false,
         timestamp: Date.now()
     };
@@ -286,6 +288,8 @@ function onClickVQHienCauHoi() {
         pack: currentVQPack,
         subject: currentVQSubject,
         questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
+        answerText: currentVQAnswerText || '',
+        answer: currentVQAnswerText || '',
         vqQuestionShown: true,
         hasStar: anyStarActive,
         starActive: anyStarActive,

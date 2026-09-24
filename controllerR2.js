@@ -34,6 +34,8 @@ function selectRKQuestion(num) {
         round: 'RK',
         questionIndex: num,
         questionText: qItem.q || `Nội dung câu hỏi Ra Khơi số ${num}`,
+        answerText: qItem.a || '',
+        answer: qItem.a || '',
         contestants: gameData.contestants
     });
 }
@@ -116,7 +118,9 @@ function onClickRKTinhThoiGian() {
     sendToProjector('RA_KHOI_START_TIMER', {
         questionIndex: currentRKQuestion,
         duration: 30,
-        questionText: qItem.q
+        questionText: qItem.q,
+        answerText: qItem.a || '',
+        answer: qItem.a || ''
     });
     showToast(`Bắt đầu tính thời gian 30s cho Câu ${currentRKQuestion}`);
 }

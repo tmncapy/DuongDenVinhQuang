@@ -126,13 +126,17 @@
         }
 
         .viewport-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            background: #000;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
         }
 
         .scene-view {
@@ -146,158 +150,197 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 100%;
+            height: 100%;
         }
 
         /* SCENE 1 STYLES */
         .s1-container {
-            width: 900px;
-            height: 500px;
-            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1400px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             box-sizing: border-box;
+            padding: 12px;
+            gap: 16px;
+            position: relative;
+        }
+
+        .s1-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .s1-mid-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
         }
 
         .s1-box-zero {
-            position: absolute;
-            left: 0;
-            top: 220px;
-            width: 80px;
-            height: 50px;
-            border: 2px solid #ffffff;
+            width: 110px;
+            height: 60px;
+            border: 2px solid #eab308;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 22px;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.05);
+            font-size: 30px;
+            font-weight: 900;
+            background: rgba(15, 23, 42, 0.85);
             color: #facc15;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+            flex-shrink: 0;
             transition: all 0.3s;
         }
 
         .s1-pagination {
-            position: absolute;
-            right: 0;
-            top: 220px;
+            flex: 1;
             display: flex;
+            gap: 6px;
         }
 
         .s1-page-btn {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #ffffff;
-            background-color: transparent;
+            flex: 1;
+            height: 60px;
+            border: 2px solid #334155;
+            border-radius: 10px;
+            background-color: rgba(30, 41, 59, 0.8);
             color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
-            margin-left: -1px;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .s1-page-btn.active {
             background-color: #2563eb;
             color: #ffffff;
             border-color: #60a5fa;
-            font-size: 18px;
-            box-shadow: 0 0 12px rgba(37, 99, 235, 0.8);
+            font-size: 24px;
+            box-shadow: 0 0 16px rgba(37, 99, 235, 0.8);
+            transform: scale(1.05);
         }
 
         .s1-page-btn.correct {
             background-color: #16a34a;
             color: #ffffff;
+            border-color: #4ade80;
         }
 
         .s1-page-btn.wrong {
             background-color: #dc2626;
             color: #ffffff;
+            border-color: #f87171;
         }
 
         .s1-question-box {
-            position: absolute;
-            left: 90px;
-            right: 0;
-            top: 290px;
-            height: 160px;
-            border: 2px solid #ffffff;
-            padding: 20px;
+            width: 100%;
+            flex: 1;
+            min-height: 250px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 32px 24px;
             box-sizing: border-box;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
             text-align: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .player-score-tag {
             position: absolute;
-            top: 10px;
-            right: 15px;
+            top: 16px;
+            right: 20px;
             background: linear-gradient(135deg, #15803d, #16a34a);
             color: #facc15;
             border: 1.5px solid #4ade80;
-            padding: 4px 14px;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 6px 18px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: 800;
             letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             z-index: 10;
         }
 
         .s1-question-text {
-            font-size: 20px;
+            font-size: 26px;
             font-weight: bold;
-            line-height: 1.4;
+            line-height: 1.5;
+            color: #f8fafc;
         }
 
         /* SCENE 2 & 4 STYLES */
         .s2-container, .s4-container {
             width: 100%;
             height: 100%;
+            max-width: 1400px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 16px;
+            gap: 16px;
             position: relative;
         }
 
         .s2-question-box, .s4-question-box {
-            position: absolute;
-            left: 15%;
-            right: 15%;
-            top: 10%;
-            height: 160px;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            padding: 20px;
+            width: 100%;
+            flex: 1;
+            min-height: 250px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 32px 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
 
         .s2-question-text, .s4-question-text {
-            font-size: 20px;
+            font-size: 26px;
             font-weight: bold;
             line-height: 1.5;
             color: #ffffff;
         }
 
+        .s2-controls-row, .s4-controls-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
         .s2-answer-box, .s4-answer-box {
-            position: absolute;
-            left: 15%;
-            top: 40%;
-            width: 320px;
-            height: 54px;
+            flex: 1;
+            height: 64px;
             border: 2px solid #3b82f6;
-            border-radius: 6px;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 17px;
-            font-weight: bold;
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
 
         .s2-answer-input, .s4-answer-input {
@@ -306,11 +349,11 @@
             background: transparent;
             border: none;
             color: #ffffff;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
             text-align: center;
             outline: none;
-            padding: 0 12px;
+            padding: 0 16px;
         }
 
         .s2-answer-input:disabled, .s4-answer-input:disabled, .s3-answer-input-box input:disabled {
@@ -321,115 +364,103 @@
         }
 
         .s2-time-box, .s4-time-box {
-            position: absolute;
-            left: calc(15% + 335px);
-            top: 40%;
-            width: 140px;
-            height: 54px;
+            width: 150px;
+            height: 64px;
             border: 2px solid #eab308;
-            border-radius: 6px;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 20px;
-            font-weight: bold;
+            font-size: 24px;
+            font-weight: 900;
             color: #facc15;
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+            flex-shrink: 0;
         }
 
         .s2-submit-btn, .s4-submit-btn {
-            position: absolute;
-            left: calc(15% + 490px);
-            top: 40%;
-            height: 54px;
-            padding: 0 24px;
+            height: 64px;
+            padding: 0 32px;
             border: 2px solid #60a5fa;
-            border-radius: 6px;
-            background: #2563eb;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
             color: #ffffff;
-            font-size: 15px;
-            font-weight: bold;
+            font-size: 18px;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+            flex-shrink: 0;
         }
 
         .s2-submit-btn:hover, .s4-submit-btn:hover {
-            background: #1d4ed8;
-            border-color: #93c5fd;
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-2px);
         }
 
-        .s2-bottom-left, .s4-bottom-left {
-            position: absolute;
-            left: 15%;
-            bottom: 10%;
-            min-width: 120px;
-            height: 60px;
-            border: 2px solid #22c55e;
-            border-radius: 6px;
+        .s2-bottom-bar, .s4-bottom-bar {
+            width: 100%;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            font-size: 20px;
-            font-weight: bold;
-            color: #4ade80;
-            background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
-            padding: 0 12px;
         }
 
         .s2-bottom-right, .s4-bottom-right {
-            position: absolute;
-            right: 15%;
-            bottom: 10%;
-            min-width: 150px;
-            height: 60px;
+            padding: 8px 20px;
             border: 2px solid #38bdf8;
-            border-radius: 6px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-radius: 10px;
             font-size: 18px;
             font-weight: bold;
             background: rgba(15, 23, 42, 0.9);
             color: #38bdf8;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
-            padding: 0 15px;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
         }
 
         /* SCENE 3 STYLES */
         .s3-container {
             width: 100%;
             height: 100%;
+            max-width: 1400px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            padding: 16px;
+            gap: 16px;
             position: relative;
         }
 
         .s3-grid-section {
-            position: absolute;
-            left: 15%;
-            top: 7%;
+            width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            align-items: center;
+            gap: 10px;
+            background: rgba(15, 23, 42, 0.65);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .s3-row-group {
             display: flex;
             align-items: center;
-            gap: 25px;
+            gap: 20px;
         }
 
         .s3-number-box {
-            width: 45px;
-            height: 45px;
-            border: 1px solid #ffffff;
+            width: 42px;
+            height: 42px;
+            border: 2px solid #ffffff;
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 18px;
             font-weight: bold;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             transition: all 0.3s;
         }
 
@@ -437,7 +468,7 @@
             background: #eab308;
             color: #000000;
             border-color: #fef08a;
-            box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.9);
         }
 
         .s3-matrix-row {
@@ -445,16 +476,17 @@
         }
 
         .s3-matrix-cell {
-            width: 38px;
-            height: 38px;
+            width: 40px;
+            height: 40px;
             border: 1px solid #ffffff;
-            margin-left: -1px;
+            border-radius: 4px;
+            margin-left: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.04);
             text-transform: uppercase;
         }
 
@@ -469,69 +501,50 @@
             border-color: #4ade80;
         }
 
-        .s3-matrix-row .s3-matrix-cell:first-child {
-            margin-left: 0;
-        }
-
         .s3-empty-space {
-            width: 45px;
+            width: 42px;
         }
 
         .s3-question-box {
-            position: absolute;
-            left: 15%;
-            right: 15%;
-            top: 57%;
-            height: 160px;
-            border: 1px solid #ffffff;
-            padding: 20px;
+            width: 100%;
+            flex: 1;
+            min-height: 180px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .s3-question-text {
-            font-size: 18px;
+            font-size: 24px;
             font-weight: bold;
-            line-height: 1.4;
+            line-height: 1.5;
         }
 
         .s3-bottom-controls {
-            position: absolute;
-            left: 15%;
-            right: 15%;
-            bottom: 8%;
+            width: 100%;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-        }
-
-        .s3-bottom-left {
-            width: 100px;
-            height: 55px;
-            border: 1px solid #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 22px;
-            font-weight: bold;
-            color: #4ade80;
-            background: rgba(255, 255, 255, 0.05);
+            gap: 16px;
         }
 
         .s3-answer-input-box {
             flex: 1;
-            margin: 0 25px;
-            height: 55px;
-            border: 1px solid #ffffff;
+            height: 60px;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
 
         .s3-answer-input-box input {
@@ -540,29 +553,30 @@
             background: transparent;
             border: none;
             color: #ffffff;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             text-align: center;
             outline: none;
+            padding: 0 16px;
         }
 
         .s3-submit-btn {
-            width: 270px;
-            height: 55px;
-            border: 1px solid #ffffff;
-            background-color: #2563eb;
+            height: 60px;
+            padding: 0 28px;
+            border: 2px solid #60a5fa;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
             color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 15px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+            flex-shrink: 0;
         }
 
         .s3-submit-btn:hover {
-            background-color: #1d4ed8;
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
         }
 
         /* Toast notifications */
@@ -896,29 +910,41 @@
         <span id="player_room_badge_text">Phòng: DDVQ2026</span>
     </div>
 
+    <!-- FLOATING FULLSCREEN TOGGLE BUTTON -->
+    <button id="btn_fullscreen" onclick="toggleFullscreen()" style="position: fixed; top: 12px; right: 12px; z-index: 9999; background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1.5px solid #38bdf8; border-radius: 8px; padding: 6px 14px; font-weight: bold; font-size: 13px; cursor: pointer; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); transition: all 0.2s;">
+        <span id="fs_icon">⛶</span>
+        <span id="fs_label">Toàn màn hình</span>
+    </button>
+
     <!-- MAIN VIEWPORT CONTAINER -->
     <div class="viewport-container">
 
         <!-- SCENE 1 (PLAYER SCENE 1) -->
         <div id="view_scene_1" class="scene-view active">
             <div class="s1-container">
-                <button id="s1_random_btn" onclick="triggerRandomDeFromPlayer()" style="position: absolute; left: 90px; top: 160px; height: 45px; padding: 0 20px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #60a5fa; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); z-index: 10; transition: all 0.2s;">
-                    <span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span>
-                    <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>
-                </button>
-                <div class="s1-box-zero" id="s1_clock_box" title="Thời gian Xuất Phát">60</div>
-                <div class="s1-pagination">
-                    <button class="s1-page-btn" id="s1_btn_1">1</button>
-                    <button class="s1-page-btn" id="s1_btn_2">2</button>
-                    <button class="s1-page-btn" id="s1_btn_3">3</button>
-                    <button class="s1-page-btn" id="s1_btn_4">4</button>
-                    <button class="s1-page-btn" id="s1_btn_5">5</button>
-                    <button class="s1-page-btn" id="s1_btn_6">6</button>
-                    <button class="s1-page-btn" id="s1_btn_7">7</button>
-                    <button class="s1-page-btn" id="s1_btn_8">8</button>
-                    <button class="s1-page-btn" id="s1_btn_9">9</button>
-                    <button class="s1-page-btn" id="s1_btn_10">10</button>
+                <div class="s1-top-row">
+                    <button id="s1_random_btn" onclick="triggerRandomDeFromPlayer()" style="height: 48px; padding: 0 24px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #60a5fa; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); z-index: 10; transition: all 0.2s;">
+                        <span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>
+                    </button>
                 </div>
+
+                <div class="s1-mid-row">
+                    <div class="s1-box-zero" id="s1_clock_box" title="Thời gian Xuất Phát">60</div>
+                    <div class="s1-pagination">
+                        <button class="s1-page-btn" id="s1_btn_1">1</button>
+                        <button class="s1-page-btn" id="s1_btn_2">2</button>
+                        <button class="s1-page-btn" id="s1_btn_3">3</button>
+                        <button class="s1-page-btn" id="s1_btn_4">4</button>
+                        <button class="s1-page-btn" id="s1_btn_5">5</button>
+                        <button class="s1-page-btn" id="s1_btn_6">6</button>
+                        <button class="s1-page-btn" id="s1_btn_7">7</button>
+                        <button class="s1-page-btn" id="s1_btn_8">8</button>
+                        <button class="s1-page-btn" id="s1_btn_9">9</button>
+                        <button class="s1-page-btn" id="s1_btn_10">10</button>
+                    </div>
+                </div>
+
                 <div class="s1-question-box">
                     <div class="player-score-tag" id="s1_score_box">ĐIỂM: 0</div>
                     <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
@@ -929,20 +955,20 @@
         <!-- SCENE 2 (PLAYER SCENE 2 - RA KHƠI) -->
         <div id="view_scene_2" class="scene-view">
             <div class="s2-container">
-                <!-- Question Box ON TOP -->
                 <div class="s2-question-box">
                     <div class="player-score-tag" id="s2_score_box">ĐIỂM: 0</div>
                     <div class="s2-question-text" id="s2_question_text">Đang chờ câu hỏi Ra Khơi...</div>
                 </div>
 
-                <!-- Answer input & Controls BELOW Question Box -->
-                <div class="s2-answer-box">
-                    <input type="text" id="s2_answer_input" class="s2-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
+                <div class="s2-controls-row">
+                    <div class="s2-answer-box">
+                        <input type="text" id="s2_answer_input" class="s2-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
+                    </div>
+                    <div class="s2-time-box" id="s2_time_box">Thời gian</div>
+                    <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
                 </div>
-                <div class="s2-time-box" id="s2_time_box">Thời gian</div>
-                <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
 
-                <div class="s2-bottom-row" style="display: contents;">
+                <div class="s2-bottom-bar">
                     <div class="s2-bottom-right" id="s2_badge_box">TS 1</div>
                 </div>
             </div>
@@ -991,25 +1017,20 @@
         <!-- SCENE 4 (PLAYER SCENE 4 - VINH QUANG) -->
         <div id="view_scene_4" class="scene-view">
             <div class="s4-container">
-                <!-- Title block -->
-                <div style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; pointer-events: none;">
-                    <h2 style="color: #facc15; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">🏆 VÒNG 4: VINH QUANG 🏆</h2>
-                </div>
-
-                <!-- Question Box ON TOP -->
-                <div class="s4-question-box" style="top: 12%;">
+                <div class="s4-question-box">
                     <div class="player-score-tag" id="s4_score_box">ĐIỂM: 0</div>
                     <div class="s4-question-text" id="s4_question_text">Đang chờ câu hỏi Vinh Quang...</div>
                 </div>
 
-                <!-- Answer input & Controls BELOW Question Box -->
-                <div class="s4-answer-box" style="top: 42%;">
-                    <input type="text" id="s4_answer_input" class="s4-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitScene4Answer(); }" disabled>
+                <div class="s4-controls-row">
+                    <div class="s4-answer-box">
+                        <input type="text" id="s4_answer_input" class="s4-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitScene4Answer(); }" disabled>
+                    </div>
+                    <div class="s4-time-box" id="s4_time_box">Thời gian</div>
+                    <button class="s4-submit-btn" onclick="submitScene4Answer()">GỬI ĐÁP ÁN</button>
                 </div>
-                <div class="s4-time-box" id="s4_time_box" style="top: 42%;">Thời gian</div>
-                <button class="s4-submit-btn" onclick="submitScene4Answer()" style="top: 42%;">GỬI ĐÁP ÁN</button>
 
-                <div class="s4-bottom-row" style="display: contents;">
+                <div class="s4-bottom-bar">
                     <div class="s4-badge-box s4-bottom-right" id="s4_badge_box">TS 1</div>
                 </div>
             </div>
@@ -1111,6 +1132,32 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-sync.js"></script>
     <script src="player.js"></script>
+
+    <script>
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Fullscreen request error: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fs_icon');
+            const label = document.getElementById('fs_label');
+            if (document.fullscreenElement) {
+                if (icon) icon.innerText = '🗗';
+                if (label) label.innerText = 'Thoát toàn màn hình';
+            } else {
+                if (icon) icon.innerText = '⛶';
+                if (label) label.innerText = 'Toàn màn hình';
+            }
+        });
+    </script>
 
 </body>
 </html>

@@ -227,6 +227,15 @@ function processHostAction(data) {
     renderHostScene5();
 }
 
+function getHostGameData() {
+    if (currentHostState.gameData) return currentHostState.gameData;
+    try {
+        const saved = localStorage.getItem('duong_den_vinh_quang_data');
+        if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return null;
+}
+
 function renderHostScene1() {
     const textEl = document.getElementById('h1_q_text');
     const ansEl = document.getElementById('h1_a_text');
@@ -242,26 +251,40 @@ function renderHostScene1() {
         { name: 'Thí sinh 4', score: 0 }
     ];
 
-    const currentTsIdx = currentHostState.contestantId || 1;
+    const currentTsIdx = currentHostState.turnIndex || currentHostState.contestantId || 1;
     const tsName = contestants[currentTsIdx - 1]?.name || `Thí sinh ${currentTsIdx}`;
     if (turnBadge) turnBadge.innerText = `LƯỢT THI: ${tsName.toUpperCase()}`;
 
-    if (textEl) textEl.innerText = currentHostState.questionText || 'Đang chờ câu hỏi Xuất Phát...';
-    if (ansEl) ansEl.innerText = currentHostState.answer || currentHostState.answerText || '--';
+    const setIndex = currentHostState.deIndex || currentHostState.deNumber || 1;
+    const qIndex = currentHostState.questionIndex || currentHostState.qNum || 1;
 
-    const setIndex = currentHostState.deNumber || currentHostState.questionIndex || 1;
+    let qText = currentHostState.questionText;
+    let ansVal = currentHostState.answerText || currentHostState.answer;
+
+    const gData = getHostGameData();
+    if (gData && gData.xuatPhat && gData.xuatPhat[setIndex]) {
+        const qItem = gData.xuatPhat[setIndex][qIndex - 1];
+        if (qItem) {
+            if (!qText) qText = qItem.q || qItem.question;
+            if (!ansVal) ansVal = qItem.a || qItem.answer;
+        }
+    }
+
+    if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Xuất Phát...';
+    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+
     if (deNum) deNum.innerText = setIndex;
     if (deTitle) deTitle.innerText = setIndex;
-    if (qNum) qNum.innerText = `${currentHostState.qNum || 1} / 10`;
+    if (qNum) qNum.innerText = `${qIndex} / 10`;
 
     // Render table of 10 questions if gameData is present
     const tableBody = document.getElementById('h1_q_table_body');
-    if (tableBody && currentHostState.gameData && currentHostState.gameData.XuatPhat) {
-        const xuatPhatSets = currentHostState.gameData.XuatPhat;
-        const currentSet = xuatPhatSets[setIndex - 1] || [];
+    if (tableBody && gData && gData.xuatPhat) {
+        const xuatPhatSets = gData.xuatPhat;
+        const currentSet = xuatPhatSets[setIndex] || xuatPhatSets[setIndex - 1] || [];
         let html = '';
         currentSet.forEach((q, idx) => {
-            const isActive = (idx + 1) === (currentHostState.qNum || 1);
+            const isActive = (idx + 1) === qIndex;
             html += `
                 <tr class="${isActive ? 'active-q' : ''}">
                     <td><strong>Câu ${idx + 1}</strong></td>
@@ -279,9 +302,20 @@ function renderHostScene2() {
     const ansEl = document.getElementById('h2_a_text');
     const badge = document.getElementById('h2_q_num_badge');
 
-    if (textEl) textEl.innerText = currentHostState.questionText || 'Đang chờ câu hỏi Ra Khơi...';
-    if (ansEl) ansEl.innerText = currentHostState.answer || currentHostState.answerText || '--';
-    if (badge) badge.innerText = `CÂU HỎI SỐ ${currentHostState.questionIndex || 1}`;
+    const qIndex = currentHostState.questionIndex || 1;
+    let qText = currentHostState.questionText;
+    let ansVal = currentHostState.answerText || currentHostState.answer;
+
+    const gData = getHostGameData();
+    if (gData && gData.raKhoi && gData.raKhoi[qIndex - 1]) {
+        const qItem = gData.raKhoi[qIndex - 1];
+        if (!qText) qText = qItem.q || qItem.question;
+        if (!ansVal) ansVal = qItem.a || qItem.answer;
+    }
+
+    if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Ra Khơi...';
+    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    if (badge) badge.innerText = `CÂU HỎI SỐ ${qIndex}`;
 
     renderContestantsAnswersGrid('h2_contestants_grid', 'RK');
 }
@@ -291,25 +325,52 @@ function renderHostScene3() {
     const ansEl = document.getElementById('h3_a_text');
     const badge = document.getElementById('h3_row_badge');
 
-    if (textEl) textEl.innerText = currentHostState.questionText || 'Đang chờ câu hỏi Vượt Sóng...';
-    if (ansEl) ansEl.innerText = currentHostState.answer || currentHostState.answerText || '--';
-    if (badge) badge.innerText = `HÀNG NGANG SỐ ${currentHostState.row || currentHostState.selectedRow || 1}`;
+    const rowVal = currentHostState.row || currentHostState.selectedRow || 1;
+    let qText = currentHostState.questionText;
+    let ansVal = currentHostState.answerText || currentHostState.answer;
+
+    const gData = getHostGameData();
+    if (gData && gData.vuotSong) {
+        const vsData = gData.vuotSong;
+        if (rowVal === 'center') {
+            if (!qText && vsData.center) qText = vsData.center.q || vsData.center.question;
+            if (!ansVal) ansVal = (vsData.center && (vsData.center.a || vsData.center.answer)) || vsData.keyword;
+        } else {
+            const hKey = `h${rowVal}`;
+            if (vsData[hKey]) {
+                if (!qText) qText = vsData[hKey].q || vsData[hKey].question;
+                if (!ansVal) ansVal = vsData[hKey].a || vsData[hKey].answer;
+            }
+        }
+    }
+
+    if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Vượt Sóng...';
+    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    if (badge) badge.innerText = `HÀNG NGANG SỐ ${rowVal === 'center' ? 'TRUNG TÂM' : rowVal}`;
 
     // All rows list for MC
     const listEl = document.getElementById('h3_all_rows_list');
-    if (listEl && currentHostState.gameData && currentHostState.gameData.VuotSong) {
-        const vsData = currentHostState.gameData.VuotSong;
+    if (listEl && gData && gData.vuotSong) {
+        const vsData = gData.vuotSong;
         let html = '';
-        if (vsData.rows && Array.isArray(vsData.rows)) {
-            vsData.rows.forEach((r, idx) => {
-                html += `
-                    <div>
-                        <strong style="color: #38bdf8;">Hàng ${idx + 1} (${r.length || 0} chữ):</strong>
-                        <span>${r.question || '--'}</span>
-                        <strong style="color: #34d399; margin-left: 8px;">➡ ${r.answer || '--'}</strong>
-                    </div>
-                `;
-            });
+        for (let i = 1; i <= 4; i++) {
+            const h = vsData[`h${i}`] || {};
+            html += `
+                <div>
+                    <strong style="color: #38bdf8;">Hàng ${i}:</strong>
+                    <span>${h.q || '--'}</span>
+                    <strong style="color: #34d399; margin-left: 8px;">➡ ${h.a || '--'}</strong>
+                </div>
+            `;
+        }
+        if (vsData.center) {
+            html += `
+                <div style="margin-top: 4px;">
+                    <strong style="color: #f43f5e;">Ô Trung Tâm:</strong>
+                    <span>${vsData.center.q || '--'}</span>
+                    <strong style="color: #34d399; margin-left: 8px;">➡ ${vsData.center.a || '--'}</strong>
+                </div>
+            `;
         }
         if (vsData.keyword) {
             html += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #475569; font-weight: 800; color: #facc15;">🔑 TỪ KHÓA CHƯỚNG NGẠI VẬT: ${vsData.keyword}</div>`;
@@ -325,9 +386,13 @@ function renderHostScene4() {
     const ansEl = document.getElementById('h4_a_text');
     const badge = document.getElementById('h4_pack_badge');
 
-    if (textEl) textEl.innerText = currentHostState.questionText || 'Đang chờ câu hỏi Vinh Quang...';
-    if (ansEl) ansEl.innerText = currentHostState.answer || currentHostState.answerText || '--';
-    if (badge) badge.innerText = `GÓI CÂU HỎI: ${currentHostState.pack || 20} ĐIỂM`;
+    const pack = currentHostState.pack || 20;
+    let qText = currentHostState.questionText;
+    let ansVal = currentHostState.answerText || currentHostState.answer;
+
+    if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Vinh Quang...';
+    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    if (badge) badge.innerText = `GÓI CÂU HỎI: ${pack} ĐIỂM${currentHostState.subject ? ' - MÔN ' + currentHostState.subject.toUpperCase() : ''}`;
 
     renderContestantsAnswersGrid('h4_contestants_grid', 'VQ');
 }
