@@ -56,6 +56,8 @@ function updateTab2Preview() {
     if (aTextEl) aTextEl.innerText = `Đáp án: ${qItem.a || '...'}`;
     const timerEl = document.getElementById('rk_preview_timer');
     if (timerEl) timerEl.innerText = rkTimeLeft;
+    const statusEl = document.getElementById('rk_preview_status');
+    if (statusEl) statusEl.innerText = rkTimeLeft;
 }
 
 function onClickBatDauDoanBang() {
@@ -67,7 +69,7 @@ function onClickBatDauDoanBang() {
         timestamp: Date.now()
     });
     const statusEl = document.getElementById('rk_preview_status');
-    if (statusEl) statusEl.innerText = "Phát đoạn băng";
+    if (statusEl) statusEl.innerText = rkTimeLeft;
     showToast(`Bắt đầu phát đoạn băng cho Câu ${currentRKQuestion}`);
 }
 
@@ -95,14 +97,18 @@ function onClickRKTinhThoiGian() {
     rkTimeLeft = 30; // 30s suy nghĩ trả lời
     const timerEl = document.getElementById('rk_preview_timer');
     if (timerEl) timerEl.innerText = rkTimeLeft;
+    const statusEl = document.getElementById('rk_preview_status');
+    if (statusEl) statusEl.innerText = rkTimeLeft;
     
     rkTimerInterval = setInterval(() => {
         rkTimeLeft--;
         if (timerEl) timerEl.innerText = rkTimeLeft;
+        const statusEl = document.getElementById('rk_preview_status');
+        if (statusEl) statusEl.innerText = rkTimeLeft;
         if (rkTimeLeft <= 0) {
             clearInterval(rkTimerInterval);
-            const statusEl = document.getElementById('rk_preview_status');
-            if (statusEl) statusEl.innerText = "Hết giờ!";
+            if (timerEl) timerEl.innerText = "0";
+            if (statusEl) statusEl.innerText = "0";
         }
     }, 1000);
 
@@ -112,8 +118,6 @@ function onClickRKTinhThoiGian() {
         duration: 30,
         questionText: qItem.q
     });
-    const statusEl = document.getElementById('rk_preview_status');
-    if (statusEl) statusEl.innerText = "Đang đếm 30s";
     showToast(`Bắt đầu tính thời gian 30s cho Câu ${currentRKQuestion}`);
 }
 
@@ -158,7 +162,7 @@ function onClickRKDapAnTS() {
         contestants: contestantsData
     });
     const statusEl = document.getElementById('rk_preview_status');
-    if (statusEl) statusEl.innerText = "Hiện đáp án TS";
+    if (statusEl) statusEl.innerText = rkTimeLeft;
     showToast('Hiển thị Scene Đáp án Thí Sinh Ra Khơi trên Projector');
 }
 
@@ -184,7 +188,7 @@ function onClickRKDatLai() {
     const timerEl = document.getElementById('rk_preview_timer');
     if (timerEl) timerEl.innerText = rkTimeLeft;
     const statusEl = document.getElementById('rk_preview_status');
-    if (statusEl) statusEl.innerText = "Đã đặt lại (Dừng/Ẩn clip)";
+    if (statusEl) statusEl.innerText = rkTimeLeft;
     updateTab2Preview();
     
     sendToProjector('RA_KHOI_RESET', {

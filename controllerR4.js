@@ -39,7 +39,7 @@ function onClickVQChuyenSlidePPT() {
 function onClickVQVeDich() {
     sendToProjector('VINH_QUANG_INTRO');
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Về Đích";
+    if (statusEl) statusEl.innerText = vqTimeLeft;
     showToast('Bắt đầu Vòng thi Về Đích (Vinh Quang)');
 }
 
@@ -48,20 +48,22 @@ function onClickVQTinhThoiGian() {
     vqTimeLeft = 20;
     const timerEl = document.getElementById('vq_preview_timer');
     if (timerEl) timerEl.innerText = vqTimeLeft;
+    const statusEl = document.getElementById('vq_preview_status');
+    if (statusEl) statusEl.innerText = vqTimeLeft;
 
     vqTimerInterval = setInterval(() => {
         vqTimeLeft--;
-        if (timerEl) timerEl.innerText = vqTimeLeft < 10 ? '0' + vqTimeLeft : vqTimeLeft;
+        if (timerEl) timerEl.innerText = vqTimeLeft;
+        const statusEl = document.getElementById('vq_preview_status');
+        if (statusEl) statusEl.innerText = vqTimeLeft;
         if (vqTimeLeft <= 0) {
             clearInterval(vqTimerInterval);
-            const statusEl = document.getElementById('vq_preview_status');
-            if (statusEl) statusEl.innerText = "Hết giờ!";
+            if (timerEl) timerEl.innerText = "0";
+            if (statusEl) statusEl.innerText = "0";
         }
     }, 1000);
 
     sendToProjector('VINH_QUANG_START_TIMER', { duration: 20 });
-    const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Đang đếm 20s";
     showToast('Bắt đầu tính thời gian 20s Vinh Quang');
 }
 
@@ -75,15 +77,19 @@ function onClickVQ5sTraLoi() {
     clearInterval(vqTimerInterval);
     vqTimeLeft = 5;
     const timerEl = document.getElementById('vq_preview_timer');
-    if (timerEl) timerEl.innerText = "05";
+    if (timerEl) timerEl.innerText = "5";
+    const statusEl = document.getElementById('vq_preview_status');
+    if (statusEl) statusEl.innerText = "5";
 
     vqTimerInterval = setInterval(() => {
         vqTimeLeft--;
-        if (timerEl) timerEl.innerText = vqTimeLeft < 10 ? '0' + vqTimeLeft : vqTimeLeft;
+        if (timerEl) timerEl.innerText = vqTimeLeft;
+        const statusEl = document.getElementById('vq_preview_status');
+        if (statusEl) statusEl.innerText = vqTimeLeft;
         if (vqTimeLeft <= 0) {
             clearInterval(vqTimerInterval);
-            const statusEl = document.getElementById('vq_preview_status');
-            if (statusEl) statusEl.innerText = "Hết 5s!";
+            if (timerEl) timerEl.innerText = "0";
+            if (statusEl) statusEl.innerText = "0";
         }
     }, 1000);
 
@@ -99,8 +105,6 @@ function onClickVQ5sTraLoi() {
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(payload);
     }
-    const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Đếm 5s";
     showToast('Bắt đầu 5s giành quyền trả lời!');
 }
 
@@ -161,11 +165,11 @@ function onClickVQChonGoiDiem(pack) {
     const titleEl = document.getElementById('vq_preview_title');
     if (titleEl) titleEl.innerText = `GÓI ${pack} ĐIỂM - ${currentVQSubject.toUpperCase()}`;
     const qEl = document.getElementById('vq_preview_q_text');
-    if (qEl) qEl.innerText = currentVQQuestionText;
+    if (qEl) qEl.innerText = '🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị câu hỏi cho Player & Máy chiếu';
     const aEl = document.getElementById('vq_preview_a_text');
-    if (aEl) aEl.innerText = `Đáp án: ${currentVQAnswerText || '...'}`;
+    if (aEl) aEl.innerText = 'Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem]';
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = `Đã chọn ${pack}đ`;
+    if (statusEl) statusEl.innerText = vqTimeLeft;
 
     // Clear contestant inputs on controller for the new question
     for (let i = 1; i <= 5; i++) {
@@ -182,6 +186,7 @@ function onClickVQChonGoiDiem(pack) {
         round: 'VQ',
         pack: pack,
         subject: currentVQSubject,
+        questionText: '',
         vqQuestionShown: false,
         timestamp: Date.now()
     };
@@ -210,13 +215,14 @@ function onClickVQHienChonGoiDiem() {
     const titleEl = document.getElementById('vq_preview_title');
     if (titleEl) titleEl.innerText = "VÒNG THI VINH QUANG (VỀ ĐÍCH)";
     const qEl = document.getElementById('vq_preview_q_text');
-    if (qEl) qEl.innerText = "Nội dung câu hỏi Vinh Quang...";
+    if (qEl) qEl.innerText = "🔒 [Đang ẩn] - Vui lòng chọn gói điểm và bấm [Hiện câu hỏi]...";
     const aEl = document.getElementById('vq_preview_a_text');
     if (aEl) aEl.innerText = "Đáp án: ...";
 
     const payload = {
         type: 'VINH_QUANG_SHOW_PACKS',
         round: 'VQ',
+        questionText: '',
         vqQuestionShown: false,
         timestamp: Date.now()
     };
@@ -225,19 +231,24 @@ function onClickVQHienChonGoiDiem() {
         sendSupabaseAction(payload);
     }
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Hiện chọn gói";
+    if (statusEl) statusEl.innerText = vqTimeLeft;
     showToast('Hiển thị giao diện chọn mức điểm trên Projector (chưa chọn)');
 }
 
 function onClickVQAnChonGoiDiem() {
     window.vqQuestionIsShown = false;
+    const qEl = document.getElementById('vq_preview_q_text');
+    if (qEl) qEl.innerText = '🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị câu hỏi cho Player & Máy chiếu';
+    const aEl = document.getElementById('vq_preview_a_text');
+    if (aEl) aEl.innerText = 'Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem]';
+
     const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
     const payload = {
         type: 'VINH_QUANG_HIDE_PACK',
         round: 'VQ',
         pack: currentVQPack,
         subject: currentVQSubject,
-        questionText: currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...",
+        questionText: '',
         vqQuestionShown: false,
         hasStar: anyStarActive,
         starActive: anyStarActive,
@@ -248,7 +259,7 @@ function onClickVQAnChonGoiDiem() {
         sendSupabaseAction(payload);
     }
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Đã ẩn chọn gói (Chờ bấm Hiện câu hỏi)";
+    if (statusEl) statusEl.innerText = vqTimeLeft;
     showToast('Đã ẩn giao diện chọn gói điểm trên Projector (Chờ bấm Hiện câu hỏi)');
 }
 
@@ -262,6 +273,11 @@ function onClickVQHienCauHoi() {
         if (extraEl) extraEl.value = '';
     }
     sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VQ' });
+
+    const qEl = document.getElementById('vq_preview_q_text');
+    if (qEl) qEl.innerText = currentVQQuestionText || "Nội dung câu hỏi Vinh Quang...";
+    const aEl = document.getElementById('vq_preview_a_text');
+    if (aEl) aEl.innerText = `Đáp án: ${currentVQAnswerText || '...'}`;
 
     const anyStarActive = Array.isArray(window.vqStars) && window.vqStars.some(s => !!s);
     const payload = {
@@ -280,7 +296,7 @@ function onClickVQHienCauHoi() {
         sendSupabaseAction(payload);
     }
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Hiện câu hỏi";
+    if (statusEl) statusEl.innerText = vqTimeLeft;
     showToast('Hiển thị câu hỏi Vinh Quang trên Projector & Player');
 }
 
@@ -292,14 +308,18 @@ function onClickVQ25s() {
     vqTimeLeft = 25;
     const timerEl = document.getElementById('vq_preview_timer');
     if (timerEl) timerEl.innerText = "25";
+    const statusEl = document.getElementById('vq_preview_status');
+    if (statusEl) statusEl.innerText = "25";
 
     vqTimerInterval = setInterval(() => {
         vqTimeLeft--;
-        if (timerEl) timerEl.innerText = vqTimeLeft < 10 ? '0' + vqTimeLeft : vqTimeLeft;
+        if (timerEl) timerEl.innerText = vqTimeLeft;
+        const statusEl = document.getElementById('vq_preview_status');
+        if (statusEl) statusEl.innerText = vqTimeLeft;
         if (vqTimeLeft <= 0) {
             clearInterval(vqTimerInterval);
-            const statusEl = document.getElementById('vq_preview_status');
-            if (statusEl) statusEl.innerText = "Hết 25s!";
+            if (timerEl) timerEl.innerText = "0";
+            if (statusEl) statusEl.innerText = "0";
         }
     }, 1000);
 
@@ -319,8 +339,6 @@ function onClickVQ25s() {
             timestamp: Date.now()
         });
     }
-    const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Đang đếm 25s";
     showToast('Bắt đầu đếm ngược 25 giây');
 }
 
@@ -342,7 +360,7 @@ function onClickVQHienDapAnTS() {
         contestants: contestantsData
     });
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Hiện đáp án TS";
+    if (statusEl) statusEl.innerText = vqTimeLeft;
     showToast('Hiển thị đáp án thí sinh Vinh Quang + Phát âm thanh Answer.mp3');
 }
 
@@ -353,7 +371,7 @@ function onClickVQDatLai() {
     const timerEl = document.getElementById('vq_preview_timer');
     if (timerEl) timerEl.innerText = "25";
     const statusEl = document.getElementById('vq_preview_status');
-    if (statusEl) statusEl.innerText = "Sẵn sàng";
+    if (statusEl) statusEl.innerText = "25";
 
     // Clear contestant extra answers on controller
     for (let i = 1; i <= 5; i++) {

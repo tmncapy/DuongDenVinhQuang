@@ -1048,17 +1048,6 @@ app.get('/controller', (req, res) => { res.sendFile(path.join(__dirname, 'contro
 app.get('/projector', (req, res) => { res.sendFile(path.join(__dirname, 'projector.html')); });
 app.get('/graphic', (req, res) => { res.sendFile(path.join(__dirname, 'graphic.html')); });
 app.get('/scoreboard', (req, res) => { res.sendFile(path.join(__dirname, 'Scoreboard.html')); });
-app.get('/guide', (req, res) => { res.sendFile(path.join(__dirname, 'guide.html')); });
-app.get('/huong-dan', (req, res) => { res.sendFile(path.join(__dirname, 'guide.html')); });
-app.get('/huong_dan_controller.pdf', (req, res) => {
-  const filePath = path.join(__dirname, 'huong_dan_controller.pdf');
-  if (fs.existsSync(filePath)) {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename="huong_dan_controller.pdf"');
-    return res.sendFile(filePath);
-  }
-  res.status(404).send('File PDF không tồn tại');
-});
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 
 // Start HTTP + WebSocket server

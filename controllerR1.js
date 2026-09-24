@@ -85,7 +85,9 @@ function updateTab1Preview() {
     if (titleEl) titleEl.innerText = `LƯỢT THI ${currentXuatPhatTurn}: ${turnName.toUpperCase()}`;
     if (qNumEl) qNumEl.innerText = currentXuatPhatQIndex + 1;
     if (deSelectEl) deSelectEl.value = currentXuatPhatDe;
-    if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
+    if (timerEl) timerEl.innerText = xuatPhatTimeLeft;
+    const statusEl = document.getElementById('preview_status_text');
+    if (statusEl) statusEl.innerText = xuatPhatTimeLeft;
     if (scoreEl) scoreEl.innerText = currentScore;
 
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
@@ -195,16 +197,18 @@ function onClickBatDau60s() {
     const targetTime = Date.now() + 60000;
     xuatPhatTimerInterval = setInterval(() => {
         xuatPhatTimeLeft = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
-        if (timerEl) timerEl.innerText = xuatPhatTimeLeft < 10 ? ('0' + xuatPhatTimeLeft) : xuatPhatTimeLeft;
+        if (timerEl) timerEl.innerText = xuatPhatTimeLeft;
+        const statusEl = document.getElementById('preview_status_text');
+        if (statusEl) statusEl.innerText = xuatPhatTimeLeft;
         if (xuatPhatTimeLeft <= 0) {
             clearInterval(xuatPhatTimerInterval);
-            const statusEl = document.getElementById('preview_status_text');
-            if (statusEl) statusEl.innerText = "Hết giờ!";
+            if (timerEl) timerEl.innerText = "0";
+            if (statusEl) statusEl.innerText = "0";
         }
     }, 200);
 
     const statusEl = document.getElementById('preview_status_text');
-    if (statusEl) statusEl.innerText = "Đang đếm giờ...";
+    if (statusEl) statusEl.innerText = "60";
     showToast('Bắt đầu tính thời gian 60 giây!');
 }
 
@@ -288,7 +292,7 @@ function onClickDatLaiVongThi() {
     const timerEl = document.getElementById('preview_timer');
     if (timerEl) timerEl.innerText = "60";
     const statusEl = document.getElementById('preview_status_text');
-    if (statusEl) statusEl.innerText = "Đã đặt lại";
+    if (statusEl) statusEl.innerText = "60";
     updateTab1Preview();
 
     const payload = {
@@ -328,7 +332,9 @@ function onClickHoanThanh() {
         sendSupabaseAction(payload);
     }
     const statusEl = document.getElementById('preview_status_text');
-    if (statusEl) statusEl.innerText = "Hoàn thành";
+    if (statusEl) statusEl.innerText = "0";
+    const timerEl = document.getElementById('preview_timer');
+    if (timerEl) timerEl.innerText = "0";
     clearInterval(xuatPhatTimerInterval);
     showToast('Đã hoàn thành lượt thi - Đã ẩn màn hình Projector');
 }

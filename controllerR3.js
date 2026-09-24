@@ -51,26 +51,21 @@ function selectVSRow(row) {
 
     sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'VS' });
 
+    window.vsQuestionIsShown = false;
     const titleEl = document.getElementById('vs_preview_title');
     const qTextEl = document.getElementById('vs_preview_q_text');
     const aTextEl = document.getElementById('vs_preview_a_text');
+    const statusEl = document.getElementById('vs_preview_status');
+    if (statusEl) statusEl.innerText = "20";
     
-    let currentQText = "";
     if (row === 'center') {
         if (titleEl) titleEl.innerText = "VÒNG THI VƯỢT SÓNG: Ô CHỮ TRUNG TÂM";
-        const q = document.getElementById('vs_q_center')?.value || gameData.vuotSong?.center?.q || "Chưa nhập câu hỏi trung tâm";
-        const a = document.getElementById('vs_a_center')?.value || gameData.vuotSong?.center?.a || "Chưa nhập đáp án";
-        if (qTextEl) qTextEl.innerText = q;
-        if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
-        currentQText = q;
     } else {
         if (titleEl) titleEl.innerText = `VÒNG THI VƯỢT SÓNG: HÀNG NGANG ${row}`;
-        const q = document.getElementById(`vs_q_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.q || `Chưa nhập câu hỏi hàng ${row}`;
-        const a = document.getElementById(`vs_a_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.a || `Chưa nhập đáp án`;
-        if (qTextEl) qTextEl.innerText = q;
-        if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
-        currentQText = q;
     }
+    if (qTextEl) qTextEl.innerText = "🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị nội dung cho Player & Máy chiếu";
+    if (aTextEl) aTextEl.innerText = `Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem] | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
+
     const payload = {
         type: 'VUOT_SONG_SELECT_ROW',
         row: row,
@@ -173,7 +168,15 @@ function onClickVSShowQuestion() {
         showToast('⚠️ Vui lòng chọn Hàng ngang trước khi bấm Hiện câu hỏi!');
         return;
     }
-    const q = currentVSRow === 'center' ? (document.getElementById('vs_q_center')?.value || "Chưa nhập câu hỏi trung tâm") : (document.getElementById(`vs_q_${currentVSRow}`)?.value || `Chưa nhập câu hỏi hàng ${currentVSRow}`);
+    window.vsQuestionIsShown = true;
+    const q = currentVSRow === 'center' ? (document.getElementById('vs_q_center')?.value || gameData.vuotSong?.center?.q || "Chưa nhập câu hỏi trung tâm") : (document.getElementById(`vs_q_${currentVSRow}`)?.value || gameData.vuotSong?.[`h${currentVSRow}`]?.q || `Chưa nhập câu hỏi hàng ${currentVSRow}`);
+    const a = currentVSRow === 'center' ? (document.getElementById('vs_a_center')?.value || gameData.vuotSong?.center?.a || "Chưa nhập đáp án") : (document.getElementById(`vs_a_${currentVSRow}`)?.value || gameData.vuotSong?.[`h${currentVSRow}`]?.a || `Chưa nhập đáp án`);
+
+    const qTextEl = document.getElementById('vs_preview_q_text');
+    const aTextEl = document.getElementById('vs_preview_a_text');
+    if (qTextEl) qTextEl.innerText = q;
+    if (aTextEl) aTextEl.innerText = `Đáp án: ${a} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
+
     const payload = {
         type: 'VUOT_SONG_SHOW_QUESTION',
         row: currentVSRow,
@@ -194,12 +197,18 @@ function onClickVSStartTimer() {
     vsTimeLeft = 20;
     const timerEl = document.getElementById('vs_preview_timer');
     if (timerEl) timerEl.innerText = vsTimeLeft;
+    const statusEl = document.getElementById('vs_preview_status');
+    if (statusEl) statusEl.innerText = vsTimeLeft;
     
     vsTimerInterval = setInterval(() => {
         vsTimeLeft--;
         if (timerEl) timerEl.innerText = vsTimeLeft;
+        const statusEl = document.getElementById('vs_preview_status');
+        if (statusEl) statusEl.innerText = vsTimeLeft;
         if (vsTimeLeft <= 0) {
             clearInterval(vsTimerInterval);
+            if (timerEl) timerEl.innerText = "0";
+            if (statusEl) statusEl.innerText = "0";
         }
     }, 1000);
 
@@ -208,9 +217,17 @@ function onClickVSStartTimer() {
 }
 
 function onClickVSReturnToGrid() {
+    window.vsQuestionIsShown = false;
     clearInterval(vsTimerInterval);
     const timerEl = document.getElementById('vs_preview_timer');
     if (timerEl) timerEl.innerText = vsTimeLeft;
+    const statusEl = document.getElementById('vs_preview_status');
+    if (statusEl) statusEl.innerText = vsTimeLeft;
+
+    const qTextEl = document.getElementById('vs_preview_q_text');
+    const aTextEl = document.getElementById('vs_preview_a_text');
+    if (qTextEl) qTextEl.innerText = "🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị nội dung cho Player & Máy chiếu";
+    if (aTextEl) aTextEl.innerText = `Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem] | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
 
     const payload = {
         type: 'VUOT_SONG_RETURN_GRID',
@@ -337,7 +354,9 @@ function onClickVSDatLai() {
     clearInterval(vsTimerInterval);
     vsTimeLeft = 20;
     const timerEl = document.getElementById('vs_preview_timer');
-    if (timerEl) timerEl.innerText = vsTimeLeft;
+    if (timerEl) timerEl.innerText = "20";
+    const statusEl = document.getElementById('vs_preview_status');
+    if (statusEl) statusEl.innerText = "20";
 
     // Clear contestant inputs on controller
     for (let i = 1; i <= 5; i++) {
