@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <!-- Disable DevTools -->
+    <script src="disable-devtools.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập Thí Sinh</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-weight: bold !important;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0f172a;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            background: #1e293b;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+
+        input, select {
+            width: 100%;
+            height: 42px;
+            padding: 0 12px;
+            font-size: 15px;
+            border: 2px solid #334155;
+            border-radius: 6px;
+            background: #0f172a;
+            color: #ffffff;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #3b82f6;
+        }
+
+        button {
+            width: 100%;
+            height: 46px;
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 6px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #login_error {
+            color: #ef4444;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <div class="form-group">
+            <label for="login_name_select">Chọn tên</label>
+            <select id="login_name_select">
+                <option value="1">Thí sinh 1</option>
+                <option value="2">Thí sinh 2</option>
+                <option value="3">Thí sinh 3</option>
+                <option value="4">Thí sinh 4</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="login_room_input">Mã phòng</label>
+            <input type="text" id="login_room_input" maxlength="6" onkeyup="if(event.key==='Enter') document.getElementById('login_pass_input').focus()">
+        </div>
+
+        <div class="form-group">
+            <label for="login_pass_input">Mật khẩu</label>
+            <input type="password" id="login_pass_input" maxlength="4" onkeyup="if(event.key==='Enter') submitLogin()">
+        </div>
+
+        <div id="login_error"></div>
+
+        <button id="btn_submit_login" onclick="submitLogin()">Xác nhận</button>
+    </div>
+
+    <script src="network_sync.js"></script>
+    <script>
+        function showError(msg) {
+            const errBox = document.getElementById('login_error');
+            if (errBox) {
+                errBox.innerText = msg;
+                errBox.style.display = 'block';
+            }
+        }
+
+        // Prefill room id if in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRoom = urlParams.get('roomid') || urlParams.get('roomCode') || urlParams.get('room');
+        const urlId = urlParams.get('id');
+        if (urlRoom) {
+            document.getElementById('login_room_input').value = urlRoom;
+        }
+        if (urlId && ['1','2','3','4'].includes(urlId)) {
+            document.getElementById('login_name_select').value = urlId;
+        }
+
+        // Load contestant names from server state if available
+        fetch(typeof getApiUrl === 'function' ? getApiUrl('/api/state') : '/api/state')
+            .then(res => res.json())
+            .then(state => {
+                if (state && state.contestants && Array.isArray(state.contestants)) {
+                    const sel = document.getElementById('login_name_select');
+                    state.contestants.forEach((c, idx) => {
+                        if (c && c.name && sel.options[idx]) {
+                            sel.options[idx].text = c.name;
+                        }
+                    });
+                }
+            })
+            .catch(() => {});
+
+        function submitLogin() {
+            const errBox = document.getElementById('login_error');
+            if (errBox) errBox.style.display = 'none';
+
+            const contestantId = document.getElementById('login_name_select').value;
+            const roomCode = (document.getElementById('login_room_input').value || '').trim();
+            const password = (document.getElementById('login_pass_input').value || '').trim();
+
+            if (!roomCode) {
+                showError('Vui lòng nhập Mã phòng!');
+                return;
+            }
+            if (!password) {
+                showError('Vui lòng nhập Mật khẩu!');
+                return;
+            }
+
+            const btn = document.getElementById('btn_submit_login');
+            if (btn) btn.disabled = true;
+
+            const apiUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/action') : '/api/action';
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'VERIFY_PLAYER_AUTH',
+                    contestantId: contestantId,
+                    roomCode: roomCode,
+                    password: password
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (btn) btn.disabled = false;
+                if (res.success) {
+                    sessionStorage.setItem('ddvq_room_code', roomCode);
+                    sessionStorage.setItem('ddvq_player_auth', res.auth || password);
+                    sessionStorage.setItem('ddvq_contestant_id', contestantId);
+                    window.location.href = `player${contestantId}.html?id=${contestantId}&roomid=${encodeURIComponent(roomCode)}&auth=${encodeURIComponent(res.auth || password)}`;
+                } else {
+                    showError(res.error || 'Mã phòng hoặc Mật khẩu không chính xác!');
+                }
+            })
+            .catch(err => {
+                if (btn) btn.disabled = false;
+                showError('Không thể kết nối đến máy chủ. Vui lòng thử lại!');
+            });
+        }
+    </script>
+</body>
+</html>
