@@ -623,6 +623,13 @@
                         <div class="status-label">TRẢ LỜI ĐÃ GỬI</div>
                         <div class="status-bar" id="s2_status_bar">---</div>
                     </div>
+
+                    <div style="display: flex; gap: 10px; width: 55%; max-width: 600px; margin-top: 4px;">
+                        <button class="btn-bell" id="s2_btn_bell" style="width: 100%; padding: 10px 14px; font-size: 1.1rem; min-height: 48px; border-radius: 8px;" onclick="submitPlayerAnswer('RA_KHOI')">🔔 GỬI ĐÁP ÁN RA KHƠI</button>
+                    </div>
+                    <div class="bell-feedback" id="s2_bell_feedback" style="display: none; margin-top: 6px;">
+                        ✅ ĐÃ GỬI ĐÁP ÁN RA KHƠI!
+                    </div>
                 </div>
             </div>
         </div>
@@ -730,40 +737,6 @@
 
     </div>
 
-    <!-- AUTHENTICATION / CONTESTANT LOGIN OVERLAY -->
-    <div class="auth-overlay" id="auth_overlay">
-        <div class="auth-card">
-            <div class="auth-header">
-                <h2>ĐĂNG NHẬP MÀN HÌNH THÍ SINH</h2>
-                <p>Nhập mã phòng và chọn vị trí thí sinh của bạn</p>
-            </div>
-
-            <div class="auth-error-msg" id="auth_error_msg"></div>
-
-            <div class="auth-form-group">
-                <label for="auth_room_code">MÃ PHÒNG (6 chữ số):</label>
-                <input type="text" id="auth_room_code" class="auth-input" maxlength="6" placeholder="Ví dụ: 123456" style="text-align: center; letter-spacing: 2px;">
-            </div>
-
-            <div class="auth-form-group">
-                <label>CHỌN VỊ TRÍ THÍ SINH:</label>
-                <div class="contestant-grid">
-                    <div class="contestant-btn selected" id="cbtn_1" onclick="selectAuthContestant(1)">Thí sinh 1 (TS1)</div>
-                    <div class="contestant-btn" id="cbtn_2" onclick="selectAuthContestant(2)">Thí sinh 2 (TS2)</div>
-                    <div class="contestant-btn" id="cbtn_3" onclick="selectAuthContestant(3)">Thí sinh 3 (TS3)</div>
-                    <div class="contestant-btn" id="cbtn_4" onclick="selectAuthContestant(4)">Thí sinh 4 (TS4)</div>
-                </div>
-            </div>
-
-            <div class="auth-form-group">
-                <label for="auth_password">MẬT KHẨU CỦA THÍ SINH (4 số):</label>
-                <input type="password" id="auth_password" class="auth-input" maxlength="8" placeholder="Nhập mật khẩu (VD: 1111)" style="text-align: center; letter-spacing: 2px;">
-            </div>
-
-            <button class="btn-submit-auth" onclick="confirmPlayerLogin()">ĐĂNG NHẬP VÀO TRẬN THI</button>
-        </div>
-    </div>
-
     <!-- SCRIPT REAL-TIME NETWORK & PLAYER CONTROLLER LOGIC -->
     <script>
         // State variables
@@ -805,15 +778,9 @@
                 currentPassword = savedPass;
             }
 
-            // Fill input elements
-            document.getElementById('auth_room_code').value = currentRoomCode;
-            selectAuthContestant(currentContestantId);
-            document.getElementById('auth_password').value = currentPassword;
-
-            // Check auto-login if saved
-            if (localStorage.getItem('ddvq_player_logged_in') === 'true') {
-                confirmPlayerLogin(true);
-            }
+            localStorage.setItem('ddvq_room_code', currentRoomCode);
+            localStorage.setItem('ddvq_player_ts_id', currentContestantId);
+            localStorage.setItem('ddvq_player_logged_in', 'true');
 
             // Setup enter key listener on input fields
             ['s2_ans_input', 's3_ans_input', 's4_ans_input', 's5_ans_input'].forEach(id => {
@@ -827,86 +794,26 @@
                     });
                 }
             });
+
+            // Start player session immediately
+            updatePlayerTopBar();
+            initSyncConnection();
         });
-
-        function selectAuthContestant(tsId) {
-            currentContestantId = tsId;
-            for (let i = 1; i <= 4; i++) {
-                const btn = document.getElementById(`cbtn_${i}`);
-                if (btn) {
-                    if (i === tsId) btn.classList.add('selected');
-                    else btn.classList.remove('selected');
-                }
-            }
-            // Auto fill default passwords if not set
-            const passInp = document.getElementById('auth_password');
-            if (passInp && !passInp.value) {
-                passInp.value = `${tsId}${tsId}${tsId}${tsId}`;
-            }
-        }
-
-        function confirmPlayerLogin(isAuto = false) {
-            const roomInp = document.getElementById('auth_room_code').value.trim().toUpperCase() || 'DDVQ2026';
-            const passInp = document.getElementById('auth_password').value.trim();
-            const errEl = document.getElementById('auth_error_msg');
-
-            currentRoomCode = roomInp;
-            currentPassword = passInp;
-
-            // Call server to verifyauth
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'VERIFY_PLAYER_AUTH',
-                    roomCode: currentRoomCode,
-                    contestantId: currentContestantId,
-                    password: currentPassword
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success || isAuto || passInp === '1234' || passInp === '0000') {
-                    // Success login
-                    if (errEl) errEl.style.display = 'none';
-                    document.getElementById('auth_overlay').style.display = 'none';
-
-                    localStorage.setItem('ddvq_room_code', currentRoomCode);
-                    localStorage.setItem('ddvq_player_ts_id', currentContestantId);
-                    localStorage.setItem('ddvq_player_password', currentPassword);
-                    localStorage.setItem('ddvq_player_logged_in', 'true');
-
-                    updatePlayerTopBar();
-                    initSyncConnection();
-                } else {
-                    if (errEl) {
-                        errEl.innerText = data.error || 'Mã phòng hoặc Mật khẩu không chính xác!';
-                        errEl.style.display = 'block';
-                    }
-                }
-            })
-            .catch(err => {
-                // Fallback login if offline or network fail
-                if (errEl) errEl.style.display = 'none';
-                document.getElementById('auth_overlay').style.display = 'none';
-                localStorage.setItem('ddvq_room_code', currentRoomCode);
-                localStorage.setItem('ddvq_player_ts_id', currentContestantId);
-                localStorage.setItem('ddvq_player_logged_in', 'true');
-                updatePlayerTopBar();
-                initSyncConnection();
-            });
-        }
 
         function logoutPlayer() {
             localStorage.removeItem('ddvq_player_logged_in');
-            document.getElementById('auth_overlay').style.display = 'flex';
+            window.location.href = 'playerLogin.html';
         }
 
         function updatePlayerTopBar() {
-            document.getElementById('top_player_tag').innerText = `TS${currentContestantId}`;
-            document.getElementById('top_player_name').innerText = contestantName || `Thí sinh ${currentContestantId}`;
-            document.getElementById('top_player_score').innerText = contestantScore || 0;
-            document.getElementById('top_room_badge').innerText = `Mã phòng: ${currentRoomCode}`;
+            const tagEl = document.getElementById('top_player_tag');
+            if (tagEl) tagEl.innerText = `TS${currentContestantId}`;
+            const nameEl = document.getElementById('top_player_name');
+            if (nameEl) nameEl.innerText = contestantName || `Thí sinh ${currentContestantId}`;
+            const scoreEl = document.getElementById('top_player_score');
+            if (scoreEl) scoreEl.innerText = contestantScore || 0;
+            const roomEl = document.getElementById('top_room_badge');
+            if (roomEl) roomEl.innerText = `Mã phòng: ${currentRoomCode}`;
         }
 
         // Initialize Real-time Network Sync Channel
@@ -1022,16 +929,34 @@
             // Round 1: Xuất phát (Khởi Động)
             if (data.type && (data.type.startsWith('XUAT_PHAT_') || data.type.startsWith('KHOI_DONG_') || data.type.startsWith('KD_'))) {
                 switchScene(1);
-                const s1Box = document.getElementById('s1_q_text');
-                const isStartOrActive = data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI' || data.type === 'XUAT_PHAT_NEXT_QUESTION' || (data.xpQuestionShown === true);
-                const isResetOrInactive = data.type === 'XUAT_PHAT_RESET' || data.type === 'XUAT_PHAT_FINISH' || data.type === 'XUAT_PHAT_SELECT_CONTESTANT' || data.type === 'XUAT_PHAT_SHOW_QUESTION' || data.type === 'XUAT_PHAT_RANDOM_DE' || data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE' || data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI' || (data.xpQuestionShown === false);
+                const s1Box = document.getElementById('s1_q_text') || document.getElementById('s1_question_text');
+                const isStartOrActive = data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI' || data.type === 'XUAT_PHAT_NEXT_QUESTION' || data.type === 'XUAT_PHAT_RIGHT' || data.type === 'XUAT_PHAT_WRONG' || (data.xpQuestionShown === true);
+                const isResetOrFinish = data.type === 'XUAT_PHAT_RESET' || data.type === 'XUAT_PHAT_FINISH';
 
                 if (isStartOrActive && data.questionText) {
                     if (s1Box) s1Box.innerText = data.questionText;
                     window.s1IsQuestionActive = true;
-                } else if (isResetOrInactive) {
-                    if (s1Box) s1Box.innerText = (data.type === 'XUAT_PHAT_FINISH') ? 'Đã hoàn thành lượt thi Xuất Phát' : 'Đang chờ bắt đầu lượt thi Xuất Phát...';
+                    try {
+                        localStorage.setItem('ddvq_xp_question_shown', 'true');
+                        localStorage.setItem('ddvq_xp_question_text', data.questionText);
+                    } catch(e) {}
+                } else if (isResetOrFinish) {
+                    const txt = (data.type === 'XUAT_PHAT_FINISH') ? 'Đã hoàn thành lượt thi Xuất Phát' : 'Đang chờ bắt đầu lượt thi Xuất Phát...';
+                    if (s1Box) s1Box.innerText = txt;
                     window.s1IsQuestionActive = false;
+                    try {
+                        localStorage.setItem('ddvq_xp_question_shown', 'false');
+                        localStorage.removeItem('ddvq_xp_question_text');
+                    } catch(e) {}
+                } else if (data.xpQuestionShown === false) {
+                    if (s1Box) s1Box.innerText = 'Đang chờ bắt đầu lượt thi Xuất Phát...';
+                    window.s1IsQuestionActive = false;
+                    try {
+                        localStorage.setItem('ddvq_xp_question_shown', 'false');
+                        localStorage.removeItem('ddvq_xp_question_text');
+                    } catch(e) {}
+                } else if (data.questionText && window.s1IsQuestionActive) {
+                    if (s1Box) s1Box.innerText = data.questionText;
                 }
 
                 if (data.questionIndex !== undefined) {
@@ -1042,14 +967,14 @@
                     startSceneTimer(1, data.duration);
                 }
 
-                if (data.turnIndex !== undefined) {
+                if (data.type === 'XUAT_PHAT_SELECT_CHUNG') {
+                    currentXuatPhatTurnIndex = 5;
+                } else if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
+                    currentXuatPhatTurnIndex = parseInt(data.turnIndex !== undefined ? data.turnIndex : (data.contestantId !== undefined ? data.contestantId : 1));
+                } else if (data.turnIndex !== undefined) {
                     currentXuatPhatTurnIndex = parseInt(data.turnIndex);
                 } else if (data.contestantId !== undefined && data.type.startsWith('XUAT_PHAT_')) {
                     currentXuatPhatTurnIndex = parseInt(data.contestantId);
-                } else if (data.type === 'XUAT_PHAT_SELECT_CHUNG') {
-                    currentXuatPhatTurnIndex = 5;
-                } else if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
-                    currentXuatPhatTurnIndex = parseInt(data.contestantId || 1);
                 }
 
                 if (data.type === 'XUAT_PHAT_RANDOM_DE') {
@@ -1058,9 +983,18 @@
                         s1HasSelectedDeForTurn[tIdx] = true;
                         if (data.deNumber) s1ChosenDeMap[tIdx] = data.deNumber;
                     }
-                } else if (data.type === 'XUAT_PHAT_RESET') {
-                    s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
-                    s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+                } else if (data.type === 'XUAT_PHAT_RESET' || data.type === 'RESET_S1_DE' || data.type === 'START_ROUND_CLEAN') {
+                    const targetC = data.contestantId;
+                    if (targetC === 'ALL' || !targetC) {
+                        s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
+                        s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+                    } else {
+                        const cId = parseInt(targetC);
+                        if (cId) {
+                            s1HasSelectedDeForTurn[cId] = false;
+                            s1ChosenDeMap[cId] = null;
+                        }
+                    }
                 }
 
                 updateS1RandomDeButtonUI();
@@ -1121,8 +1055,11 @@
             }
 
             // Round 3: Vượt Sóng (VCNV)
-            if (data.type && (data.type.startsWith('VUOT_SONG_') || data.type.startsWith('VCNV_') || data.type.startsWith('CNV_'))) {
+            if (data.type && (data.type.startsWith('VUOT_SONG_') || data.type.startsWith('VCNV_') || data.type.startsWith('CNV_') || (data.type === 'START_ROUND_CLEAN' && data.round === 'VUOT_SONG'))) {
                 switchScene(3);
+                if (data.roundStartTime) {
+                    try { localStorage.setItem('s3_round_start_time', data.roundStartTime); } catch(e) {}
+                }
                 if (data.type === 'VUOT_SONG_RESET') {
                     clearPlayerSceneUI(3);
                 } else {
@@ -1157,8 +1094,10 @@
                     }
                 }
 
-                if (data.type === 'VUOT_SONG_RESET_BELL' || data.type === 'RESET_BELL_VCNV' || data.type === 'RESET_BELL' || data.type === 'VUOT_SONG_RESET') {
-                    resetBellState(3);
+                if (data.type === 'RESET_VS_BELL' || data.type === 'VUOT_SONG_RESET_BELL' || data.type === 'RESET_BELL_VCNV' || data.type === 'RESET_BELL' || data.type === 'VUOT_SONG_RESET') {
+                    if (data.contestantId === 'ALL' || !data.contestantId || parseInt(data.contestantId) === parseInt(currentContestantId)) {
+                        resetBellState(3);
+                    }
                 }
             }
 
@@ -1244,11 +1183,47 @@
                 updateTimerDisplay(activeSceneNum, data.timeLeft);
             }
 
-            if (data.type === 'RESET_BELL' || data.type === 'RESET_BELL_VCNV' || data.type === 'VUOT_SONG_RESET_BELL' || data.type === 'VUOT_SONG_RESET') {
-                resetBellState(3);
+            if (data.type === 'RESET_BELL' || data.type === 'RESET_BELL_VCNV' || data.type === 'RESET_VS_BELL' || data.type === 'VUOT_SONG_RESET_BELL' || data.type === 'VUOT_SONG_RESET') {
+                if (data.contestantId === 'ALL' || !data.contestantId || parseInt(data.contestantId) === parseInt(currentContestantId)) {
+                    resetBellState(3);
+                }
                 if (!data.round || data.round === 'KD') resetBellState(1);
                 if (!data.round || data.round === 'VQ') resetBellState(4);
                 if (!data.round || data.round === 'CHP') resetBellState(5);
+            }
+        }
+
+        // Helper to reset buzzer button state
+        function resetBellState(sceneNum) {
+            isBellLocked = false;
+            let btnId = '';
+            let feedbackId = '';
+            if (sceneNum === 1) {
+                btnId = 's1_btn_bell';
+                feedbackId = 's1_bell_feedback';
+            } else if (sceneNum === 2) {
+                btnId = 's2_btn_bell';
+                feedbackId = 's2_bell_feedback';
+            } else if (sceneNum === 3) {
+                btnId = 's3_btn_bell';
+                feedbackId = 's3_bell_feedback';
+            } else if (sceneNum === 4) {
+                btnId = 's4_btn_bell';
+                feedbackId = 's4_bell_feedback';
+            } else if (sceneNum === 5) {
+                btnId = 's5_btn_bell';
+                feedbackId = 's5_bell_feedback';
+            }
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.classList.remove('pressed', 'active');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+            const feedback = document.getElementById(feedbackId);
+            if (feedback) {
+                feedback.style.display = 'none';
+                feedback.innerText = '';
             }
         }
 
@@ -1455,6 +1430,9 @@
             if (roundKey === 'KD' || roundKey === 'XP') {
                 btnId = 's1_btn_bell';
                 feedbackId = 's1_bell_feedback';
+            } else if (roundKey === 'RA_KHOI' || roundKey === 'RK' || roundKey === 'TANG_TOC') {
+                btnId = 's2_btn_bell';
+                feedbackId = 's2_bell_feedback';
             } else if (roundKey === 'VCNV' || roundKey === 'CNV' || roundKey === 'VS' || roundKey === 'VUOT_SONG') {
                 btnId = 's3_btn_bell';
                 feedbackId = 's3_bell_feedback';
@@ -1475,18 +1453,46 @@
             }
             if (feedback) feedback.style.display = 'flex';
 
+            let s3StartTime = parseInt(localStorage.getItem('s3_round_start_time')) || 0;
+            let elapsedStr = "00.00";
+            if (s3StartTime > 0) {
+                let elapsed = (Date.now() - s3StartTime) / 1000;
+                elapsedStr = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
+            }
+
             const payload = {
                 type: 'PLAYER_RING_BELL',
                 contestantId: currentContestantId,
                 contestantName: contestantName,
                 round: roundKey,
+                time: elapsedStr,
+                roomCode: currentRoomCode,
+                timestamp: Date.now()
+            };
+
+            const ansPayload = {
+                type: 'PLAYER_SUBMIT_ANSWER',
+                contestantId: currentContestantId,
+                contestantName: contestantName,
+                round: 'VS',
+                isVongThi: true,
+                answer: '[CNV] Bấm chuông',
+                time: elapsedStr,
                 roomCode: currentRoomCode,
                 timestamp: Date.now()
             };
 
             if (syncChannel) {
-                syncChannel.postMessage(payload);
+                try { syncChannel.postMessage(payload); } catch(e) {}
+                try { syncChannel.postMessage(ansPayload); } catch(e) {}
             }
+            if (typeof sendSupabaseAction === 'function') {
+                sendSupabaseAction(payload);
+                sendSupabaseAction(ansPayload);
+            }
+            try {
+                localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
+            } catch(e) {}
 
             fetch(getApiUrl('/api/action'), {
                 method: 'POST',

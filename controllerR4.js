@@ -336,9 +336,6 @@ function onClickVQHienCauHoi() {
         timestamp: Date.now()
     };
     sendToProjector('VINH_QUANG_SHOW_QUESTION', payload);
-    if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(payload);
-    }
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = vqTimeLeft;
     showToast('Hiển thị câu hỏi Vinh Quang trên Projector & Player');

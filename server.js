@@ -285,6 +285,37 @@ function handleIncomingAction(action, senderWs = null) {
     serverState.playerAnswers[rKey] = serverState.playerAnswers[`ts${tsIdx}`];
   }
 
+  // Handle Player Ring Bell
+  if (type === 'PLAYER_RING_BELL' && action.contestantId) {
+    const tsIdx = action.contestantId;
+    const rKey = action.round ? `ts${tsIdx}_${action.round}` : `ts${tsIdx}`;
+    serverState.playerAnswers[`ts${tsIdx}`] = {
+      contestantId: tsIdx,
+      answer: action.answer || '[CNV] Bấm chuông',
+      time: action.time || '00.00',
+      round: action.round || 'VS',
+      isVongThi: true,
+      timestamp: now
+    };
+    serverState.playerAnswers[rKey] = serverState.playerAnswers[`ts${tsIdx}`];
+  }
+
+  // Handle Reset Vuot Song Bell specifically
+  if (type === 'RESET_VS_BELL' || type === 'VUOT_SONG_RESET_BELL') {
+    const targetC = action.contestantId;
+    if (targetC === 'ALL' || !targetC) {
+      for (const k of Object.keys(serverState.playerAnswers)) {
+        if (serverState.playerAnswers[k].round === 'VS' || k.endsWith('_VS') || k.endsWith('_VUOT_SONG')) {
+          delete serverState.playerAnswers[k];
+        }
+      }
+    } else {
+      const cId = parseInt(targetC);
+      delete serverState.playerAnswers[`ts${cId}_VS`];
+      delete serverState.playerAnswers[`ts${cId}`];
+    }
+  }
+
   // Handle Reset / Clear Answers on question switch or explicit clear
   if (
     type === 'CLEAR_PLAYER_ANSWERS' ||

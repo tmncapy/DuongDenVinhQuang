@@ -132,7 +132,7 @@
             if (flashInterval) clearInterval(flashInterval);
 
             let count = 0;
-            const maxFlashes = 20;
+            const maxFlashes = 10;
             let isOn = false;
 
             flashInterval = setInterval(() => {
@@ -143,6 +143,7 @@
                     if (count >= maxFlashes) {
                         setTimeout(() => {
                             clearInterval(flashInterval);
+                            flashInterval = null;
                             overlay.style.opacity = '0';
                         }, 250);
                     }
@@ -179,8 +180,13 @@
                 }
             }
 
-            if ((data.type === 'PLAYER_SUBMIT_ANSWER' && (data.isVongThi || data.round === 'VS')) || data.type === 'S3_FLASH_SCOREBOARD') {
-                if (!data.contestantId || data.contestantId === CONTESTANT_ID) {
+            if (
+                data.type === 'S3_FLASH_SCOREBOARD' ||
+                (data.type === 'PLAYER_RING_BELL' && (data.round === 'VUOT_SONG' || data.round === 'VS' || data.round === 'VCNV')) ||
+                (data.type === 'PLAYER_SUBMIT_ANSWER' && (data.round === 'VS' || data.round === 'VUOT_SONG') && (data.isVongThi || !data.answer || data.answer.startsWith('[CNV]')))
+            ) {
+                const targetC = data.contestantId;
+                if (!targetC || parseInt(targetC) === CONTESTANT_ID) {
                     triggerOrangeFlash();
                 }
             }

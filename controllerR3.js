@@ -316,7 +316,7 @@ function updateVSBuzzerLabels() {
         const idx = parseInt(idxStr);
         const sub = window.vsSubmissions[idxStr];
         const timeVal = typeof sub === 'object' ? sub.time : sub;
-        const numTime = parseFloat(timeVal) || 999;
+        const numTime = typeof sub === 'object' ? (sub.numTime || parseFloat(timeVal) || 999) : (parseFloat(timeVal) || 999);
         const timestamp = (typeof sub === 'object' && sub.timestamp) ? sub.timestamp : 0;
         return { idx, timeVal, numTime, timestamp };
     });
@@ -335,14 +335,17 @@ function updateVSBuzzerLabels() {
             .replace(/\s*🔔.*$/gi, '')
             .replace(/\s*\(Thứ \d+.*?\)/gi, '')
             .replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '')
+            .replace(/\s*\(\d+\)/g, '')
             .trim();
 
         const orderIdx = submissions.findIndex(s => s.idx === i);
         if (orderIdx !== -1) {
             const rank = orderIdx + 1;
             const timeStr = submissions[orderIdx].timeVal;
+            const rankSuffix = submissions.length > 1 ? ` (${rank})` : '';
             if (nameInput) {
-                nameInput.value = `${baseName} 🔔 [Thứ ${rank} - ${timeStr}s]`;
+                // Tên thí sinh bấm sang màu đỏ sau đó là ngoặc đơn ghi thời gian bấm và ngoặc đơn nữa ghi thứ tự bấm chuông (nếu có nhiều người bấm cùng lúc)
+                nameInput.value = `${baseName} (${timeStr}s)${rankSuffix}`;
                 nameInput.style.color = '#dc2626';
                 nameInput.style.fontWeight = 'bold';
             }
@@ -362,9 +365,26 @@ function markVSContestantSubmitted(tsIdx, timeStr) {
     const idx = parseInt(tsIdx);
     if (isNaN(idx) || idx < 1 || idx > 4) return;
 
+    if (!window.vsRoundStartTime) {
+        const savedTime = parseInt(localStorage.getItem('s3_round_start_time'));
+        window.vsRoundStartTime = (savedTime && Date.now() - savedTime < 3600000) ? savedTime : Date.now();
+    }
+
+    let cleanTime = (timeStr || '').toString().replace(/s|giây/gi, '').trim();
+    if (!cleanTime || cleanTime === '00.00' || isNaN(parseFloat(cleanTime))) {
+        let elapsed = (Date.now() - window.vsRoundStartTime) / 1000;
+        cleanTime = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
+    } else {
+        let num = parseFloat(cleanTime);
+        if (!isNaN(num)) {
+            cleanTime = num < 10 ? '0' + num.toFixed(2) : num.toFixed(2);
+        }
+    }
+
     if (!window.vsSubmissions[idx]) {
         window.vsSubmissions[idx] = {
-            time: timeStr || '00.00',
+            time: cleanTime,
+            numTime: parseFloat(cleanTime) || 999,
             timestamp: Date.now()
         };
     }
@@ -375,11 +395,26 @@ function markVSContestantSubmitted(tsIdx, timeStr) {
     }
 
     updateVSBuzzerLabels();
+
+    // Trigger full-screen orange flash on corresponding scoreboard (10 flashes)
+    const flashPayload = {
+        type: 'S3_FLASH_SCOREBOARD',
+        contestantId: idx,
+        round: 'VUOT_SONG',
+        timestamp: Date.now()
+    };
+    sendToProjector('S3_FLASH_SCOREBOARD', flashPayload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(flashPayload);
+    }
 }
 window.markVSContestantSubmitted = markVSContestantSubmitted;
 
 function triggerVSBell(idx) {
-    if (!window.vsRoundStartTime) window.vsRoundStartTime = Date.now();
+    if (!window.vsRoundStartTime) {
+        const savedTime = parseInt(localStorage.getItem('s3_round_start_time'));
+        window.vsRoundStartTime = (savedTime && Date.now() - savedTime < 3600000) ? savedTime : Date.now();
+    }
     let elapsed = (Date.now() - window.vsRoundStartTime) / 1000;
     let timeStr = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
     
@@ -387,9 +422,7 @@ function triggerVSBell(idx) {
     if (ansInput && !ansInput.value) {
         ansInput.value = '[CNV] Bấm chuông';
     }
-    if (typeof markVSContestantSubmitted === 'function') {
-        markVSContestantSubmitted(idx, timeStr);
-    }
+    markVSContestantSubmitted(idx, timeStr);
 }
 
 function resetVSContestantBell(tsIdx) {
@@ -415,7 +448,19 @@ function resetVSContestantBell(tsIdx) {
                 }
             }
         }
-        sendToProjector('RESET_VS_BELL', { contestantId: 'ALL' });
+        const payloadAll = {
+            type: 'RESET_VS_BELL',
+            contestantId: 'ALL',
+            round: 'VS',
+            activeRound: 'VUOT_SONG',
+            timestamp: Date.now()
+        };
+        sendToProjector('RESET_VS_BELL', payloadAll);
+        sendToProjector('VUOT_SONG_RESET_BELL', payloadAll);
+        if (typeof sendSupabaseAction === 'function') {
+            sendSupabaseAction(payloadAll);
+            sendSupabaseAction({ ...payloadAll, type: 'VUOT_SONG_RESET_BELL' });
+        }
         if (typeof showToast === 'function') showToast('Đã reset nút chuông cho tất cả thí sinh');
     } else {
         if (window.vsSubmissions) delete window.vsSubmissions[tsIdx];
@@ -435,7 +480,19 @@ function resetVSContestantBell(tsIdx) {
                 nameInput.style.fontWeight = 'bold';
             }
         }
-        sendToProjector('RESET_VS_BELL', { contestantId: tsIdx });
+        const payloadSingle = {
+            type: 'RESET_VS_BELL',
+            contestantId: tsIdx,
+            round: 'VS',
+            activeRound: 'VUOT_SONG',
+            timestamp: Date.now()
+        };
+        sendToProjector('RESET_VS_BELL', payloadSingle);
+        sendToProjector('VUOT_SONG_RESET_BELL', payloadSingle);
+        if (typeof sendSupabaseAction === 'function') {
+            sendSupabaseAction(payloadSingle);
+            sendSupabaseAction({ ...payloadSingle, type: 'VUOT_SONG_RESET_BELL' });
+        }
         if (typeof showToast === 'function') showToast(`Đã reset nút chuông cho Thí sinh ${tsIdx}`);
     }
 }
@@ -443,6 +500,7 @@ function resetVSContestantBell(tsIdx) {
 function onClickVSDatLai() {
     resetVSContestantBell('ALL');
     window.vsRoundStartTime = Date.now();
+    try { localStorage.setItem('s3_round_start_time', window.vsRoundStartTime); } catch(e) {}
     vsRevealedKeyIndices = [];
     clearInterval(vsTimerInterval);
     vsTimeLeft = 20;

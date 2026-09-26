@@ -753,6 +753,30 @@ window.addEventListener('message', function(event) {
 });
 
 let lastProcessedActionId = '';
+const processedProjectorMsgIds = new Set();
+let lastProjectorEventKey = '';
+let lastProjectorEventTime = 0;
+
+function isDuplicateProjectorMessage(data) {
+    if (!data || !data.type) return true;
+    if (data.id) {
+        if (processedProjectorMsgIds.has(data.id)) return true;
+        processedProjectorMsgIds.add(data.id);
+        if (processedProjectorMsgIds.size > 300) {
+            const first = processedProjectorMsgIds.values().next().value;
+            processedProjectorMsgIds.delete(first);
+        }
+    }
+    const now = Date.now();
+    const eventKey = `${data.type}_${data.questionIndex || ''}_${data.pack || ''}_${data.turnIndex || ''}_${data.deIndex || ''}_${data.row || ''}`;
+    if (lastProjectorEventKey === eventKey && (now - lastProjectorEventTime) < 180) {
+        return true;
+    }
+    lastProjectorEventKey = eventKey;
+    lastProjectorEventTime = now;
+    return false;
+}
+
 setInterval(() => {
     try {
         const raw = localStorage.getItem('ddvq_latest_action');
@@ -767,6 +791,8 @@ setInterval(() => {
 }, 150);
 
 function handleProjectorMessage(data) {
+    if (isDuplicateProjectorMessage(data)) return;
+
     if (data.type === 'SWITCH_VIEW') {
         if (data.viewNum) switchView(data.viewNum);
     } else if (data.type === 'XUAT_PHAT_INTRO') {
@@ -1101,8 +1127,8 @@ function handleProjectorMessage(data) {
                 if (ansEl) ansEl.innerText = "";
             }
         }
-    } else if (data.type === 'PLAYER_SUBMIT_ANSWER') {
-        if (data.round === 'VS' && data.isVongThi) {
+    } else if (data.type === 'PLAYER_SUBMIT_ANSWER' || data.type === 'PLAYER_RING_BELL') {
+        if (data.round === 'RK' || data.round === 'RA_KHOI' || data.round === 'TANG_TOC' || (data.round === 'VS' && data.isVongThi) || data.type === 'PLAYER_RING_BELL') {
             safePlay(soundActivate);
         }
     } else if (data.type === 'VUOT_SONG_SELECT_ROW') {
@@ -1325,8 +1351,11 @@ function handleProjectorMessage(data) {
 
         if (overlay) {
             overlay.style.display = 'flex';
-            const srcLower = (data.src || '').toLowerCase();
-            const isImage = srcLower.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)($|\?)/i) || srcLower.startsWith('data:image/');
+            const rawSrc = data.src || '';
+            const fullSrc = (typeof getApiUrl === 'function') ? getApiUrl(rawSrc) : rawSrc;
+            const srcLower = fullSrc.toLowerCase();
+            const isVideo = (data.mediaType === 'video') || srcLower.match(/\.(mp4|webm|ogg|mov|m4v)($|\?)/i);
+            const isImage = (data.mediaType === 'image') || !isVideo;
 
             if (isImage) {
                 if (player) {
@@ -1335,7 +1364,7 @@ function handleProjectorMessage(data) {
                     player.src = '';
                 }
                 if (imgPlayer) {
-                    imgPlayer.src = data.src;
+                    imgPlayer.src = fullSrc;
                     imgPlayer.style.display = 'block';
                 }
             } else {
@@ -1345,7 +1374,7 @@ function handleProjectorMessage(data) {
                 }
                 if (player) {
                     player.style.display = 'block';
-                    player.src = data.src;
+                    player.src = fullSrc;
                     player.load();
                     player.play().catch(err => {
                         console.warn("Intro media play error:", err);

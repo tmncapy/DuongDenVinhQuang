@@ -58,6 +58,7 @@ function selectLuotThi(turnIndex) {
     const payload = {
         type: 'XUAT_PHAT_SELECT_CONTESTANT',
         turnIndex: currentXuatPhatTurn,
+        contestantId: currentXuatPhatTurn,
         deIndex: currentXuatPhatDe,
         name,
         score,
@@ -299,9 +300,10 @@ function onClickDung() {
         turnIndex: currentXuatPhatTurn,
         deIndex: currentXuatPhatDe,
         questionIndex: currentXuatPhatQIndex + 1,
-        questionText: currentQ.q || '',
+        questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
         answerText: currentQ.a || '',
         answer: currentQ.a || '',
+        xpQuestionShown: true,
         timestamp: Date.now()
     };
     sendToProjector('XUAT_PHAT_RIGHT', payload);
@@ -325,9 +327,10 @@ function onClickSai() {
         turnIndex: currentXuatPhatTurn,
         deIndex: currentXuatPhatDe,
         questionIndex: currentXuatPhatQIndex + 1,
-        questionText: currentQ.q || '',
+        questionText: currentQ.q || `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`,
         answerText: currentQ.a || '',
         answer: currentQ.a || '',
+        xpQuestionShown: true,
         timestamp: Date.now()
     };
     sendToProjector('XUAT_PHAT_WRONG', payload);
@@ -373,7 +376,17 @@ function onClickChuyenCau() {
 }
 
 function resetS1ContestantDe(tsIdx) {
-    sendToProjector('RESET_S1_DE', { contestantId: tsIdx || 'ALL' });
+    const payload = {
+        type: 'RESET_S1_DE',
+        contestantId: tsIdx || 'ALL',
+        round: 'XUAT_PHAT',
+        activeRound: 'XUAT_PHAT',
+        timestamp: Date.now()
+    };
+    sendToProjector('RESET_S1_DE', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     if (typeof showToast === 'function') {
         showToast(`Đã reset nút chọn bộ đề Xuất Phát`);
     }
@@ -405,9 +418,10 @@ function onClickDatLaiVongThi() {
         timestamp: Date.now()
     };
     sendToProjector('XUAT_PHAT_RESET', payload);
-    sendToProjector('RESET_S1_DE', { contestantId: 'ALL' });
+    sendToProjector('RESET_S1_DE', { type: 'RESET_S1_DE', contestantId: 'ALL', timestamp: Date.now() });
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(payload);
+        sendSupabaseAction({ type: 'RESET_S1_DE', contestantId: 'ALL', timestamp: Date.now() });
     }
 
     showToast('Đã đặt lại vòng thi Xuất Phát');

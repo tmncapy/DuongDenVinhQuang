@@ -61,6 +61,7 @@
 <body>
 
     <div class="scoreboard-container">
+        <div id="orange_flash_overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(249, 115, 22, 0.85); pointer-events: none; z-index: 999; opacity: 0; transition: opacity 0.1s ease;"></div>
         <img id="scoreboard_thumbnail_img" src="Images/thumbnail.png" alt="Thumbnail" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; z-index: 100; display: none;">
         <div class="score" id="sb_score" style="position: absolute; z-index: 60;">0</div>
         <div class="name" id="sb_name" style="position: absolute; z-index: 60;">THÍ SINH</div>
@@ -97,6 +98,36 @@
             }
         }
 
+        let flashInterval = null;
+        function triggerOrangeFlash() {
+            const overlay = document.getElementById('orange_flash_overlay');
+            if (!overlay) return;
+            if (flashInterval) clearInterval(flashInterval);
+
+            let count = 0;
+            const maxFlashes = 10;
+            let isOn = false;
+
+            flashInterval = setInterval(() => {
+                isOn = !isOn;
+                overlay.style.opacity = isOn ? '1' : '0';
+                if (isOn) {
+                    count++;
+                    if (count >= maxFlashes) {
+                        setTimeout(() => {
+                            clearInterval(flashInterval);
+                            flashInterval = null;
+                            overlay.style.opacity = '0';
+                        }, 250);
+                    }
+                }
+            }, 250);
+
+            isOn = true;
+            overlay.style.opacity = '1';
+            count = 1;
+        }
+
         window.handleBroadcastMessage = function(data) {
             if (!data) return;
             if (data.type === 'TOGGLE_SCOREBOARD_THUMBNAIL' || data.type === 'SHOW_SCOREBOARD_THUMBNAIL' || data.type === 'HIDE_SCOREBOARD_THUMBNAIL') {
@@ -110,6 +141,19 @@
                     try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + contestantId, show ? 'true' : 'false'); } catch(e){}
                 }
             }
+
+            if (
+                data.type === 'S3_FLASH_SCOREBOARD' ||
+                (data.type === 'PLAYER_RING_BELL' && (data.round === 'VUOT_SONG' || data.round === 'VS' || data.round === 'VCNV')) ||
+                (data.type === 'PLAYER_SUBMIT_ANSWER' && (data.round === 'VS' || data.round === 'VUOT_SONG') && (data.isVongThi || !data.answer || data.answer.startsWith('[CNV]')))
+            ) {
+                const myId = playerIdx + 1;
+                const targetC = data.contestantId;
+                if (!targetC || parseInt(targetC) === myId) {
+                    triggerOrangeFlash();
+                }
+            }
+
             if (data.contestants) {
                 updateScoreboardView(data.contestants);
             }
@@ -141,6 +185,16 @@
 
         // Fetch authoritative server state if available
         function fetchCurrentState() {
+            try {
+                const saved = localStorage.getItem('ddvq_contestants');
+                if (saved) {
+                    const list = JSON.parse(saved);
+                    if (Array.isArray(list) && list[playerIdx]) {
+                        updateScoreboardView(list);
+                    }
+                }
+            } catch(e) {}
+
             if (typeof hasLocalServerBackend === 'function' && !hasLocalServerBackend()) return;
             const stateUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/state') : '/api/state';
             fetch(stateUrl)
@@ -153,8 +207,53 @@
                 .catch(() => {});
         }
 
+        // 1. BroadcastChannel
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                const channel = new BroadcastChannel('ddvq_game_channel');
+                channel.onmessage = function(e) {
+                    window.handleBroadcastMessage(e.data);
+                };
+            }
+        } catch(e) {}
+
+        // 2. Server-Sent Events (SSE)
+        if (typeof EventSource !== 'undefined') {
+            try {
+                const sseUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/events') : '/api/events';
+                const sse = new EventSource(sseUrl);
+                sse.onmessage = function(e) {
+                    try {
+                        const data = JSON.parse(e.data);
+                        window.handleBroadcastMessage(data);
+                    } catch(err) {}
+                };
+            } catch(e) {}
+        }
+
+        // 3. Storage Event
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'ddvq_latest_action' && e.newValue) {
+                try {
+                    window.handleBroadcastMessage(JSON.parse(e.newValue));
+                } catch(err) {}
+            } else if (e.key === 'ddvq_contestants' && e.newValue) {
+                try {
+                    const list = JSON.parse(e.newValue);
+                    if (Array.isArray(list)) {
+                        updateScoreboardView(list);
+                    }
+                } catch(err) {}
+            }
+        });
+
+        // 4. PostMessage Event
+        window.addEventListener('message', function(e) {
+            if (e.data) window.handleBroadcastMessage(e.data);
+        });
+
         fetchCurrentState();
-        setInterval(fetchCurrentState, 2000);
+        setInterval(fetchCurrentState, 1500);
     </script>
 </body>
 </html>
