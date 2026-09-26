@@ -811,14 +811,14 @@
                 </div>
             </div>
 
-            <!-- Khung Cấu hình & Phát Video Intro -->
+            <!-- Khung Cấu hình & Phát Video/Ảnh Intro -->
             <div class="panel" style="background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 8px; padding: 12px; margin-top: 10px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #7dd3fc; padding-bottom: 6px; flex-wrap: wrap; gap: 8px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-size: 16px;">🎬</span>
-                        <strong style="color: #0369a1; font-size: 13px; text-transform: uppercase;">CẤU HÌNH & PHÁT VIDEO INTRO (CUỘC THI & CÁC VÒNG THI)</strong>
+                        <strong style="color: #0369a1; font-size: 13px; text-transform: uppercase;">CẤU HÌNH & PHÁT MEDIA INTRO (ẢNH / VIDEO INTRO CUỘC THI & CÁC VÒNG THI)</strong>
                     </div>
-                    <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px; border-radius: 6px;">⏹️ DỪNG INTRO ĐANG PHÁT</button>
+                    <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px; border-radius: 6px;">⏹️ DỪNG MEDIA ĐANG PHÁT</button>
                 </div>
 
                 <!-- Grid 5 Intro Slots -->
@@ -826,41 +826,41 @@
                     <!-- Intro Cuộc thi (Main Opening) -->
                     <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
                         <span style="font-weight: bold; color: #0284c7; width: 160px; font-size: 12px;">🏆 Intro Mở Đầu Cuộc Thi:</span>
-                        <input type="text" id="intro_media_opening" value="./Opening.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
-                        <button class="btn" style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: bold; border-color: #7dd3fc;" onclick="triggerFilePicker('intro_media_opening', 'video/*')">📁 Tải Video</button>
-                        <button class="btn" style="background: #0284c7; color: white; font-size: 11px; font-weight: bold; border-color: #0369a1;" onclick="playIntroVideo('intro_media_opening')">▶️ PHÁT INTRO</button>
+                        <input type="text" id="intro_media_opening" value="./Opening.mp4" placeholder="URL / Đường dẫn Ảnh hoặc Video (.mp4/.png/.jpg...)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: bold; border-color: #7dd3fc;" onclick="triggerFilePicker('intro_media_opening', 'video/*,image/*')">📁 Tải Ảnh / Video</button>
+                        <button class="btn" style="background: #0284c7; color: white; font-size: 11px; font-weight: bold; border-color: #0369a1;" onclick="playIntroVideo('intro_media_opening')">▶️ PHÁT MEDIA</button>
                     </div>
 
                     <!-- Intro Vòng 1: Xuất Phát -->
                     <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
                         <span style="font-weight: bold; color: #15803d; width: 160px; font-size: 12px;">🚀 Intro Vòng 1 (Xuất Phát):</span>
-                        <input type="text" id="intro_media_v1" value="./V1.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
-                        <button class="btn" style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: bold; border-color: #86efac;" onclick="triggerFilePicker('intro_media_v1', 'video/*')">📁 Tải Video</button>
-                        <button class="btn" style="background: #16a34a; color: white; font-size: 11px; font-weight: bold; border-color: #15803d;" onclick="playIntroVideo('intro_media_v1')">▶️ PHÁT INTRO</button>
+                        <input type="text" id="intro_media_v1" value="./V1.mp4" placeholder="URL / Đường dẫn Ảnh hoặc Video (.mp4/.png/.jpg...)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: bold; border-color: #86efac;" onclick="triggerFilePicker('intro_media_v1', 'video/*,image/*')">📁 Tải Ảnh / Video</button>
+                        <button class="btn" style="background: #16a34a; color: white; font-size: 11px; font-weight: bold; border-color: #15803d;" onclick="playIntroVideo('intro_media_v1')">▶️ PHÁT MEDIA</button>
                     </div>
 
                     <!-- Intro Vòng 2: Ra Khơi -->
                     <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
                         <span style="font-weight: bold; color: #1e40af; width: 160px; font-size: 12px;">⛵ Intro Vòng 2 (Ra Khơi):</span>
-                        <input type="text" id="intro_media_v2" value="./V2.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
-                        <button class="btn" style="background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: bold; border-color: #93c5fd;" onclick="triggerFilePicker('intro_media_v2', 'video/*')">📁 Tải Video</button>
-                        <button class="btn" style="background: #2563eb; color: white; font-size: 11px; font-weight: bold; border-color: #1d4ed8;" onclick="playIntroVideo('intro_media_v2')">▶️ PHÁT INTRO</button>
+                        <input type="text" id="intro_media_v2" value="./V2.mp4" placeholder="URL / Đường dẫn Ảnh hoặc Video (.mp4/.png/.jpg...)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: bold; border-color: #93c5fd;" onclick="triggerFilePicker('intro_media_v2', 'video/*,image/*')">📁 Tải Ảnh / Video</button>
+                        <button class="btn" style="background: #2563eb; color: white; font-size: 11px; font-weight: bold; border-color: #1d4ed8;" onclick="playIntroVideo('intro_media_v2')">▶️ PHÁT MEDIA</button>
                     </div>
 
                     <!-- Intro Vòng 3: Vượt Sóng -->
                     <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
                         <span style="font-weight: bold; color: #b45309; width: 160px; font-size: 12px;">🌊 Intro Vòng 3 (Vượt Sóng):</span>
-                        <input type="text" id="intro_media_v3" value="./V3.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
-                        <button class="btn" style="background: #fef3c7; color: #b45309; font-size: 11px; font-weight: bold; border-color: #fde047;" onclick="triggerFilePicker('intro_media_v3', 'video/*')">📁 Tải Video</button>
-                        <button class="btn" style="background: #d97706; color: white; font-size: 11px; font-weight: bold; border-color: #b45309;" onclick="playIntroVideo('intro_media_v3')">▶️ PHÁT INTRO</button>
+                        <input type="text" id="intro_media_v3" value="./V3.mp4" placeholder="URL / Đường dẫn Ảnh hoặc Video (.mp4/.png/.jpg...)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #fef3c7; color: #b45309; font-size: 11px; font-weight: bold; border-color: #fde047;" onclick="triggerFilePicker('intro_media_v3', 'video/*,image/*')">📁 Tải Ảnh / Video</button>
+                        <button class="btn" style="background: #d97706; color: white; font-size: 11px; font-weight: bold; border-color: #b45309;" onclick="playIntroVideo('intro_media_v3')">▶️ PHÁT MEDIA</button>
                     </div>
 
                     <!-- Intro Vòng 4: Vinh Quang -->
                     <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd; flex-wrap: wrap;">
                         <span style="font-weight: bold; color: #6b21a8; width: 160px; font-size: 12px;">👑 Intro Vòng 4 (Vinh Quang):</span>
-                        <input type="text" id="intro_media_v4" value="./V4.mp4" placeholder="URL / Đường dẫn Video (.mp4/.webm)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
-                        <button class="btn" style="background: #f3e8ff; color: #6b21a8; font-size: 11px; font-weight: bold; border-color: #d8b4fe;" onclick="triggerFilePicker('intro_media_v4', 'video/*')">📁 Tải Video</button>
-                        <button class="btn" style="background: #7e22ce; color: white; font-size: 11px; font-weight: bold; border-color: #6b21a8;" onclick="playIntroVideo('intro_media_v4')">▶️ PHÁT INTRO</button>
+                        <input type="text" id="intro_media_v4" value="./V4.mp4" placeholder="URL / Đường dẫn Ảnh hoặc Video (.mp4/.png/.jpg...)..." style="flex: 1; min-width: 180px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: bold;" onchange="saveAllData()">
+                        <button class="btn" style="background: #f3e8ff; color: #6b21a8; font-size: 11px; font-weight: bold; border-color: #d8b4fe;" onclick="triggerFilePicker('intro_media_v4', 'video/*,image/*')">📁 Tải Ảnh / Video</button>
+                        <button class="btn" style="background: #7e22ce; color: white; font-size: 11px; font-weight: bold; border-color: #6b21a8;" onclick="playIntroVideo('intro_media_v4')">▶️ PHÁT MEDIA</button>
                     </div>
                 </div>
             </div>
@@ -872,7 +872,7 @@
                     <div>BƯỚC 1,2: Tạo và kiểm tra kết nối <span class="status-check green-check">✅</span></div>
                     <div>BƯỚC 3: Cập nhật tên thí sinh <span class="status-check green-check" id="step3-check">✅</span></div>
                     <div>BƯỚC 4: Nhập dữ liệu câu hỏi <span class="status-check red-x" id="step4-check">❌</span></div>
-                    <div>BƯỚC 5: Nhập dữ liệu file PowerPoint <span class="status-check red-x">❌</span></div>
+                    <div>BƯỚC 5: Tải lên Ảnh/Video Intro & Media <span class="status-check green-check" id="step5-check">✅</span></div>
                     <div style="grid-column: span 2;">
                         BƯỚC 6: Chọn video, hình ảnh câu hỏi các phần thi <span class="status-check red-x">❌</span>
                         <div style="padding-left: 15px; margin-top: 3px; color: #555;">
@@ -1116,18 +1116,34 @@
 
     <!-- TAB 1: XUẤT PHÁT -->
     <div class="tab-content" id="tab1-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto;">
-        <!-- TOP TOOLBAR FOR TAB 1: EXCEL IMPORT & INTRO -->
+        <!-- TOP TOOLBAR FOR TAB 1: SCOREBOARD THUMBNAIL CONTROL -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Excel:</span>
-                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn" onclick="playIntroVideo('intro_media_v1')" style="background: #16a34a; color: white; border-color: #15803d; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 1</button>
-                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
-                <div style="font-size: 12px; font-weight: bold; color: #0056b3;">
-                    ĐIỀU KHIỂN VÒNG THI XUẤT PHÁT
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: bold; color: #1e3a8a; display: flex; align-items: center; gap: 5px;">
+                    🖼️ <strong>THUMBNAIL BẢNG ĐIỂM:</strong>
+                </span>
+                <div style="display: flex; gap: 4px; align-items: center; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Tất cả:</span>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(true, 'ALL')" style="background: #16a34a; color: white; border-color: #15803d; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Hiển thị thumbnail đè bảng điểm tất cả thí sinh">
+                        👁️ Hiện tất cả
+                    </button>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(false, 'ALL')" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Ẩn thumbnail đè bảng điểm tất cả thí sinh">
+                        🙈 Ẩn tất cả
+                    </button>
                 </div>
+                <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Chỉ định:</span>
+                    <button class="btn sb_thumb_btn_ts1" onclick="toggleScoreboardThumbnail(undefined, 1)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 1">🔴 TS1: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts2" onclick="toggleScoreboardThumbnail(undefined, 2)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 2">🔴 TS2: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts3" onclick="toggleScoreboardThumbnail(undefined, 3)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 3">🔴 TS3: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts4" onclick="toggleScoreboardThumbnail(undefined, 4)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 4">🔴 TS4: Ẩn</button>
+                </div>
+                <span id="sb_thumb_status_tag" class="sb_thumb_status_tag" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">
+                    Trạng thái: 🔴 Ẩn tất cả
+                </span>
+            </div>
+            <div style="font-size: 12px; font-weight: bold; color: #0056b3;">
+                ĐIỀU KHIỂN VÒNG THI XUẤT PHÁT
             </div>
         </div>
 
@@ -1217,15 +1233,8 @@
         <!-- BOTTOM SECTION: CONTROLS & DISPLAY AREA -->
         <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: auto;">
             
-            <!-- LEFT PANELS: CHUYỂN SLIDE -->
+            <!-- LEFT PANELS: INTRO & AUDIO -->
             <div style="display: flex; flex-direction: column; gap: 8px; width: 140px;">
-                <!-- Panel Chuyển slide -->
-                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
-                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
-                    <button class="ctrl-btn-sm" onclick="onClickIntroXuatPhat()">Video Giới thiệu</button>
-                    <button class="ctrl-btn-sm" onclick="onClickLuatXuatPhat()">Video Khởi động</button>
-                    <button class="ctrl-btn-sm" onclick="showToast('Chuyển slide PPT')">Chuyển slide PPT</button>
-                </div>
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
@@ -1333,23 +1342,39 @@
     <!-- TAB 2: RA KHƠI (TĂNG TỐC) -->
     <div class="tab-content" id="tab2-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
         
-        <!-- TOP TOOLBAR / HEADER FOR TAB 2 -->
+        <!-- TOP TOOLBAR FOR TAB 2: SCOREBOARD THUMBNAIL CONTROL -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Ra Khơi:</span>
-                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn" onclick="playIntroVideo('intro_media_v2')" style="background: #2563eb; color: white; border-color: #1d4ed8; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 2</button>
-                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
-                <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
-                    ĐIỀU KHIỂN VÒNG THI RA KHƠI
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: bold; color: #1e3a8a; display: flex; align-items: center; gap: 5px;">
+                    🖼️ <strong>THUMBNAIL BẢNG ĐIỂM:</strong>
+                </span>
+                <div style="display: flex; gap: 4px; align-items: center; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Tất cả:</span>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(true, 'ALL')" style="background: #16a34a; color: white; border-color: #15803d; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Hiển thị thumbnail đè bảng điểm tất cả thí sinh">
+                        👁️ Hiện tất cả
+                    </button>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(false, 'ALL')" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Ẩn thumbnail đè bảng điểm tất cả thí sinh">
+                        🙈 Ẩn tất cả
+                    </button>
                 </div>
+                <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Chỉ định:</span>
+                    <button class="btn sb_thumb_btn_ts1" onclick="toggleScoreboardThumbnail(undefined, 1)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 1">🔴 TS1: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts2" onclick="toggleScoreboardThumbnail(undefined, 2)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 2">🔴 TS2: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts3" onclick="toggleScoreboardThumbnail(undefined, 3)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 3">🔴 TS3: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts4" onclick="toggleScoreboardThumbnail(undefined, 4)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 4">🔴 TS4: Ẩn</button>
+                </div>
+                <span class="sb_thumb_status_tag" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">
+                    Trạng thái: 🔴 Ẩn tất cả
+                </span>
+            </div>
+            <div style="font-size: 12px; font-weight: bold; color: #0056b3;">
+                ĐIỀU KHIỂN VÒNG THI RA KHƠI
             </div>
         </div>
 
         <!-- MAIN CONTENT GRID: CONTESTANTS (LEFT) & QUESTION SELECTOR (RIGHT) -->
-        <div style="display: flex; gap: 20px; justify-content: space-between; margin-bottom: 15px; flex-shrink: 0;">
+        <div style="display: flex; gap: 20px; justify-content: space-between; margin-bottom: 20px; flex-shrink: 0;">
             
             <!-- LEFT: CONTESTANT CARDS -->
             <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 650px; flex-shrink: 0;">
@@ -1372,12 +1397,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(1, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
-                            <button onclick="adjustScore(1, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
+                            <button onclick="adjustScore(1, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
+                            <button onclick="adjustScore(1, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(1, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
-                            <button onclick="adjustScore(1, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
+                            <button onclick="adjustScore(1, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
+                            <button onclick="adjustScore(1, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1400,12 +1425,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(2, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
-                            <button onclick="adjustScore(2, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
+                            <button onclick="adjustScore(2, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
+                            <button onclick="adjustScore(2, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(2, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
-                            <button onclick="adjustScore(2, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
+                            <button onclick="adjustScore(2, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
+                            <button onclick="adjustScore(2, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1428,12 +1453,12 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(3, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
-                            <button onclick="adjustScore(3, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
+                            <button onclick="adjustScore(3, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
+                            <button onclick="adjustScore(3, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(3, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
-                            <button onclick="adjustScore(3, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
+                            <button onclick="adjustScore(3, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
+                            <button onclick="adjustScore(3, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm">+10</button>
                         </div>
                     </div>
                 </div>
@@ -1456,51 +1481,39 @@
                     <!-- 2x2 Score Adding Grid -->
                     <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(4, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm (Trả lời đúng nhanh nhất - thứ 1)">+40</button>
-                            <button onclick="adjustScore(4, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm (Trả lời đúng thứ 2)">+30</button>
+                            <button onclick="adjustScore(4, 40)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #1e3a8a; background: #1e3a8a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 40 điểm">+40</button>
+                            <button onclick="adjustScore(4, 30)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #2563eb; background: #2563eb; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 30 điểm">+30</button>
                         </div>
                         <div style="display: flex; gap: 4px;">
-                            <button onclick="adjustScore(4, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm (Trả lời đúng thứ 3)">+20</button>
-                            <button onclick="adjustScore(4, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm (Trả lời đúng thứ 4)">+10</button>
+                            <button onclick="adjustScore(4, 20)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #16a34a; background: #16a34a; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 20 điểm">+20</button>
+                            <button onclick="adjustScore(4, 10)" style="width: 32px; height: 26px; border-radius: 4px; border: 1px solid #ca8a04; background: #ca8a04; color: white; font-weight: bold; font-size: 10px; cursor: pointer;" title="Cộng 10 điểm">+10</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT: CÂU HỎI SELECTOR PANEL -->
-            <div style="background: #eaf2fc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; width: 280px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-self: flex-start; flex-shrink: 0;">
-                <div id="btn_rk_q1" class="rk-q-btn active" onclick="selectRKQuestion(1)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
-                    <span>Câu hỏi thứ</span>
-                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">1</span>
+            <!-- RIGHT: CÂU HỎI SELECTOR PANEL (STANDARDIZED WIDTH 250px) -->
+            <div style="width: 250px; display: flex; flex-direction: column; gap: 8px;">
+                <div id="btn_rk_q1" class="rk-q-btn active luot-thi-btn" onclick="selectRKQuestion(1)" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Câu hỏi số 1</span> <span class="badge">1</span>
                 </div>
-                <div id="btn_rk_q2" class="rk-q-btn" onclick="selectRKQuestion(2)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
-                    <span>Câu hỏi thứ</span>
-                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">2</span>
+                <div id="btn_rk_q2" class="rk-q-btn luot-thi-btn" onclick="selectRKQuestion(2)" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Câu hỏi số 2</span> <span class="badge">2</span>
                 </div>
-                <div id="btn_rk_q3" class="rk-q-btn" onclick="selectRKQuestion(3)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
-                    <span>Câu hỏi thứ</span>
-                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">3</span>
+                <div id="btn_rk_q3" class="rk-q-btn luot-thi-btn" onclick="selectRKQuestion(3)" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Câu hỏi số 3</span> <span class="badge">3</span>
                 </div>
-                <div id="btn_rk_q4" class="rk-q-btn" onclick="selectRKQuestion(4)" style="display: flex; justify-content: space-between; align-items: center; background: #80bfff; color: #002060; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
-                    <span>Câu hỏi thứ</span>
-                    <span style="background: #cbd5e1; color: #333; width: 32px; height: 32px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 16px;">4</span>
+                <div id="btn_rk_q4" class="rk-q-btn luot-thi-btn" onclick="selectRKQuestion(4)" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Câu hỏi số 4</span> <span class="badge">4</span>
                 </div>
             </div>
         </div>
 
         <!-- BOTTOM SECTION: CENTER DISPLAY CARDS & ACTION BUTTONS -->
-        <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: 15px; flex-shrink: 0;">
+        <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: auto;">
             
-            <!-- LEFT SLIDE CONTROLS FIELDSET -->
-            <div style="display: flex; flex-direction: column; gap: 8px; width: 150px; flex-shrink: 0;">
-                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
-                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
-                    <button class="ctrl-btn-sm" onclick="onClickBatDauDoanBang()">Bắt đầu đoạn băng</button>
-                    <button class="ctrl-btn-sm" onclick="onClickRKDapAnTS()">Đáp án thí sinh</button>
-                    <button class="ctrl-btn-sm" onclick="onClickGiaiMaMedia()">Giải mã Video/Ảnh</button>
-                    <button class="ctrl-btn-sm" onclick="onClickDiemTS()">Điểm TS</button>
-                </div>
-                <!-- Panel Phát Video Intro -->
+            <!-- LEFT PANELS: INTRO & AUDIO (STANDARDIZED WIDTH 140px) -->
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 140px; flex-shrink: 0;">
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
                     <button class="ctrl-btn-sm" onclick="playIntroVideo('intro_media_v2')" style="background: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: bold;">⚓ Phát V2</button>
@@ -1510,13 +1523,14 @@
             </div>
 
             <!-- CENTER & RIGHT ACTION CONTROLS -->
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
                 
-                <!-- BLUE PREVIEW / STATUS CARDS -->
+                <!-- BLUE PREVIEW / STATUS DISPLAY CARD (STANDARDIZED 140px HEIGHT) -->
                 <div style="display: flex; gap: 8px; height: 140px;">
                     <div style="flex: 1; background: #5b9bd5; border-radius: 4px; padding: 12px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);">
                         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 4px;">
                             <span id="rk_preview_title">VÒNG THI RA KHƠI: CÂU HỎI THỨ 1</span>
+                            <span>CÂU HỎI: <span id="rk_preview_q_num">1</span>/4</span>
                             <span>THỜI GIAN: <span id="rk_preview_timer" style="color: #ffeb3b; font-size: 16px;">30</span></span>
                         </div>
                         <div style="font-size: 15px; font-weight: bold; line-height: 1.4; color: #f8fafc;" id="rk_preview_q_text">
@@ -1527,61 +1541,45 @@
                         </div>
                     </div>
 
-                    <div style="width: 140px; background: #5b9bd5; border-radius: 4px; padding: 10px; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px;">
+                    <div style="width: 140px; background: #5b9bd5; border-radius: 4px; padding: 10px; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 4px;">
                         <div style="font-size: 11px; font-weight: bold;">THỜI GIAN CÒN LẠI</div>
-                        <div id="rk_preview_status" style="font-size: 36px; font-weight: bold; color: #ffeb3b;">30</div>
+                        <div id="rk_preview_status" style="font-size: 30px; font-weight: bold; color: #ffeb3b; line-height: 1;">30</div>
                     </div>
                 </div>
 
                 <!-- NÚT BẮT ĐẦU VÒNG 2: RA KHƠI -->
                 <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(2)" style="flex: 1; background: linear-gradient(135deg, #1d4ed8, #1e40af); color: #ffffff; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(29,78,216,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Ra Khơi & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(2)" style="flex: 1; background: linear-gradient(135deg, #1d4ed8, #1e40af); color: #ffffff; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(29,78,216,0.35); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Ra Khơi">
                         🚀 BẮT ĐẦU VÒNG 2 (RA KHƠI)
                     </button>
                 </div>
 
                 <!-- ROW 1 CONTROLS: BLUE BAR + HIỆN ĐÁP ÁN + SOUND -->
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <div style="flex: 1; background: #5b9bd5; height: 36px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: bold;">
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <div style="flex: 1; background: #5b9bd5; height: 38px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: bold;">
                         <span id="rk_select_bar_title">Câu hỏi thứ 1</span>
                         <button onclick="cycleRKQuestion()" style="background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; outline: none;">⇅</button>
                     </div>
 
-                    <button class="btn" onclick="onClickRKHienDapAn()" style="background: #ffffff; border: 1px solid #ccc; color: #333; font-weight: bold; padding: 6px 16px; border-radius: 3px;">
+                    <button class="ctrl-btn-action" onclick="onClickRKHienDapAn()" style="background: #ffffff; border: 1px solid #cbd5e1; color: #333;">
                         Hiện Đáp án Đúng
                     </button>
 
-                    <button class="btn" onclick="onClickPhatAmThanh()" style="background: #ffffff; border: 1px solid #ccc; padding: 6px 12px; border-radius: 3px;">
+                    <button class="ctrl-btn-action" onclick="onClickPhatAmThanh()" style="width: 50px; background: #d1d5db; color: #333;">
                         🔊...
                     </button>
                 </div>
 
                 <!-- ROW 2 CONTROLS: ACTION BUTTONS ROW -->
-                <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                    <button class="btn" onclick="onClickRKTangToc()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
-                        Tăng Tốc
-                    </button>
-                    <button class="btn" onclick="onClickBatDauDoanBang()" style="background: #2563eb; color: #ffffff; border: none; font-weight: bold; padding: 6px 16px; border-radius: 3px; box-shadow: 0 2px 4px rgba(37,99,235,0.3);">
-                        ▶ Bắt đầu đoạn băng
-                    </button>
-                    <button class="btn" onclick="onClickRKTinhThoiGian()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
-                        ⏱️ Tính thời gian (30s)
-                    </button>
-                    <button class="btn" onclick="onClickRKDapAnTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
-                        👥 Hiện đáp án thí sinh
-                    </button>
-                    <button class="btn" onclick="onClickRKAutoScore()" style="background: #16a34a; color: white; font-weight: bold; padding: 6px 14px; border-radius: 3px;" title="Chấm điểm tự động theo thứ tự thời gian nộp bài: 40 - 30 - 20 - 10">
-                        ⚡ Chấm điểm (40-30-20-10)
-                    </button>
-                    <button class="btn" onclick="onClickDiemTS()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
-                        Điểm TS
-                    </button>
-                    <button class="btn" onclick="onClickRKDatLai()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px;">
-                        Đặt lại
-                    </button>
-                    <button class="btn" onclick="onClickTongKet()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 14px; border-radius: 3px; margin-left: auto;">
-                        Tổng kết
-                    </button>
+                <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
+                    <button class="ctrl-btn-bottom" onclick="onClickRKTangToc()">Tăng Tốc</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickBatDauDoanBang()" style="background: #2563eb; color: #ffffff;">▶ Đoạn băng</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickRKTinhThoiGian()">⏱️ 30s</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickRKDapAnTS()">👥 Đáp án TS</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickRKAutoScore()" style="background: #16a34a; color: white;" title="Chấm điểm 40-30-20-10">⚡ Chấm điểm</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickDiemTS()">Điểm TS</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickRKDatLai()">Đặt lại</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickTongKet()" style="background: #0f172a; color: white;">Tổng kết</button>
                 </div>
             </div>
         </div>
@@ -1589,18 +1587,34 @@
 
     <!-- TAB 3: VƯỢT SÓNG -->
     <div class="tab-content" id="tab3-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
-        <!-- TOP TOOLBAR -->
+        <!-- TOP TOOLBAR FOR TAB 3: SCOREBOARD THUMBNAIL CONTROL -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Vượt Sóng:</span>
-                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn" onclick="playIntroVideo('intro_media_v3')" style="background: #d97706; color: white; border-color: #b45309; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 3</button>
-                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
-                <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
-                    ĐIỀU KHIỂN VÒNG THI VƯỢT SÓNG (GIẢI Ô CHỮ)
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: bold; color: #1e3a8a; display: flex; align-items: center; gap: 5px;">
+                    🖼️ <strong>THUMBNAIL BẢNG ĐIỂM:</strong>
+                </span>
+                <div style="display: flex; gap: 4px; align-items: center; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Tất cả:</span>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(true, 'ALL')" style="background: #16a34a; color: white; border-color: #15803d; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Hiển thị thumbnail đè bảng điểm tất cả thí sinh">
+                        👁️ Hiện tất cả
+                    </button>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(false, 'ALL')" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Ẩn thumbnail đè bảng điểm tất cả thí sinh">
+                        🙈 Ẩn tất cả
+                    </button>
                 </div>
+                <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Chỉ định:</span>
+                    <button class="btn sb_thumb_btn_ts1" onclick="toggleScoreboardThumbnail(undefined, 1)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 1">🔴 TS1: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts2" onclick="toggleScoreboardThumbnail(undefined, 2)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 2">🔴 TS2: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts3" onclick="toggleScoreboardThumbnail(undefined, 3)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 3">🔴 TS3: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts4" onclick="toggleScoreboardThumbnail(undefined, 4)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 4">🔴 TS4: Ẩn</button>
+                </div>
+                <span class="sb_thumb_status_tag" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">
+                    Trạng thái: 🔴 Ẩn tất cả
+                </span>
+            </div>
+            <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                ĐIỀU KHIỂN VÒNG THI VƯỢT SÓNG (GIẢI Ô CHỮ)
             </div>
         </div>
 
@@ -1763,12 +1777,6 @@
         <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: 15px; flex-shrink: 0;">
             <!-- LEFT SLIDE CONTROLS -->
             <div style="display: flex; flex-direction: column; gap: 8px; width: 150px; flex-shrink: 0;">
-                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
-                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
-                    <button class="ctrl-btn-sm" onclick="showToast('Video giới thiệu Vượt Sóng')">Video Giới thiệu</button>
-                    <button class="ctrl-btn-sm" onclick="showToast('Hình ảnh Chướng ngại vật')">Hình ảnh CNV</button>
-                    <button class="ctrl-btn-sm" onclick="showToast('Tổng kết Vượt Sóng')">Tổng kết Vượt Sóng</button>
-                </div>
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>
@@ -1864,18 +1872,34 @@
     <!-- TAB 4: VINH QUANG -->
     <div class="tab-content" id="tab4-content" style="padding: 15px; flex-direction: column; background: #e8e6da; overflow-y: auto; box-sizing: border-box;">
         
-        <!-- TOP TOOLBAR FOR TAB 4 -->
+        <!-- TOP TOOLBAR FOR TAB 4: SCOREBOARD THUMBNAIL CONTROL -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-weight: bold; color: #1e3a8a;">📁 Nhập bộ đề Vinh Quang:</span>
-                <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Chọn file Excel</button>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn" onclick="playIntroVideo('intro_media_v4')" style="background: #7e22ce; color: white; border-color: #6b21a8; font-weight: bold; padding: 4px 10px;">🎬 PHÁT INTRO VÒNG 4</button>
-                <button class="btn" onclick="stopIntroVideo()" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 4px 10px;">⏹️ DỪNG INTRO</button>
-                <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
-                    ĐIỀU KHIỂN VÒNG THI VINH QUANG
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: bold; color: #1e3a8a; display: flex; align-items: center; gap: 5px;">
+                    🖼️ <strong>THUMBNAIL BẢNG ĐIỂM:</strong>
+                </span>
+                <div style="display: flex; gap: 4px; align-items: center; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Tất cả:</span>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(true, 'ALL')" style="background: #16a34a; color: white; border-color: #15803d; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Hiển thị thumbnail đè bảng điểm tất cả thí sinh">
+                        👁️ Hiện tất cả
+                    </button>
+                    <button class="btn" onclick="toggleScoreboardThumbnail(false, 'ALL')" style="background: #dc2626; color: white; border-color: #b91c1c; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 3px;" title="Ẩn thumbnail đè bảng điểm tất cả thí sinh">
+                        🙈 Ẩn tất cả
+                    </button>
                 </div>
+                <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: bold; color: #334155;">Chỉ định:</span>
+                    <button class="btn sb_thumb_btn_ts1" onclick="toggleScoreboardThumbnail(undefined, 1)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 1">🔴 TS1: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts2" onclick="toggleScoreboardThumbnail(undefined, 2)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 2">🔴 TS2: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts3" onclick="toggleScoreboardThumbnail(undefined, 3)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 3">🔴 TS3: Ẩn</button>
+                    <button class="btn sb_thumb_btn_ts4" onclick="toggleScoreboardThumbnail(undefined, 4)" style="background: #dc2626; color: white; font-weight: bold; padding: 3px 8px; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Bật/Tắt thumbnail Thí sinh 4">🔴 TS4: Ẩn</button>
+                </div>
+                <span class="sb_thumb_status_tag" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">
+                    Trạng thái: 🔴 Ẩn tất cả
+                </span>
+            </div>
+            <div style="font-size: 13px; font-weight: bold; color: #0056b3;">
+                ĐIỀU KHIỂN VÒNG THI VINH QUANG
             </div>
         </div>
 
@@ -2010,20 +2034,8 @@
         <!-- BOTTOM SECTION: DISPLAY CARDS & CONTROL BUTTONS -->
         <div style="display: flex; gap: 15px; align-items: flex-end; justify-content: space-between; margin-top: auto;">
             
-            <!-- LEFT COLUMN: CHUYỂN SLIDE GROUP & PHÁT ÂM THANH -->
+            <!-- LEFT COLUMN: INTRO GROUP & PHÁT ÂM THANH -->
             <div style="display: flex; flex-direction: column; gap: 8px; width: 200px; flex-shrink: 0;">
-                <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
-                    <div style="font-size: 11px; font-weight: bold; color: #555;">Chuyển slide</div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQVideoVeDich()">Video Về Đích</button>
-                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQPhanThi()">Phần Thi</button>
-                    </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQVideoCauHoi()">Video Câu hỏi</button>
-                        <button class="ctrl-btn-sm" style="flex: 1;" onclick="onClickVQTGThucNghiem()">TG Thực nghiệm</button>
-                    </div>
-                    <button class="ctrl-btn-sm" onclick="onClickVQChuyenSlidePPT()">Chuyển slide PPT</button>
-                </div>
                 <!-- Panel Phát Video Intro -->
                 <div style="background: #fdfbf7; border: 1px solid #dcd7c9; padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;">
                     <div style="font-size: 11px; font-weight: bold; color: #555;">Phát Video Intro</div>

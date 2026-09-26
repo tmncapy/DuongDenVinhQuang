@@ -63,11 +63,11 @@ function selectVSRow(row) {
     } else {
         if (titleEl) titleEl.innerText = `VÒNG THI VƯỢT SÓNG: HÀNG NGANG ${row}`;
     }
-    if (qTextEl) qTextEl.innerText = "🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị nội dung cho Player & Máy chiếu";
-    if (aTextEl) aTextEl.innerText = `Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem] | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
-
     const q = row === 'center' ? (document.getElementById('vs_q_center')?.value || gameData.vuotSong?.center?.q || "") : (document.getElementById(`vs_q_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.q || "");
     const a = row === 'center' ? (document.getElementById('vs_a_center')?.value || gameData.vuotSong?.center?.a || "") : (document.getElementById(`vs_a_${row}`)?.value || gameData.vuotSong?.[`h${row}`]?.a || "");
+
+    if (qTextEl) qTextEl.innerText = q || `Nội dung câu hỏi Hàng ngang ${row}`;
+    if (aTextEl) aTextEl.innerText = `Đáp án: ${a || '...'} | Từ khóa CNV: ${gameData.vuotSong?.keyword || '...'}`;
 
     const payload = {
         type: 'VUOT_SONG_SELECT_ROW',
@@ -77,6 +77,7 @@ function selectVSRow(row) {
         answerText: a,
         answer: a,
         vsQuestionShown: false,
+        gameData: gameData,
         contestants: gameData.contestants,
         timestamp: Date.now()
     };
@@ -220,7 +221,22 @@ function onClickVSStartTimer() {
         }
     }, 1000);
 
-    sendToProjector('VUOT_SONG_START_TIMER', { duration: 20 });
+    const q = currentVSRow === 'center' ? (document.getElementById('vs_q_center')?.value || gameData.vuotSong?.center?.q || "") : (document.getElementById(`vs_q_${currentVSRow}`)?.value || gameData.vuotSong?.[`h${currentVSRow}`]?.q || "");
+    const a = currentVSRow === 'center' ? (document.getElementById('vs_a_center')?.value || gameData.vuotSong?.center?.a || "") : (document.getElementById(`vs_a_${currentVSRow}`)?.value || gameData.vuotSong?.[`h${currentVSRow}`]?.a || "");
+
+    const payload = {
+        type: 'VUOT_SONG_START_TIMER',
+        duration: 20,
+        row: currentVSRow,
+        questionText: q,
+        answerText: a,
+        answer: a,
+        timestamp: Date.now()
+    };
+    sendToProjector('VUOT_SONG_START_TIMER', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast('Bắt đầu 20s Vượt Sóng trên Projector');
 }
 

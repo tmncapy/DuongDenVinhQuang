@@ -2,6 +2,7 @@ let hostRoomCode = localStorage.getItem('ddvq_room_code') || '';
 let hostAutoSync = true;
 let hostActiveScene = 1;
 let currentHostState = {};
+let selectedS1QuestionIndex = 1;
 
 function getApiUrl(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
@@ -23,12 +24,10 @@ function setHostAutoSync(isAuto) {
     if (btn) {
         if (isAuto) {
             btn.className = 'scene-tab auto-active';
-            btn.innerText = '🔄 TỰ ĐỘNG';
-            showToast('Chế độ Tự Động Theo Dõi: ĐÃ BẬT');
+            btn.innerText = '⚡ TỰ ĐỘNG';
         } else {
             btn.className = 'scene-tab';
             btn.innerText = '⏸️ THỦ CÔNG';
-            showToast('Chế độ Thủ Công: ĐÃ TẮT');
         }
     }
 }
@@ -97,7 +96,7 @@ function updateHostBadge(isConnected, roomCode) {
     const badge = document.getElementById('host_status_badge');
     if (badge) {
         if (isConnected) {
-            badge.innerHTML = `🟢 ĐÃ KẾT NỐI MC (MÃ: ${roomCode || 'DDVQ2026'})`;
+            badge.innerHTML = `🟢 ĐÃ KẾT NỐI MC (DDVQ: ${roomCode || 'DDVQ2026'})`;
             badge.style.background = 'rgba(34,197,94,0.15)';
             badge.style.color = '#4ade80';
             badge.style.borderColor = 'rgba(34,197,94,0.3)';
@@ -192,11 +191,18 @@ function processHostAction(data) {
 
     // Room code auto-sync
     if (data.roomCode && data.roomCode !== hostRoomCode) {
-        console.log(`[Sync] Host room code auto-syncing to: ${data.roomCode}`);
         hostRoomCode = data.roomCode;
         localStorage.setItem('ddvq_room_code', data.roomCode);
         const input = document.getElementById('host_room_code_input');
         if (input) input.value = data.roomCode;
+    }
+
+    // Save gameData if present
+    if (data.gameData) {
+        currentHostState.gameData = data.gameData;
+        try {
+            localStorage.setItem('duong_den_vinh_quang_data', JSON.stringify(data.gameData));
+        } catch(e) {}
     }
 
     // Reload / Kick handler for Host
@@ -209,8 +215,50 @@ function processHostAction(data) {
         return;
     }
 
-    // Merge state
-    currentHostState = { ...currentHostState, ...data };
+    // Determine current round category
+    let newRoundCategory = '';
+    if (data.type) {
+        if (data.type.startsWith('XUAT_PHAT_')) newRoundCategory = 'XP';
+        else if (data.type.startsWith('RA_KHOI_')) newRoundCategory = 'RK';
+        else if (data.type.startsWith('VUOT_SONG_')) newRoundCategory = 'VS';
+        else if (data.type.startsWith('VINH_QUANG_')) newRoundCategory = 'VQ';
+    }
+
+    // If round changed, reset question/answer so previous round's Q&A won't bleed over
+    if (newRoundCategory && currentHostState.activeRoundCategory !== newRoundCategory) {
+        currentHostState.activeRoundCategory = newRoundCategory;
+        currentHostState.questionText = '';
+        currentHostState.answerText = '';
+        currentHostState.answer = '';
+    }
+
+    Object.keys(data).forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+            currentHostState[key] = data[key];
+        }
+    });
+
+    if (data.questionText) {
+        currentHostState.questionText = data.questionText;
+    }
+
+    if (data.answerText || data.answer) {
+        const newAns = data.answerText || data.answer;
+        currentHostState.answerText = newAns;
+        currentHostState.answer = newAns;
+    }
+
+    // Synchronize clock/timer
+    if (data.timer !== undefined) {
+        const clockEl = document.getElementById('host_clock_display');
+        if (clockEl) clockEl.innerText = `${data.timer}s`;
+        const h2Time = document.getElementById('h2_time_box');
+        if (h2Time) h2Time.innerText = `${data.timer}s`;
+        const h3Time = document.getElementById('h3_time_box');
+        if (h3Time) h3Time.innerText = `${data.timer}s`;
+        const h4Time = document.getElementById('h4_time_box');
+        if (h4Time) h4Time.innerText = `${data.timer}s`;
+    }
 
     // Auto round tab switching
     if (hostAutoSync && data.type) {
@@ -218,6 +266,10 @@ function processHostAction(data) {
         else if (data.type.startsWith('RA_KHOI_')) switchHostScene(2);
         else if (data.type.startsWith('VUOT_SONG_')) switchHostScene(3);
         else if (data.type.startsWith('VINH_QUANG_')) switchHostScene(4);
+    }
+
+    if (data.questionIndex) {
+        selectedS1QuestionIndex = data.questionIndex;
     }
 
     renderHostScene1();
@@ -234,6 +286,11 @@ function getHostGameData() {
         if (saved) return JSON.parse(saved);
     } catch(e) {}
     return null;
+}
+
+function selectHostS1Question(qNum) {
+    selectedS1QuestionIndex = qNum;
+    renderHostScene1();
 }
 
 function renderHostScene1() {
@@ -256,32 +313,48 @@ function renderHostScene1() {
     if (turnBadge) turnBadge.innerText = `LƯỢT THI: ${tsName.toUpperCase()}`;
 
     const setIndex = currentHostState.deIndex || currentHostState.deNumber || 1;
-    const qIndex = currentHostState.questionIndex || currentHostState.qNum || 1;
+    const qIndex = currentHostState.questionIndex || selectedS1QuestionIndex || 1;
+
+    // Update pagination buttons active state
+    for (let i = 1; i <= 10; i++) {
+        const btn = document.getElementById(`s1_btn_${i}`);
+        if (btn) {
+            btn.className = `s1-page-btn ${i === qIndex ? 'active' : ''}`;
+        }
+    }
 
     let qText = currentHostState.questionText;
     let ansVal = currentHostState.answerText || currentHostState.answer;
 
     const gData = getHostGameData();
-    if (gData && gData.xuatPhat && gData.xuatPhat[setIndex]) {
-        const qItem = gData.xuatPhat[setIndex][qIndex - 1];
+    if (gData && gData.xuatPhat) {
+        const xuatPhatSets = gData.xuatPhat;
+        const currentSet = xuatPhatSets[setIndex] || xuatPhatSets[String(setIndex)] || xuatPhatSets[1] || [];
+        let qItem = currentSet[qIndex - 1];
+
         if (qItem) {
-            if (!qText) qText = qItem.q || qItem.question;
-            if (!ansVal) ansVal = qItem.a || qItem.answer;
+            if (!qText || qText === 'Đang chờ câu hỏi Xuất Phát...' || qText.includes('🔒') || qText.includes('Nội dung câu hỏi')) {
+                qText = qItem.q || qItem.question || qText;
+            }
+            if (!ansVal || ansVal === '--' || ansVal.includes('🔒') || ansVal === 'Đáp án') {
+                ansVal = qItem.a || qItem.answer || ansVal;
+            }
         }
     }
 
     if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Xuất Phát...';
-    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    let cleanAns1 = ansVal ? ansVal.replace(/^ĐÁP ÁN:\s*/i, '').trim() : '';
+    if (ansEl) ansEl.innerText = cleanAns1 || '--';
 
     if (deNum) deNum.innerText = setIndex;
     if (deTitle) deTitle.innerText = setIndex;
     if (qNum) qNum.innerText = `${qIndex} / 10`;
 
-    // Render table of 10 questions if gameData is present
+    // Render table of 10 questions in current set
     const tableBody = document.getElementById('h1_q_table_body');
     if (tableBody && gData && gData.xuatPhat) {
         const xuatPhatSets = gData.xuatPhat;
-        const currentSet = xuatPhatSets[setIndex] || xuatPhatSets[setIndex - 1] || [];
+        const currentSet = xuatPhatSets[setIndex] || xuatPhatSets[setIndex - 1] || xuatPhatSets[String(setIndex)] || [];
         let html = '';
         currentSet.forEach((q, idx) => {
             const isActive = (idx + 1) === qIndex;
@@ -307,14 +380,25 @@ function renderHostScene2() {
     let ansVal = currentHostState.answerText || currentHostState.answer;
 
     const gData = getHostGameData();
-    if (gData && gData.raKhoi && gData.raKhoi[qIndex - 1]) {
-        const qItem = gData.raKhoi[qIndex - 1];
-        if (!qText) qText = qItem.q || qItem.question;
-        if (!ansVal) ansVal = qItem.a || qItem.answer;
+    if (gData && gData.raKhoi) {
+        let qItem = gData.raKhoi[qIndex - 1];
+        if (qText && (!ansVal || ansVal === '--' || ansVal === 'Đáp án')) {
+            const matched = gData.raKhoi.find(item => item && item.q && item.q.trim() === qText.trim() && item.a);
+            if (matched) qItem = matched;
+        }
+        if (qItem) {
+            if (!qText || qText === 'Đang chờ câu hỏi Ra Khơi...' || qText.includes('🔒') || qText.includes('Nội dung câu hỏi')) {
+                qText = qItem.q || qItem.question || qText;
+            }
+            if (!ansVal || ansVal === '--' || ansVal.includes('🔒') || ansVal === 'Đáp án') {
+                ansVal = qItem.a || qItem.answer || ansVal;
+            }
+        }
     }
 
     if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Ra Khơi...';
-    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    let cleanAns2 = ansVal ? ansVal.replace(/^ĐÁP ÁN:\s*/i, '').trim() : '';
+    if (ansEl) ansEl.innerText = cleanAns2 || '--';
     if (badge) badge.innerText = `CÂU HỎI SỐ ${qIndex}`;
 
     renderContestantsAnswersGrid('h2_contestants_grid', 'RK');
@@ -333,20 +417,31 @@ function renderHostScene3() {
     if (gData && gData.vuotSong) {
         const vsData = gData.vuotSong;
         if (rowVal === 'center') {
-            if (!qText && vsData.center) qText = vsData.center.q || vsData.center.question;
-            if (!ansVal) ansVal = (vsData.center && (vsData.center.a || vsData.center.answer)) || vsData.keyword;
+            if ((!qText || qText === 'Đang chờ chọn hàng ngang Vượt Sóng...' || qText.includes('🔒')) && vsData.center) {
+                qText = vsData.center.q || vsData.center.question || qText;
+            }
+            if ((!ansVal || ansVal === '--' || ansVal.includes('🔒') || ansVal === 'Đáp án') && vsData.center) {
+                ansVal = vsData.center.a || vsData.center.answer || vsData.keyword || ansVal;
+            }
         } else {
             const hKey = `h${rowVal}`;
             if (vsData[hKey]) {
-                if (!qText) qText = vsData[hKey].q || vsData[hKey].question;
-                if (!ansVal) ansVal = vsData[hKey].a || vsData[hKey].answer;
+                if (!qText || qText === 'Đang chờ chọn hàng ngang Vượt Sóng...' || qText.includes('🔒')) {
+                    qText = vsData[hKey].q || vsData[hKey].question || qText;
+                }
+                if (!ansVal || ansVal === '--' || ansVal.includes('🔒') || ansVal === 'Đáp án') {
+                    ansVal = vsData[hKey].a || vsData[hKey].answer || ansVal;
+                }
             }
         }
     }
 
-    if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Vượt Sóng...';
-    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    if (textEl) textEl.innerText = qText || 'Đang chờ chọn hàng ngang Vượt Sóng...';
+    let cleanAns3 = ansVal ? ansVal.replace(/^ĐÁP ÁN:\s*/i, '').trim() : '';
+    if (ansEl) ansEl.innerText = cleanAns3 || '--';
     if (badge) badge.innerText = `HÀNG NGANG SỐ ${rowVal === 'center' ? 'TRUNG TÂM' : rowVal}`;
+
+    renderHostVuotSongMatrix();
 
     // All rows list for MC
     const listEl = document.getElementById('h3_all_rows_list');
@@ -381,6 +476,65 @@ function renderHostScene3() {
     renderContestantsAnswersGrid('h3_contestants_grid', 'VS');
 }
 
+function renderHostVuotSongMatrix() {
+    const gData = getHostGameData();
+    const activeRow = currentHostState.row || currentHostState.selectedRow;
+    const openedRows = currentHostState.openedRows || {};
+
+    if (!gData || !gData.vuotSong) return;
+    const vsData = gData.vuotSong;
+
+    for (let i = 1; i <= 4; i++) {
+        const numBox = document.getElementById(`s3_num_${i}`);
+        const rowEl = document.getElementById(`s3_row_${i}`);
+        if (!numBox || !rowEl) continue;
+
+        if (String(activeRow) === String(i)) {
+            numBox.className = 's3-number-box active-row';
+        } else {
+            numBox.className = 's3-number-box';
+        }
+
+        const hData = vsData[`h${i}`] || {};
+        const ans = (hData.a || hData.answer || '').trim();
+        const isOpened = openedRows[i] || openedRows[`h${i}`];
+
+        let html = '';
+        if (ans) {
+            for (let c = 0; c < ans.length; c++) {
+                const char = ans[c];
+                if (char === ' ') continue;
+                if (isOpened) {
+                    html += `<div class="s3-matrix-cell opened">${char}</div>`;
+                } else {
+                    html += `<div class="s3-matrix-cell has-length"></div>`;
+                }
+            }
+        }
+        rowEl.innerHTML = html;
+    }
+
+    // Center row
+    const centerRowEl = document.getElementById('s3_row_center');
+    if (centerRowEl && vsData.center) {
+        const cAns = (vsData.center.a || vsData.center.answer || vsData.keyword || '').trim();
+        const isCenterOpened = openedRows['center'];
+        let cHtml = '';
+        if (cAns) {
+            for (let c = 0; c < cAns.length; c++) {
+                const char = cAns[c];
+                if (char === ' ') continue;
+                if (isCenterOpened) {
+                    cHtml += `<div class="s3-matrix-cell opened">${char}</div>`;
+                } else {
+                    cHtml += `<div class="s3-matrix-cell has-length"></div>`;
+                }
+            }
+        }
+        centerRowEl.innerHTML = cHtml;
+    }
+}
+
 function renderHostScene4() {
     const textEl = document.getElementById('h4_q_text');
     const ansEl = document.getElementById('h4_a_text');
@@ -390,8 +544,31 @@ function renderHostScene4() {
     let qText = currentHostState.questionText;
     let ansVal = currentHostState.answerText || currentHostState.answer;
 
+    const gData = getHostGameData();
+    if (gData && gData.vinhQuang && gData.vinhQuang[pack]) {
+        const packQuestions = gData.vinhQuang[pack];
+        const qIndex = (currentHostState.questionIndex !== undefined) ? currentHostState.questionIndex : 0;
+        if (packQuestions[qIndex]) {
+            const qItem = packQuestions[qIndex];
+            if (!qText || qText === 'Đang chờ câu hỏi Vinh Quang...' || qText.includes('🔒') || qText.includes('Nội dung câu hỏi')) {
+                qText = qItem.q || qItem.question || qText;
+            }
+            if (!ansVal || ansVal === '--' || ansVal.includes('🔒') || ansVal === 'Đáp án') {
+                ansVal = qItem.a || qItem.answer || ansVal;
+            }
+        } else if (packQuestions[0]) {
+            if (!qText || qText === 'Đang chờ câu hỏi Vinh Quang...' || qText.includes('🔒') || qText.includes('Nội dung câu hỏi')) {
+                qText = packQuestions[0].q || packQuestions[0].question || qText;
+            }
+            if (!ansVal || ansVal === '--' || ansVal.includes('🔒') || ansVal === 'Đáp án') {
+                ansVal = packQuestions[0].a || packQuestions[0].answer || ansVal;
+            }
+        }
+    }
+
     if (textEl) textEl.innerText = qText || 'Đang chờ câu hỏi Vinh Quang...';
-    if (ansEl) ansEl.innerText = ansVal ? `ĐÁP ÁN: ${ansVal}` : '--';
+    let cleanAns4 = ansVal ? ansVal.replace(/^ĐÁP ÁN:\s*/i, '').trim() : '';
+    if (ansEl) ansEl.innerText = cleanAns4 || '--';
     if (badge) badge.innerText = `GÓI CÂU HỎI: ${pack} ĐIỂM${currentHostState.subject ? ' - MÔN ' + currentHostState.subject.toUpperCase() : ''}`;
 
     renderContestantsAnswersGrid('h4_contestants_grid', 'VQ');
@@ -399,19 +576,25 @@ function renderHostScene4() {
 
 function renderHostScene5() {
     const listEl = document.getElementById('h5_chp_list');
-    if (listEl && currentHostState.gameData && currentHostState.gameData.CauHoiPhu) {
-        const chpList = currentHostState.gameData.CauHoiPhu;
-        let html = '';
-        chpList.forEach((q, idx) => {
-            html += `
-                <div style="background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; padding: 14px;">
-                    <div style="font-size: 14px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">CÂU HỎI PHỤ SỐ ${idx + 1}</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">${q.q || q.question || '--'}</div>
-                    <div style="font-size: 14px; font-weight: bold; color: #34d399; background: #064e3b; padding: 6px 12px; border-radius: 6px; display: inline-block;">ĐÁP ÁN: ${q.a || q.answer || '--'}</div>
-                </div>
-            `;
-        });
-        listEl.innerHTML = html;
+    const gData = getHostGameData();
+    if (listEl && gData) {
+        const chpList = gData.cauHoiPhu || gData.CauHoiPhu || [];
+        if (chpList.length > 0) {
+            let html = '';
+            chpList.forEach((q, idx) => {
+                html += `
+                    <div style="background: #0f172a; border: 1.5px solid #334155; border-radius: 10px; padding: 16px;">
+                        <div style="font-size: 14px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">CÂU HỎI PHỤ SỐ ${idx + 1}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">${q.q || q.question || '--'}</div>
+                        <div class="answer-display-box" style="margin-bottom: 0;">
+                            <span class="ans-label">ĐÁP ÁN:</span>
+                            <span class="ans-text">${q.a || q.answer || '--'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
     }
 }
 
@@ -432,23 +615,26 @@ function renderContestantsAnswersGrid(containerId, roundKey) {
     for (let i = 1; i <= 4; i++) {
         const name = contestants[i - 1]?.name || `Thí sinh ${i}`;
         const score = contestants[i - 1]?.score || 0;
-        const ansObj = playerAnswers[`ts${i}_${roundKey}`];
+        const ansObj = playerAnswers[`ts${i}_${roundKey}`] || playerAnswers[`ts${i}`];
 
         let ansText = '-- (Chưa gửi)';
+        let isSubmitted = false;
         let ansTime = '';
+
         if (ansObj) {
             ansText = ansObj.answer || '--';
+            isSubmitted = true;
             ansTime = ansObj.time ? `Thời gian: ${ansObj.time}s` : '';
         }
 
         html += `
             <div class="contestant-card">
-                <div class="ts-name">
-                    <span>TS ${i}: ${name}</span>
-                    <span class="ts-score">${score}đ</span>
+                <div class="ts-header-line">
+                    <span class="ts-title">TS ${i}: ${name}</span>
+                    <span class="ts-score-badge">${score}đ</span>
                 </div>
-                <div class="ts-answer-display">${ansText}</div>
-                <div class="ts-time-display">${ansTime}</div>
+                <div class="ts-answer-box ${isSubmitted ? 'submitted' : ''}">${ansText}</div>
+                <div class="ts-time-text">${ansTime}</div>
             </div>
         `;
     }

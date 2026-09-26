@@ -63,7 +63,21 @@ function onClickVQTinhThoiGian() {
         }
     }, 1000);
 
-    sendToProjector('VINH_QUANG_START_TIMER', { duration: 20 });
+    const payload = {
+        type: 'VINH_QUANG_START_TIMER',
+        duration: 20,
+        pack: currentVQPack,
+        subject: currentVQSubject,
+        questionIndex: currentVQQuestionIndex,
+        questionText: currentVQQuestionText,
+        answerText: currentVQAnswerText,
+        answer: currentVQAnswerText,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_START_TIMER', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast('Bắt đầu tính thời gian 20s Vinh Quang');
 }
 
@@ -109,12 +123,36 @@ function onClickVQ5sTraLoi() {
 }
 
 function onClickVQDung() {
-    sendToProjector('VINH_QUANG_RIGHT');
+    const payload = {
+        type: 'VINH_QUANG_RIGHT',
+        pack: currentVQPack,
+        questionText: currentVQQuestionText || '',
+        answerText: currentVQAnswerText || '',
+        answer: currentVQAnswerText || '',
+        gameData: gameData,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_RIGHT', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast('Chấm ĐÚNG cho thí sinh');
 }
 
 function onClickVQSai() {
-    sendToProjector('VINH_QUANG_WRONG');
+    const payload = {
+        type: 'VINH_QUANG_WRONG',
+        pack: currentVQPack,
+        questionText: currentVQQuestionText || '',
+        answerText: currentVQAnswerText || '',
+        answer: currentVQAnswerText || '',
+        gameData: gameData,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_WRONG', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast('Chấm SAI cho thí sinh');
 }
 
@@ -165,9 +203,9 @@ function onClickVQChonGoiDiem(pack) {
     const titleEl = document.getElementById('vq_preview_title');
     if (titleEl) titleEl.innerText = `GÓI ${pack} ĐIỂM - ${currentVQSubject.toUpperCase()}`;
     const qEl = document.getElementById('vq_preview_q_text');
-    if (qEl) qEl.innerText = '🔒 [Đang ẩn] - Bấm [Hiện câu hỏi] để hiển thị câu hỏi cho Player & Máy chiếu';
+    if (qEl) qEl.innerText = currentVQQuestionText || `Nội dung câu hỏi gói ${pack} điểm`;
     const aEl = document.getElementById('vq_preview_a_text');
-    if (aEl) aEl.innerText = 'Đáp án: 🔒 [Đang ẩn - Bấm Hiện câu hỏi để xem]';
+    if (aEl) aEl.innerText = `Đáp án: ${currentVQAnswerText || '...'}`;
     const statusEl = document.getElementById('vq_preview_status');
     if (statusEl) statusEl.innerText = vqTimeLeft;
 
@@ -190,6 +228,7 @@ function onClickVQChonGoiDiem(pack) {
         answerText: currentVQAnswerText || '',
         answer: currentVQAnswerText || '',
         vqQuestionShown: false,
+        gameData: gameData,
         timestamp: Date.now()
     };
     sendToProjector('VINH_QUANG_SELECT_PACK', payload);
@@ -293,6 +332,7 @@ function onClickVQHienCauHoi() {
         vqQuestionShown: true,
         hasStar: anyStarActive,
         starActive: anyStarActive,
+        gameData: gameData,
         timestamp: Date.now()
     };
     sendToProjector('VINH_QUANG_SHOW_QUESTION', payload);
@@ -327,21 +367,22 @@ function onClickVQ25s() {
         }
     }, 1000);
 
-    sendToProjector('VINH_QUANG_START_TIMER', {
+    const payload25s = {
+        type: 'VINH_QUANG_START_TIMER',
         duration: 25,
         round: 'VQ',
+        pack: currentVQPack,
+        subject: currentVQSubject,
+        questionIndex: currentVQQuestionIndex,
         questionText: currentVQQuestionText,
-        vqQuestionShown: !!window.vqQuestionIsShown
-    });
+        answerText: currentVQAnswerText,
+        answer: currentVQAnswerText,
+        vqQuestionShown: !!window.vqQuestionIsShown,
+        timestamp: Date.now()
+    };
+    sendToProjector('VINH_QUANG_START_TIMER', payload25s);
     if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction({
-            type: 'VINH_QUANG_START_TIMER',
-            duration: 25,
-            round: 'VQ',
-            questionText: currentVQQuestionText,
-            vqQuestionShown: !!window.vqQuestionIsShown,
-            timestamp: Date.now()
-        });
+        sendSupabaseAction(payload25s);
     }
     showToast('Bắt đầu đếm ngược 25 giây');
 }

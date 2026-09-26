@@ -62,8 +62,9 @@
 
     <div class="scoreboard-container">
         <div id="orange_flash_overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 165, 0, 0.7); pointer-events: none; z-index: 999; opacity: 0; transition: opacity 0.1s ease;"></div>
-        <div class="score" id="contestant_score">0</div>
-        <div class="name" id="contestant_name">THÍ SINH 3</div>
+        <img id="scoreboard_thumbnail_img" src="Images/thumbnail.png" alt="Thumbnail" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; z-index: 100; display: none;">
+        <div class="score" id="contestant_score" style="position: absolute; z-index: 60;">0</div>
+        <div class="name" id="contestant_name" style="position: absolute; z-index: 60;">THÍ SINH 3</div>
     </div>
 
     <script src="network_sync.js"></script>
@@ -84,6 +85,19 @@
         }
 
         function loadInitialData() {
+            try {
+                const savedSelf = localStorage.getItem('ddvq_scoreboard_thumbnail_shown_' + CONTESTANT_ID);
+                const savedAll = localStorage.getItem('ddvq_scoreboard_thumbnail_shown');
+                const thumbEl = document.getElementById('scoreboard_thumbnail_img');
+                if (thumbEl) {
+                    if (savedSelf === 'true' || (savedSelf === null && savedAll === 'true')) {
+                        thumbEl.style.display = 'block';
+                    } else if (savedSelf === 'false') {
+                        thumbEl.style.display = 'none';
+                    }
+                }
+            } catch(e) {}
+
             try {
                 const saved = localStorage.getItem('ddvq_contestants');
                 if (saved) {
@@ -142,6 +156,28 @@
 
         function handleData(data) {
             if (!data) return;
+
+            if (data.type === 'TOGGLE_SCOREBOARD_THUMBNAIL' || data.type === 'SHOW_SCOREBOARD_THUMBNAIL' || data.type === 'HIDE_SCOREBOARD_THUMBNAIL') {
+                const thumbEl = document.getElementById('scoreboard_thumbnail_img');
+                if (thumbEl) {
+                    const targetId = data.contestantId || data.targetSlot || 'ALL';
+                    if (targetId === 'ALL' || parseInt(targetId) === CONTESTANT_ID) {
+                        let show = false;
+                        if (data.type === 'SHOW_SCOREBOARD_THUMBNAIL') show = true;
+                        else if (data.type === 'HIDE_SCOREBOARD_THUMBNAIL') show = false;
+                        else show = data.show !== undefined ? data.show : (thumbEl.style.display === 'none' || !thumbEl.style.display);
+                        thumbEl.style.display = show ? 'block' : 'none';
+                        try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + CONTESTANT_ID, show ? 'true' : 'false'); } catch(e){}
+                    }
+                }
+            } else if (data.scoreboardThumbnailStates && data.scoreboardThumbnailStates[CONTESTANT_ID] !== undefined) {
+                const thumbEl = document.getElementById('scoreboard_thumbnail_img');
+                if (thumbEl) {
+                    const show = !!data.scoreboardThumbnailStates[CONTESTANT_ID];
+                    thumbEl.style.display = show ? 'block' : 'none';
+                    try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + CONTESTANT_ID, show ? 'true' : 'false'); } catch(e){}
+                }
+            }
 
             if ((data.type === 'PLAYER_SUBMIT_ANSWER' && (data.isVongThi || data.round === 'VS')) || data.type === 'S3_FLASH_SCOREBOARD') {
                 if (!data.contestantId || data.contestantId === CONTESTANT_ID) {

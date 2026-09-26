@@ -61,8 +61,9 @@
 <body>
 
     <div class="scoreboard-container">
-        <div class="score" id="sb_score">0</div>
-        <div class="name" id="sb_name">THÍ SINH</div>
+        <img id="scoreboard_thumbnail_img" src="Images/thumbnail.png" alt="Thumbnail" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; z-index: 100; display: none;">
+        <div class="score" id="sb_score" style="position: absolute; z-index: 60;">0</div>
+        <div class="name" id="sb_name" style="position: absolute; z-index: 60;">THÍ SINH</div>
     </div>
 
     <script src="network_sync.js"></script>
@@ -81,8 +82,34 @@
             if (nameEl) nameEl.innerText = (c.name || `THÍ SINH ${playerIdx + 1}`).toUpperCase();
         }
 
+        function toggleThumbnailView(data) {
+            const thumbEl = document.getElementById('scoreboard_thumbnail_img');
+            if (!thumbEl) return;
+            const contestantId = playerIdx + 1;
+            const targetId = data.contestantId || data.targetSlot || 'ALL';
+            if (targetId === 'ALL' || parseInt(targetId) === contestantId) {
+                let show = false;
+                if (data.type === 'SHOW_SCOREBOARD_THUMBNAIL') show = true;
+                else if (data.type === 'HIDE_SCOREBOARD_THUMBNAIL') show = false;
+                else show = data.show !== undefined ? data.show : (thumbEl.style.display === 'none' || !thumbEl.style.display);
+                thumbEl.style.display = show ? 'block' : 'none';
+                try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + contestantId, show ? 'true' : 'false'); } catch(e){}
+            }
+        }
+
         window.handleBroadcastMessage = function(data) {
             if (!data) return;
+            if (data.type === 'TOGGLE_SCOREBOARD_THUMBNAIL' || data.type === 'SHOW_SCOREBOARD_THUMBNAIL' || data.type === 'HIDE_SCOREBOARD_THUMBNAIL') {
+                toggleThumbnailView(data);
+            } else if (data.scoreboardThumbnailStates) {
+                const thumbEl = document.getElementById('scoreboard_thumbnail_img');
+                const contestantId = playerIdx + 1;
+                if (thumbEl && data.scoreboardThumbnailStates[contestantId] !== undefined) {
+                    const show = !!data.scoreboardThumbnailStates[contestantId];
+                    thumbEl.style.display = show ? 'block' : 'none';
+                    try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + contestantId, show ? 'true' : 'false'); } catch(e){}
+                }
+            }
             if (data.contestants) {
                 updateScoreboardView(data.contestants);
             }
@@ -96,6 +123,21 @@
                 updateScoreboardView(data.contestants);
             }
         };
+
+        // Restore saved thumbnail state
+        try {
+            const contestantId = playerIdx + 1;
+            const savedSelf = localStorage.getItem('ddvq_scoreboard_thumbnail_shown_' + contestantId);
+            const savedAll = localStorage.getItem('ddvq_scoreboard_thumbnail_shown');
+            const thumbEl = document.getElementById('scoreboard_thumbnail_img');
+            if (thumbEl) {
+                if (savedSelf === 'true' || (savedSelf === null && savedAll === 'true')) {
+                    thumbEl.style.display = 'block';
+                } else if (savedSelf === 'false') {
+                    thumbEl.style.display = 'none';
+                }
+            }
+        } catch(e) {}
 
         // Fetch authoritative server state if available
         function fetchCurrentState() {

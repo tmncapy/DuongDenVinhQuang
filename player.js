@@ -474,17 +474,31 @@ function applyPlayerGameState(data) {
     }
 
     // 4. Sync Question Text & Index
-    const qText = data.questionText || data.currentQuestion?.questionText || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_xp_question_text') : '');
     if (sceneNum === 1 || !sceneNum) {
         const el = document.getElementById('s1_question_text');
         if (el) {
-            const isXPShown = (data.xpQuestionShown === true) || (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_xp_question_shown') === 'true') || window.s1IsQuestionActive;
-            const isXPRunning = !!(isXPShown || (data.currentTimer && data.currentTimer.round === 'XUAT_PHAT'));
-            if (isXPRunning && qText) {
+            let isXPShown = false;
+            if (data.xpQuestionShown === true) {
+                isXPShown = true;
+            } else if (data.xpQuestionShown === false) {
+                isXPShown = false;
+                window.s1IsQuestionActive = false;
+                try {
+                    localStorage.setItem('ddvq_xp_question_shown', 'false');
+                    localStorage.removeItem('ddvq_xp_question_text');
+                } catch(e) {}
+            } else {
+                const hasActiveTimer = !!(data.currentTimer && data.currentTimer.round === 'XUAT_PHAT' && ((data.currentTimer.targetTime && data.currentTimer.targetTime > Date.now()) || data.currentTimer.remaining > 0));
+                isXPShown = hasActiveTimer && window.s1IsQuestionActive;
+            }
+
+            const qText = data.questionText || data.currentQuestion?.questionText || (isXPShown ? localStorage.getItem('ddvq_xp_question_text') : '');
+            if (isXPShown && qText) {
                 el.innerText = qText;
                 window.s1IsQuestionActive = true;
-            } else if (!window.s1IsQuestionActive && !isXPShown) {
+            } else {
                 el.innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
+                window.s1IsQuestionActive = false;
             }
         }
     }
@@ -504,13 +518,13 @@ function applyPlayerGameState(data) {
         }
     }
     if (sceneNum === 4) {
-        const el = document.getElementById('s4_question_text');
+        const el = document.getElementById('s4_q_text') || document.getElementById('s4_question_text');
         if (el) {
-            const isVQShown = (data.vqQuestionShown === true) || (localStorage.getItem('ddvq_vq_question_shown') === 'true');
+            const isVQShown = (data.vqQuestionShown === true) || (data.type === 'VINH_QUANG_SHOW_QUESTION') || (data.type === 'VE_DICH_SHOW_QUESTION') || (data.type === 'VINH_QUANG_START_TIMER') || (data.type === 'VINH_QUANG_START_TIMER_5S') || (localStorage.getItem('ddvq_vq_question_shown') === 'true');
             if (isVQShown && qText) {
                 el.innerText = qText;
             } else {
-                el.innerText = "Đang chờ câu hỏi Vinh Quang...";
+                el.innerText = "🔒 [Đang chờ MC phát lệnh HIỆN CÂU HỎI...]";
             }
         }
     }
@@ -1693,7 +1707,8 @@ function handlePlayerMessage(data) {
             data.type === 'XUAT_PHAT_SELECT_CONTESTANT' ||
             data.type === 'XUAT_PHAT_SHOW_QUESTION' ||
             data.type === 'XUAT_PHAT_RANDOM_DE' ||
-            data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE'
+            data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE' ||
+            data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI'
         ) {
             window.s1IsQuestionActive = false;
             try {
@@ -1701,7 +1716,7 @@ function handlePlayerMessage(data) {
                 localStorage.removeItem('ddvq_xp_question_text');
             } catch(e) {}
             const el = document.getElementById('s1_question_text');
-            if (el) el.innerText = "Đang chờ bắt đầu lượt thi Xuất Phát...";
+            if (el) el.innerText = (data.type === 'XUAT_PHAT_FINISH') ? "Đã hoàn thành lượt thi Xuất Phát" : "Đang chờ bắt đầu lượt thi Xuất Phát...";
         }
 
         if (data.score !== undefined) {
@@ -1731,6 +1746,13 @@ function handlePlayerMessage(data) {
         } else if (data.type === 'XUAT_PHAT_WRONG') {
             const btn = document.getElementById(`s1_btn_${s1QIndex + 1}`);
             if (btn) btn.className = 's1-page-btn wrong';
+        } else if (data.type === 'XUAT_PHAT_FINISH') {
+            clearInterval(s1TimerInterval);
+            s1TimerInterval = null;
+            try { localStorage.removeItem('ddvq_current_timer'); } catch(e) {}
+            updateMasterRemainingTime('0s');
+            const clockEl = document.getElementById('s1_clock_box');
+            if (clockEl) clockEl.innerText = "0";
         } else if (data.type === 'XUAT_PHAT_RESET') {
             clearInterval(s1TimerInterval);
             s1TimerInterval = null;
@@ -1915,6 +1937,21 @@ function handlePlayerMessage(data) {
                 s3Input.value = "";
                 s3Input.disabled = true;
                 s3Input.placeholder = "Nhập đáp án hàng ngang";
+            }
+        } else if (data.type === 'RESET_VS_BELL') {
+            if (data.contestantId === 'ALL' || data.contestantId === contestantId || data.contestantId == contestantId) {
+                s3HasSubmittedVongThi = false;
+                resetS3SubmitBtn();
+                const badge = document.getElementById('s3_status_badge');
+                if (badge) {
+                    badge.innerText = 'Chưa gửi';
+                    badge.style.background = '#64748b';
+                }
+                const txt = document.getElementById('s3_submitted_text');
+                if (txt) txt.innerText = 'Chưa có';
+                const tm = document.getElementById('s3_submitted_time');
+                if (tm) tm.innerText = 'Thời gian: --';
+                showToast("🔔 Nút chuông / Trả lời Vòng thi đã được cấp lại!");
             }
         }
     }

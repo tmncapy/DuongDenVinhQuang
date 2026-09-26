@@ -12,14 +12,17 @@ function changeXuatPhatDe(val) {
     updateTab1Preview();
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[0] || { q: '', a: '' };
+    const qText = currentQ.q || `Câu 1 bộ đề ${currentXuatPhatDe}`;
+    const ansVal = currentQ.a || `--`;
     const payload = {
         type: 'XUAT_PHAT_SHOW_QUESTION',
         deIndex: currentXuatPhatDe,
         questionIndex: 1,
-        questionText: currentQ.q || '',
-        answerText: currentQ.a || '',
-        answer: currentQ.a || '',
+        questionText: qText,
+        answerText: ansVal,
+        answer: ansVal,
         xpQuestionShown: false,
+        gameData: gameData,
         contestants: gameData.contestants,
         timestamp: Date.now()
     };
@@ -47,14 +50,23 @@ function selectLuotThi(turnIndex) {
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
 
     updateTab1Preview();
+    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
+    const currentQ = questions[0] || { q: '', a: '' };
+    const qText = currentQ.q || `Câu 1 bộ đề ${currentXuatPhatDe}`;
+    const ansVal = currentQ.a || `--`;
+
     const payload = {
         type: 'XUAT_PHAT_SELECT_CONTESTANT',
         turnIndex: currentXuatPhatTurn,
+        deIndex: currentXuatPhatDe,
         name,
         score,
         questionIndex: 1,
-        questionText: '',
+        questionText: qText,
+        answerText: ansVal,
+        answer: ansVal,
         xpQuestionShown: false,
+        gameData: gameData,
         contestants: gameData.contestants,
         timestamp: Date.now()
     };
@@ -97,13 +109,8 @@ function updateTab1Preview() {
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
 
-    if (!isXuatPhatStarted) {
-        if (qTextEl) qTextEl.innerText = '🔒 Đang chờ bấm Bắt đầu thi (Câu hỏi đầu tiên đang ẩn)...';
-        if (aTextEl) aTextEl.innerText = 'Đáp án: 🔒 [Đang ẩn - Bấm Bắt đầu để xem]';
-    } else {
-        if (qTextEl) qTextEl.innerText = currentQ.q ? `Câu ${currentXuatPhatQIndex + 1}: ${currentQ.q}` : `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`;
-        if (aTextEl) aTextEl.innerText = `Đáp án: ${currentQ.a || '...'}`;
-    }
+    if (qTextEl) qTextEl.innerText = currentQ.q ? `Câu ${currentXuatPhatQIndex + 1}: ${currentQ.q}` : `Nội dung câu hỏi số ${currentXuatPhatQIndex + 1}`;
+    if (aTextEl) aTextEl.innerText = `Đáp án: ${currentQ.a || '...'}`;
 }
 
 function onClickIntroXuatPhat() {
@@ -122,7 +129,25 @@ function onClickHienGraphicChonDe() {
         return;
     }
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', { turnIndex: currentXuatPhatTurn, name });
+    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
+    const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
+    const payload = {
+        type: 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE',
+        turnIndex: currentXuatPhatTurn,
+        deIndex: currentXuatPhatDe,
+        questionIndex: currentXuatPhatQIndex + 1,
+        questionText: currentQ.q || '',
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
+        name: name,
+        xpQuestionShown: false,
+        gameData: gameData,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CHON_DE', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast('Đã hiện graphic Chọn Đề trên Projector');
 }
 
@@ -133,12 +158,28 @@ function onClickHienGraphicCauHoi() {
     }
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI', { 
+    const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
+    const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
+
+    const payload = {
+        type: 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI',
         turnIndex: currentXuatPhatTurn,
+        deIndex: currentXuatPhatDe,
+        questionIndex: currentXuatPhatQIndex + 1,
+        questionText: currentQ.q || '',
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
         name: name,
-        score: score
-    });
-    showToast('Đã hiện graphic khung Câu Hỏi trên Projector (chưa hiện câu hỏi)');
+        score: score,
+        xpQuestionShown: false,
+        gameData: gameData,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+    showToast('Đã hiện graphic khung Câu Hỏi trên Projector');
 }
 
 function onClickRandomDe() {
@@ -151,7 +192,26 @@ function onClickRandomDe() {
     currentXuatPhatQIndex = 0;
     updateTab1Preview();
     const name = gameData.contestants[currentXuatPhatTurn - 1]?.name || `Thí sinh ${currentXuatPhatTurn}`;
-    sendToProjector('XUAT_PHAT_RANDOM_DE', { turnIndex: currentXuatPhatTurn, deNumber: chosenSet, name: name });
+    const questions = gameData.xuatPhat[chosenSet] || [];
+    const currentQ = questions[0] || { q: '', a: '' };
+
+    const payload = {
+        type: 'XUAT_PHAT_RANDOM_DE',
+        turnIndex: currentXuatPhatTurn,
+        deNumber: chosenSet,
+        deIndex: chosenSet,
+        questionIndex: 1,
+        questionText: currentQ.q || '',
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
+        name: name,
+        xpQuestionShown: false,
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_RANDOM_DE', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast(`Đã random chọn Bộ đề ${chosenSet} cho ${name}`);
 }
 
@@ -226,14 +286,27 @@ function onClickDung() {
     }
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
+    let newScore = 0;
     if (gameData.contestants[currentXuatPhatTurn - 1]) {
         gameData.contestants[currentXuatPhatTurn - 1].score += 10;
-        const newScore = gameData.contestants[currentXuatPhatTurn - 1].score;
+        newScore = gameData.contestants[currentXuatPhatTurn - 1].score;
         if (typeof syncContestantsUI === 'function') syncContestantsUI();
         saveAllData();
-        sendToProjector('XUAT_PHAT_RIGHT', { score: newScore, answerText: currentQ.a || 'Đáp án' });
-    } else {
-        sendToProjector('XUAT_PHAT_RIGHT', { answerText: currentQ.a || 'Đáp án' });
+    }
+    const payload = {
+        type: 'XUAT_PHAT_RIGHT',
+        score: newScore,
+        turnIndex: currentXuatPhatTurn,
+        deIndex: currentXuatPhatDe,
+        questionIndex: currentXuatPhatQIndex + 1,
+        questionText: currentQ.q || '',
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_RIGHT', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
     }
     showToast('Trả lời ĐÚNG (+10đ)');
 }
@@ -246,7 +319,21 @@ function onClickSai() {
     const questions = gameData.xuatPhat[currentXuatPhatDe] || [];
     const currentQ = questions[currentXuatPhatQIndex] || { q: '', a: '' };
     const score = gameData.contestants[currentXuatPhatTurn - 1]?.score || 0;
-    sendToProjector('XUAT_PHAT_WRONG', { score, answerText: currentQ.a || 'Đáp án' });
+    const payload = {
+        type: 'XUAT_PHAT_WRONG',
+        score,
+        turnIndex: currentXuatPhatTurn,
+        deIndex: currentXuatPhatDe,
+        questionIndex: currentXuatPhatQIndex + 1,
+        questionText: currentQ.q || '',
+        answerText: currentQ.a || '',
+        answer: currentQ.a || '',
+        timestamp: Date.now()
+    };
+    sendToProjector('XUAT_PHAT_WRONG', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast('Trả lời SAI');
 }
 

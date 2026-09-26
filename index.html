@@ -1,56 +1,90 @@
 <!DOCTYPE html>
 <html lang="vi">
- 
 <head>
     <meta charset="UTF-8">
-    <title>Màn Hình Hiển Thị Ô Chữ (Khán Giả)</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-
-<body>
-
-    <div id="game-container">
-        
-        <div id="light-white" class="overlay-light"></div>
-        <div id="light-green" class="overlay-light"></div>
-        <div id="light-red" class="overlay-light"></div>
-
-        <div id="scoreboard">
-            <div class="player-box player-1">
-                <div id="playerName1" class="player-name">PLAYER 1</div>
-                <div id="playerScore1" class="player-score">0</div>
-            </div>
-
-            <div class="player-box player-2">
-                <div id="playerName2" class="player-name">PLAYER 2</div>
-                <div id="playerScore2" class="player-score">0</div>
-            </div>
-
-            <div class="player-box player-3">
-                <div id="playerName3" class="player-name">PLAYER 3</div>
-                <div id="playerScore3" class="player-score">0</div>
-            </div>
-        </div>
-
-        <div id="board">
-            <img id="programThumbnail" src="thumbnail.png" alt="Thumbnail Chương Trình">
-        </div>
-
-    </div>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đường Đến Vinh Quang - Hệ thống Gameshow</title>
+    <meta name="description" content="Hệ thống Gameshow Đường Đến Vinh Quang hỗ trợ đồng bộ thời gian thực qua mạng LAN cục bộ và Internet cho máy điều khiển, máy chiếu, MC và 4 thí sinh">
+    <meta property="og:title" content="Đường Đến Vinh Quang">
+    <meta property="og:description" content="Hệ thống Gameshow Đường Đến Vinh Quang">
     <script>
-        window.SUPABASE_URL = "https://tukabyhjmcyptuwmwedp.supabase.co";
-        window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1a2FieWhqbWN5cHR1d213ZWRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NDk3NDksImV4cCI6MjA5NjAyNTc0OX0.gNWdvZ_hRdon_w_KL3C3eXFFiV_EoA4eLgikcYb6dpQ";
-        
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'F12') { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.key === 'U') { e.preventDefault(); return false; }
-        });
+        // Automatic seamless redirect to controller
+        if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
+            window.location.href = 'controller.html' + window.location.search;
+        }
     </script>
-
-    <script src="script.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 550px;
+            width: 100%;
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        h1 {
+            color: #38bdf8;
+            margin-top: 0;
+            font-size: 26px;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .btn {
+            display: block;
+            padding: 14px 20px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            background: #1d4ed8;
+        }
+        .btn.secondary {
+            background: #334155;
+            color: #f1f5f9;
+        }
+        .btn.secondary:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 ĐƯỜNG ĐẾN VINH QUANG</h1>
+        <p>Hệ thống thi đấu đồng bộ thời gian thực cho Controller, Máy Chiếu, MC và 4 Thí sinh.</p>
+        <div class="btn-grid">
+            <a href="controller.html" class="btn">📱 Bảng Điều Khiển (Controller)</a>
+            <a href="player.html" class="btn secondary">⚡ Màn Hình Thí Sinh (Player)</a>
+            <a href="projector.html" class="btn secondary">🖥️ Màn Hình Chiếu (Projector)</a>
+            <a href="host.html" class="btn secondary">🎤 Màn Hình MC (Host)</a>
+            <a href="Scoreboard.html" class="btn secondary">📊 Màn Hình Bảng Điểm</a>
+        </div>
+    </div>
 </body>
-
 </html>

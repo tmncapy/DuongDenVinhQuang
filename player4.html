@@ -141,16 +141,16 @@
 
         /* SCENE 1 STYLES */
         .s1-container {
-            width: 900px;
-            height: 500px;
+            width: 100%;
+            height: 100%;
             position: relative;
             box-sizing: border-box;
         }
 
         .s1-box-zero {
             position: absolute;
-            left: 0;
-            top: 220px;
+            left: 15%;
+            top: 40%;
             width: 80px;
             height: 50px;
             border: 2px solid #ffffff;
@@ -166,8 +166,8 @@
 
         .s1-pagination {
             position: absolute;
-            right: 0;
-            top: 220px;
+            right: 15%;
+            top: 40%;
             display: flex;
         }
 
@@ -207,18 +207,30 @@
 
         .s1-question-box {
             position: absolute;
-            left: 90px;
-            right: 0;
-            top: 290px;
+            left: 15%;
+            right: 15%;
+            top: 10%;
             height: 160px;
-            border: 2px solid #ffffff;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
             padding: 20px;
             box-sizing: border-box;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.05);
             text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .s1-bottom-controls {
+            position: absolute;
+            left: 15%;
+            right: 15%;
+            bottom: 8%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
         }
 
         .player-score-tag {
@@ -632,10 +644,10 @@
         <!-- SCENE 1 (PLAYER SCENE 1) -->
         <div id="view_scene_1" class="scene-view active">
             <div class="s1-container">
-                <button id="s1_random_btn" onclick="triggerRandomDeFromPlayer()" style="position: absolute; left: 90px; top: 160px; height: 45px; padding: 0 20px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #60a5fa; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); z-index: 10; transition: all 0.2s;">
-                    <span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span>
-                    <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>
-                </button>
+                <div class="s1-question-box">
+                    <div class="player-score-tag" id="s1_score_box">ĐIỂM: 0</div>
+                    <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
+                </div>
                 <div class="s1-box-zero" id="s1_clock_box" title="Thời gian Xuất Phát">60</div>
                 <div class="s1-pagination">
                     <button class="s1-page-btn" id="s1_btn_1">1</button>
@@ -649,9 +661,10 @@
                     <button class="s1-page-btn" id="s1_btn_9">9</button>
                     <button class="s1-page-btn" id="s1_btn_10">10</button>
                 </div>
-                <div class="s1-question-box">
-                    <div class="player-score-tag" id="s1_score_box">ĐIỂM: 0</div>
-                    <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
+                <div class="s1-bottom-controls">
+                    <button id="s1_random_btn" class="s3-submit-btn" style="background: #475569; border-color: #64748b; height: 55px; padding: 0 24px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: not-allowed; transition: all 0.2s;" onclick="triggerRandomDeFromPlayer()" disabled>
+                        🔒 CHƯA BẮT ĐẦU LƯỢT THI (ĐANG CHỜ MC CHỌN THÍ SINH)
+                    </button>
                 </div>
             </div>
         </div>

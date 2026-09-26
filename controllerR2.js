@@ -30,14 +30,21 @@ function selectRKQuestion(num) {
     rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
     updateTab2Preview();
     const qItem = gameData.raKhoi ? (gameData.raKhoi[num - 1] || { q: '', a: '' }) : { q: '', a: '' };
-    sendToProjector('RA_KHOI_SHOW_QUESTION', {
+    const payload = {
+        type: 'RA_KHOI_SHOW_QUESTION',
         round: 'RK',
         questionIndex: num,
         questionText: qItem.q || `Nội dung câu hỏi Ra Khơi số ${num}`,
         answerText: qItem.a || '',
         answer: qItem.a || '',
-        contestants: gameData.contestants
-    });
+        gameData: gameData,
+        contestants: gameData.contestants,
+        timestamp: Date.now()
+    };
+    sendToProjector('RA_KHOI_SHOW_QUESTION', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
 }
 
 function cycleRKQuestion() {
@@ -64,12 +71,19 @@ function updateTab2Preview() {
 
 function onClickBatDauDoanBang() {
     const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '', m: '' }) : { q: '', a: '', m: '' };
-    sendToProjector('RA_KHOI_PLAY_CLIP', {
+    const payload = {
+        type: 'RA_KHOI_PLAY_CLIP',
         questionIndex: currentRKQuestion,
         questionText: qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`,
+        answerText: qItem.a || '',
+        answer: qItem.a || '',
         mediaUrl: qItem.m || '',
         timestamp: Date.now()
-    });
+    };
+    sendToProjector('RA_KHOI_PLAY_CLIP', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     const statusEl = document.getElementById('rk_preview_status');
     if (statusEl) statusEl.innerText = rkTimeLeft;
     showToast(`Bắt đầu phát đoạn băng cho Câu ${currentRKQuestion}`);
@@ -80,7 +94,19 @@ function onClickVideoTangToc() {
 }
 
 function onClickGiaiMaMedia() {
-    sendToProjector('RA_KHOI_SHOW_GIAI_MA', { questionIndex: currentRKQuestion });
+    const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+    const payload = {
+        type: 'RA_KHOI_SHOW_GIAI_MA',
+        questionIndex: currentRKQuestion,
+        questionText: qItem.q || '',
+        answerText: qItem.a || '',
+        answer: qItem.a || '',
+        timestamp: Date.now()
+    };
+    sendToProjector('RA_KHOI_SHOW_GIAI_MA', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
     showToast(`Hiện Giải mã Video/Ảnh cho Câu ${currentRKQuestion}`);
 }
 
@@ -115,13 +141,19 @@ function onClickRKTinhThoiGian() {
     }, 1000);
 
     const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
-    sendToProjector('RA_KHOI_START_TIMER', {
+    const payloadTimer = {
+        type: 'RA_KHOI_START_TIMER',
         questionIndex: currentRKQuestion,
         duration: 30,
-        questionText: qItem.q,
+        questionText: qItem.q || `Nội dung câu hỏi Ra Khơi số ${currentRKQuestion}`,
         answerText: qItem.a || '',
-        answer: qItem.a || ''
-    });
+        answer: qItem.a || '',
+        timestamp: Date.now()
+    };
+    sendToProjector('RA_KHOI_START_TIMER', payloadTimer);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payloadTimer);
+    }
     showToast(`Bắt đầu tính thời gian 30s cho Câu ${currentRKQuestion}`);
 }
 
@@ -160,11 +192,20 @@ function onClickRKDapAnTS() {
         });
     }
 
-    sendToProjector('RA_KHOI_SHOW_CONTESTANT_ANSWERS', {
+    const payloadAns = {
+        type: 'RA_KHOI_SHOW_CONTESTANT_ANSWERS',
         questionIndex: currentRKQuestion,
         correctAnswer: qItem.a,
-        contestants: contestantsData
-    });
+        questionText: qItem.q || '',
+        answerText: qItem.a || '',
+        answer: qItem.a || '',
+        contestants: contestantsData,
+        timestamp: Date.now()
+    };
+    sendToProjector('RA_KHOI_SHOW_CONTESTANT_ANSWERS', payloadAns);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payloadAns);
+    }
     const statusEl = document.getElementById('rk_preview_status');
     if (statusEl) statusEl.innerText = rkTimeLeft;
     showToast('Hiển thị Scene Đáp án Thí Sinh Ra Khơi trên Projector');
@@ -172,10 +213,18 @@ function onClickRKDapAnTS() {
 
 function onClickRKHienDapAn() {
     const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
-    sendToProjector('RA_KHOI_SHOW_ANSWER', {
+    const payloadAns = {
+        type: 'RA_KHOI_SHOW_ANSWER',
         questionIndex: currentRKQuestion,
-        answerText: qItem.a
-    });
+        questionText: qItem.q || '',
+        answerText: qItem.a || '',
+        answer: qItem.a || '',
+        timestamp: Date.now()
+    };
+    sendToProjector('RA_KHOI_SHOW_ANSWER', payloadAns);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payloadAns);
+    }
     showToast('Hiện Đáp án Đúng trên Projector');
 }
 

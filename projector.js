@@ -1315,26 +1315,62 @@ function handleProjectorMessage(data) {
     } else if (data.type === 'PLAY_INTRO_VIDEO') {
         const overlay = document.getElementById('intro_video_overlay');
         const player = document.getElementById('intro_video_player');
-        if (overlay && player) {
+        let imgPlayer = document.getElementById('intro_image_player');
+        if (!imgPlayer && overlay) {
+            imgPlayer = document.createElement('img');
+            imgPlayer.id = 'intro_image_player';
+            imgPlayer.style.cssText = 'width: 100%; height: 100%; object-fit: contain; display: none;';
+            overlay.appendChild(imgPlayer);
+        }
+
+        if (overlay) {
             overlay.style.display = 'flex';
-            player.src = data.src;
-            player.load();
+            const srcLower = (data.src || '').toLowerCase();
+            const isImage = srcLower.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)($|\?)/i) || srcLower.startsWith('data:image/');
 
-            player.play().catch(err => {
-                console.warn("Intro video play error:", err);
-            });
-
-            player.onended = () => {
-                overlay.style.display = 'none';
-                player.src = '';
-            };
+            if (isImage) {
+                if (player) {
+                    player.pause();
+                    player.style.display = 'none';
+                    player.src = '';
+                }
+                if (imgPlayer) {
+                    imgPlayer.src = data.src;
+                    imgPlayer.style.display = 'block';
+                }
+            } else {
+                if (imgPlayer) {
+                    imgPlayer.style.display = 'none';
+                    imgPlayer.src = '';
+                }
+                if (player) {
+                    player.style.display = 'block';
+                    player.src = data.src;
+                    player.load();
+                    player.play().catch(err => {
+                        console.warn("Intro media play error:", err);
+                    });
+                    player.onended = () => {
+                        overlay.style.display = 'none';
+                        player.src = '';
+                    };
+                }
+            }
         }
     } else if (data.type === 'STOP_INTRO_VIDEO') {
         const overlay = document.getElementById('intro_video_overlay');
         const player = document.getElementById('intro_video_player');
-        if (overlay && player) {
+        const imgPlayer = document.getElementById('intro_image_player');
+        if (player) {
             player.pause();
             player.src = '';
+            player.style.display = 'none';
+        }
+        if (imgPlayer) {
+            imgPlayer.src = '';
+            imgPlayer.style.display = 'none';
+        }
+        if (overlay) {
             overlay.style.display = 'none';
         }
     }

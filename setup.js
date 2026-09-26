@@ -55,6 +55,21 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof selectRKQuestion === 'function') {
         selectRKQuestion(1);
     }
+    // Restore Scoreboard Thumbnail States
+    try {
+        for (let c = 1; c <= 4; c++) {
+            const savedSelf = localStorage.getItem('ddvq_scoreboard_thumbnail_shown_' + c);
+            const savedAll = localStorage.getItem('ddvq_scoreboard_thumbnail_shown');
+            if (savedSelf === 'true' || (savedSelf === null && savedAll === 'true')) {
+                window.scoreboardThumbnailStates[c] = true;
+            } else {
+                window.scoreboardThumbnailStates[c] = false;
+            }
+        }
+    } catch(e) {}
+    if (typeof updateScoreboardThumbnailBadges === 'function') {
+        updateScoreboardThumbnailBadges();
+    }
 });
 
 // Track current active round and running timer
@@ -254,6 +269,70 @@ function safeRemoveStorage(key) {
     }
 }
 
+// Seed default questions if empty
+function ensureDefaultGameDataSeed() {
+    if (!gameData.xuatPhat[1] || !gameData.xuatPhat[1][0] || !gameData.xuatPhat[1][0].q) {
+        const defaultXPSet1 = [
+            { q: "Thành phố Hồ Chí Minh trước năm 1976 có tên gọi là gì?", a: "Sài Gòn" },
+            { q: "Ngôn ngữ chính thức của Việt Nam là gì?", a: "Tiếng Việt" },
+            { q: "Hành tinh nào trong Hệ Mặt Trời gần Mặt Trời nhất?", a: "Thủy Tinh" },
+            { q: "Sông nào dài nhất chảy hoàn toàn trên lãnh thổ Việt Nam?", a: "Sông Đồng Nai" },
+            { q: "Ai là tác giả của tác phẩm Truyện Kiều?", a: "Nguyễn Du" },
+            { q: "Kim loại nào có khả năng dẫn điện tốt nhất?", a: "Bạc" },
+            { q: "Thủ đô của Nhật Bản là thành phố nào?", a: "Tokyo" },
+            { q: "Bác Hồ đọc Tuyên ngôn Độc lập khai sinh nước VNDCCH vào năm nào?", a: "1945" },
+            { q: "Đỉnh núi nào được mệnh danh là nóc nhà của Đông Dương?", a: "Fansipan" },
+            { q: "Vitamin nào có hàm lượng rất cao trong quả cam, chanh?", a: "Vitamin C" }
+        ];
+        gameData.xuatPhat[1] = defaultXPSet1;
+        for (let t = 2; t <= 8; t++) {
+            if (!gameData.xuatPhat[t] || !gameData.xuatPhat[t][0] || !gameData.xuatPhat[t][0].q) {
+                gameData.xuatPhat[t] = defaultXPSet1.map((item, idx) => ({
+                    q: `Câu hỏi số ${idx + 1} bộ đề ${t}`,
+                    a: `Đáp án câu ${idx + 1}`
+                }));
+            }
+        }
+    }
+
+    if (!gameData.raKhoi || !gameData.raKhoi[0] || !gameData.raKhoi[0].q) {
+        gameData.raKhoi = [
+            { q: "Sự kiện lịch sử nào diễn ra vào ngày 30/4/1975?", a: "Giải phóng miền Nam" },
+            { q: "Nguyên tố hóa học nào có ký hiệu là Au?", a: "Vàng" },
+            { q: "Biển nào có độ mặn cao nhất thế giới?", a: "Biển Chết" },
+            { q: "Tập hợp các số tự nhiên được ký hiệu bằng chữ cái nào?", a: "N" }
+        ];
+    }
+
+    if (!gameData.vuotSong || !gameData.vuotSong.h1 || !gameData.vuotSong.h1.q) {
+        gameData.vuotSong = {
+            h1: { q: "Loài chim biểu tượng cho hòa bình là chim gì?", a: "BO CHAU" },
+            h2: { q: "Thành phố trung tâm kinh tế lớn nhất phía Nam là gì?", a: "TP HO CHI MINH" },
+            h3: { q: "Đại dương lớn nhất trên Trái Đất là đại dương nào?", a: "THAI BINH DUONG" },
+            h4: { q: "Chất khí chiếm tỷ lệ lớn nhất trong không khí là khí gì?", a: "NITO" },
+            center: { q: "Từ khóa chính của chướng ngại vật là gì?", a: "VIET NAM" },
+            keyword: "VIET NAM"
+        };
+    }
+
+    if (!gameData.vinhQuang || !gameData.vinhQuang[10] || !gameData.vinhQuang[10][0] || !gameData.vinhQuang[10][0].q) {
+        gameData.vinhQuang = {
+            10: [
+                { m: "Lịch sử", q: "Kinh đô đầu tiên của nước ta thời Lạc Long Quân là gì?", a: "Phong Châu" },
+                { m: "Địa lý", q: "Thành phố nào là thủ đô của Việt Nam?", a: "Hà Nội" }
+            ],
+            20: [
+                { m: "Vật lý", q: "Đơn vị đo cường độ dòng điện trong hệ SI là gì?", a: "Ampe (A)" },
+                { m: "Hóa học", q: "Công thức hóa học của nước là gì?", a: "H2O" }
+            ],
+            30: [
+                { m: "Toán học", q: "Số nguyên tố nhỏ nhất là số mấy?", a: "2" },
+                { m: "Văn học", q: "Tác giả của Nam quốc sơn hà là ai?", a: "Lý Thường Kiệt" }
+            ]
+        };
+    }
+}
+
 // Initialize empty Xuat Phat turns
 function initXuatPhatTurnData() {
     for (let turn = 1; turn <= 8; turn++) {
@@ -264,6 +343,7 @@ function initXuatPhatTurnData() {
             }
         }
     }
+    ensureDefaultGameDataSeed();
 }
 
 // Render Xuat Phat 10 rows for editing a set (1..8)
@@ -839,6 +919,15 @@ function saveAllData(notify = false) {
         if (v4El) gameData.intros.v4 = v4El.value;
 
         safeSetStorage('duong_den_vinh_quang_data', JSON.stringify(gameData));
+        const syncPayload = {
+            type: 'SYNC_GAME_DATA',
+            gameData: gameData,
+            timestamp: Date.now()
+        };
+        sendToProjector('SYNC_GAME_DATA', syncPayload);
+        if (typeof sendSupabaseAction === 'function') {
+            sendSupabaseAction(syncPayload);
+        }
         if (notify) {
             showToast('Đã lưu tất cả dữ liệu câu hỏi vào hệ thống!');
         }
@@ -1232,8 +1321,12 @@ function handleIncomingPlayerAnswer(data) {
                 if (inputAns && inputAns.value !== ans) inputAns.value = ans;
             } else {
                 // Thời gian màu đỏ: kể từ lúc bắt đầu vòng thi đến lúc bấm chuông trả lời đáp án vòng thi
-                markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
-                if (ans && inputAns && (!inputAns.value || inputAns.value === '[CNV] Bấm chuông')) {
+                if (typeof markVSContestantSubmitted === 'function') {
+                    markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                } else if (typeof window.markVSContestantSubmitted === 'function') {
+                    window.markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                }
+                if (ans && inputAns) {
                     inputAns.value = `[CNV] ${ans}`;
                 }
             }
@@ -1272,8 +1365,12 @@ function handleIncomingPlayerAnswer(data) {
                         if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
                         if (inputAns && inputAns.value !== ans) inputAns.value = ans;
                     } else {
-                        markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
-                        if (ans && inputAns && (!inputAns.value || inputAns.value === '[CNV] Bấm chuông')) {
+                        if (typeof markVSContestantSubmitted === 'function') {
+                            markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                        } else if (typeof window.markVSContestantSubmitted === 'function') {
+                            window.markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
+                        }
+                        if (ans && inputAns) {
                             inputAns.value = `[CNV] ${ans}`;
                         }
                     }
@@ -1768,6 +1865,7 @@ function respondToStateRequest() {
         contestants: gameData.contestants,
         vuotSong: gameData.vuotSong,
         vuotSongRow: typeof currentVSRow !== 'undefined' ? currentVSRow : 0,
+        scoreboardThumbnailStates: window.scoreboardThumbnailStates,
         timestamp: Date.now()
     };
 
@@ -2254,4 +2352,158 @@ function onClickPlayIntroVideo(src) {
 
 function onClickStopIntroVideo() {
     stopIntroVideo();
+}
+
+// Scoreboard Thumbnail State Map (TS1, TS2, TS3, TS4)
+window.scoreboardThumbnailStates = (function() {
+    const states = { 1: false, 2: false, 3: false, 4: false };
+    try {
+        for (let c = 1; c <= 4; c++) {
+            const savedSelf = localStorage.getItem('ddvq_scoreboard_thumbnail_shown_' + c);
+            const savedAll = localStorage.getItem('ddvq_scoreboard_thumbnail_shown');
+            if (savedSelf === 'true' || (savedSelf === null && savedAll === 'true')) {
+                states[c] = true;
+            } else if (savedSelf === 'false') {
+                states[c] = false;
+            }
+        }
+    } catch(e) {}
+    return states;
+})();
+
+function updateScoreboardThumbnailBadges() {
+    for (let c = 1; c <= 4; c++) {
+        const isShown = !!window.scoreboardThumbnailStates[c];
+        const btns = document.querySelectorAll(`#sb_thumb_btn_ts${c}, .sb_thumb_btn_ts${c}`);
+        btns.forEach(btn => {
+            if (isShown) {
+                btn.innerHTML = `🟢 TS${c}: Hiện`;
+                btn.style.background = '#16a34a';
+                btn.style.borderColor = '#15803d';
+                btn.style.color = '#ffffff';
+            } else {
+                btn.innerHTML = `🔴 TS${c}: Ẩn`;
+                btn.style.background = '#dc2626';
+                btn.style.borderColor = '#b91c1c';
+                btn.style.color = '#ffffff';
+            }
+        });
+    }
+
+    const anyShown = Object.values(window.scoreboardThumbnailStates).some(v => !!v);
+    const allShown = Object.values(window.scoreboardThumbnailStates).every(v => !!v);
+    const tags = document.querySelectorAll('#sb_thumb_status_tag, .sb_thumb_status_tag');
+    tags.forEach(tag => {
+        if (allShown) {
+            tag.innerHTML = 'Trạng thái: 🟢 Hiện tất cả';
+            tag.style.background = '#dcfce7';
+            tag.style.color = '#15803d';
+        } else if (anyShown) {
+            tag.innerHTML = 'Trạng thái: 🟡 Hiện một phần';
+            tag.style.background = '#fef3c7';
+            tag.style.color = '#b45309';
+        } else {
+            tag.innerHTML = 'Trạng thái: 🔴 Ẩn tất cả';
+            tag.style.background = '#fee2e2';
+            tag.style.color = '#b91c1c';
+        }
+    });
+}
+
+// Toggle Scoreboard Thumbnail (Images/thumbnail.png) for ALL or SPECIFIC contestant
+function toggleScoreboardThumbnail(show, contestantId = 'ALL') {
+    if (contestantId === 'ALL' || !contestantId) {
+        let isShown = false;
+        if (show === undefined) {
+            const anyHidden = Object.values(window.scoreboardThumbnailStates).some(v => !v);
+            isShown = anyHidden;
+        } else {
+            isShown = show === true;
+        }
+
+        for (let c = 1; c <= 4; c++) {
+            window.scoreboardThumbnailStates[c] = isShown;
+            try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + c, isShown ? 'true' : 'false'); } catch(e){}
+        }
+        try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown', isShown ? 'true' : 'false'); } catch(e){}
+
+        updateScoreboardThumbnailBadges();
+
+        const payload = {
+            type: 'TOGGLE_SCOREBOARD_THUMBNAIL',
+            show: isShown,
+            contestantId: 'ALL',
+            scoreboardThumbnailStates: window.scoreboardThumbnailStates,
+            timestamp: Date.now()
+        };
+
+        if (typeof sendToProjector === 'function') sendToProjector('TOGGLE_SCOREBOARD_THUMBNAIL', payload);
+        if (typeof sendSupabaseAction === 'function') sendSupabaseAction(payload);
+        try { localStorage.setItem('ddvq_latest_action', JSON.stringify(payload)); } catch(e) {}
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                const bc = new BroadcastChannel('ddvq_game_channel');
+                bc.postMessage(payload);
+            }
+        } catch(e) {}
+
+        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(isShown ? 'Đã HIỂN THỊ Thumbnail cho TẤT CẢ Thí sinh!' : 'Đã ẨN Thumbnail cho TẤT CẢ Thí sinh!');
+        }
+    } else {
+        const cId = parseInt(contestantId);
+        if (cId >= 1 && cId <= 4) {
+            let isShown = false;
+            if (show === undefined) {
+                isShown = !window.scoreboardThumbnailStates[cId];
+            } else {
+                isShown = show === true;
+            }
+
+            window.scoreboardThumbnailStates[cId] = isShown;
+            try { localStorage.setItem('ddvq_scoreboard_thumbnail_shown_' + cId, isShown ? 'true' : 'false'); } catch(e){}
+
+            updateScoreboardThumbnailBadges();
+
+            const payload = {
+                type: 'TOGGLE_SCOREBOARD_THUMBNAIL',
+                show: isShown,
+                contestantId: cId,
+                targetSlot: cId,
+                scoreboardThumbnailStates: window.scoreboardThumbnailStates,
+                timestamp: Date.now()
+            };
+
+            if (typeof sendToProjector === 'function') sendToProjector('TOGGLE_SCOREBOARD_THUMBNAIL', payload);
+            if (typeof sendSupabaseAction === 'function') sendSupabaseAction(payload);
+            try { localStorage.setItem('ddvq_latest_action', JSON.stringify(payload)); } catch(e) {}
+            try {
+                if (typeof BroadcastChannel !== 'undefined') {
+                    const bc = new BroadcastChannel('ddvq_game_channel');
+                    bc.postMessage(payload);
+                }
+            } catch(e) {}
+
+            if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+                fetch(getApiUrl('/api/action'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(() => {});
+            }
+
+            if (typeof showToast === 'function') {
+                const contestantName = gameData?.contestants?.[cId - 1]?.name || `Thí sinh ${cId}`;
+                showToast(isShown ? `Đã HIỂN THỊ Thumbnail cho ${contestantName} (TS${cId})!` : `Đã ẨN Bảng điểm / Thumbnail của ${contestantName} (TS${cId})!`);
+            }
+        }
+    }
 }

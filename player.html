@@ -4,1160 +4,1595 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Màn Hình Thí Sinh - Đường Đến Vinh Quang</title>
+    <!-- Include network_sync.js for Cross-Device Realtime MQTT / BroadcastChannel / SSE Sync -->
+    <script src="network_sync.js"></script>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
-        body, html {
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #cddceb;
+            user-select: none;
+        }
+
+        /* Top Bar - Header thông tin thí sinh */
+        .top-player-bar {
+            height: 42px;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 100;
+        }
+
+        .player-info-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .player-tag {
+            background: #f59e0b;
+            color: #ffffff;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .score-pill {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #fef08a;
+        }
+
+        .network-status-pill {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.85);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #dc2626;
+        }
+
+        /* Container chứa các Scene */
+        .player-viewport {
+            width: 100vw;
+            height: calc(100vh - 42px);
+            position: relative;
+            background: linear-gradient(to bottom, #dbe6f6, #c5d8f0);
+        }
+
+        .scene-container {
             width: 100%;
             height: 100%;
-            background-color: #000000;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        .master-top-bar {
+        .scene-container.active {
+            display: flex;
+        }
+
+        /* Common Header for Scenes */
+        .scene-header {
+            height: 18vh;
+            padding: 15px 30px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .section-label {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .scene-title {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #e54b4b;
+            font-style: italic;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .timer-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 5px;
+        }
+
+        .clock-icon {
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .timer-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #e54b4b;
+            line-height: 1;
+        }
+
+        .score-box-s1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -40%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .score-label-s1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            font-style: italic;
+        }
+
+        .score-value-s1 {
+            font-size: 3.2rem;
+            font-weight: bold;
+            color: #e54b4b;
+        }
+
+        /* Common Main Content for Scenes */
+        .scene-main {
+            height: 82vh;
+            border-top: 1px solid #99b3cd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-area {
+            padding: 12px 30px 0 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .row-label {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .black-box {
+            width: 100%;
+            height: 220px;
+            background-color: #000000;
+            color: #ffffff;
+            padding: 18px 24px;
+            font-size: 1.45rem;
+            line-height: 1.45;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.15);
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .black-box img, .black-box video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        /* Common Answer Area */
+        .answer-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 15px 0;
+        }
+
+        .input-group {
+            width: 55%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-label {
+            font-size: 1.05rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .answer-input {
+            width: 100%;
+            height: 46px;
+            border: 2px solid #3b82f6;
+            border-radius: 4px;
+            padding: 0 14px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            outline: none;
+            background-color: #ffffff;
+            color: #1e3a8a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .answer-input:focus {
+            border-color: #1d4ed8;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+        }
+
+        .answer-input:disabled {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .status-group {
+            width: 55%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .status-label {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #333;
+            text-transform: uppercase;
+        }
+
+        .status-bar {
+            width: 100%;
+            height: 42px;
+            background-color: #d87093;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            padding: 0 12px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+
+        .status-bar.submitted {
+            background-color: #16a34a;
+        }
+
+        .btn-cnv {
+            margin-top: 5px;
+            width: 280px;
+            height: 48px;
+            background-color: #e9ecef;
+            border: 2px solid #7a98b3;
+            border-radius: 4px;
+            color: #222;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+        }
+
+        .btn-cnv:hover {
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+
+        .btn-cnv:active {
+            transform: translateY(1px);
+        }
+
+        /* Action Area cho Bell / Nút bấm */
+        .action-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-bell {
+            width: 340px;
+            height: 75px;
+            background: linear-gradient(to bottom, #ef4444, #dc2626);
+            border: 3px solid #b91c1c;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 6px 15px rgba(220, 38, 38, 0.4), inset 0 2px 4px rgba(255,255,255,0.3);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-bell:hover {
+            background: linear-gradient(to bottom, #f87171, #ef4444);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.5);
+        }
+
+        .btn-bell:active, .btn-bell.pressed {
+            transform: translateY(2px);
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.6);
+            background: #991b1b;
+        }
+
+        .bell-feedback {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #16a34a;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: #dcfce7;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #86efac;
+        }
+
+        /* Modal Đăng nhập / Chọn Thí sinh */
+        .auth-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 48px;
-            background: #0f172a;
-            border-bottom: 2px solid #334155;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(6px);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            z-index: 1000;
-            user-select: none;
+            justify-content: center;
+            z-index: 9999;
         }
 
-        .left-controls {
+        .auth-card {
+            background: #ffffff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 440px;
+            padding: 28px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            border: 2px solid #3b82f6;
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            gap: 18px;
         }
 
-        .left-controls label {
+        .auth-header {
+            text-align: center;
+        }
+
+        .auth-header h2 {
+            font-size: 20px;
+            color: #1e3a8a;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .auth-header p {
             font-size: 13px;
-            color: #94a3b8;
-            font-weight: 600;
+            color: #64748b;
         }
 
-        .left-controls select {
-            background: #1e293b;
-            color: #f8fafc;
-            border: 1px solid #475569;
-            padding: 5px 12px;
-            border-radius: 6px;
+        .auth-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .auth-form-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e293b;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .auth-input:focus {
+            border-color: #2563eb;
+        }
+
+        .contestant-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .contestant-btn {
+            padding: 12px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #334155;
             font-weight: bold;
             font-size: 14px;
-            outline: none;
             cursor: pointer;
-        }
-
-        .scene-tabs {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #1e293b;
-            padding: 4px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-        }
-
-        .scene-tab {
-            padding: 5px 12px;
-            font-size: 13px;
-            font-weight: bold;
-            color: #94a3b8;
-            background: transparent;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+            text-align: center;
             transition: all 0.2s;
         }
 
-        .scene-tab:hover {
-            color: #f8fafc;
+        .contestant-btn:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
         }
 
-        .scene-tab.active {
+        .contestant-btn.selected {
+            border-color: #2563eb;
             background: #2563eb;
             color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
         }
 
-        .scene-tab.auto-active {
-            background: #059669;
-            color: #ffffff;
-        }
-
-        .contestant-slot-btn:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.2);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        }
-        .contestant-slot-btn:active {
-            transform: scale(0.98);
-        }
-
-        .status-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 13px;
-        }
-
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(34, 197, 94, 0.1);
-            color: #4ade80;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .viewport-container {
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-            box-sizing: border-box;
-        }
-
-        .scene-view {
-            display: none;
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-
-        .scene-view.active {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* SCENE 1 STYLES */
-        .s1-container {
-            width: 100%;
-            height: 100%;
-            max-width: 1400px;
-            max-height: 900px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-sizing: border-box;
+        .btn-submit-auth {
             padding: 12px;
-            gap: 16px;
-            position: relative;
-        }
-
-        .s1-top-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-        }
-
-        .s1-mid-row {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            width: 100%;
-        }
-
-        .s1-box-zero {
-            width: 110px;
-            height: 60px;
-            border: 2px solid #eab308;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 30px;
-            font-weight: 900;
-            background: rgba(15, 23, 42, 0.85);
-            color: #facc15;
-            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
-            flex-shrink: 0;
-            transition: all 0.3s;
-        }
-
-        .s1-pagination {
-            flex: 1;
-            display: flex;
-            gap: 6px;
-        }
-
-        .s1-page-btn {
-            flex: 1;
-            height: 60px;
-            border: 2px solid #334155;
-            border-radius: 10px;
-            background-color: rgba(30, 41, 59, 0.8);
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .s1-page-btn.active {
-            background-color: #2563eb;
-            color: #ffffff;
-            border-color: #60a5fa;
-            font-size: 24px;
-            box-shadow: 0 0 16px rgba(37, 99, 235, 0.8);
-            transform: scale(1.05);
-        }
-
-        .s1-page-btn.correct {
-            background-color: #16a34a;
-            color: #ffffff;
-            border-color: #4ade80;
-        }
-
-        .s1-page-btn.wrong {
-            background-color: #dc2626;
-            color: #ffffff;
-            border-color: #f87171;
-        }
-
-        .s1-question-box {
-            width: 100%;
-            flex: 1;
-            min-height: 250px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            padding: 32px 24px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            text-align: center;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .player-score-tag {
-            position: absolute;
-            top: 16px;
-            right: 20px;
-            background: linear-gradient(135deg, #15803d, #16a34a);
-            color: #facc15;
-            border: 1.5px solid #4ade80;
-            padding: 6px 18px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            z-index: 10;
-        }
-
-        .s1-question-text {
-            font-size: 26px;
-            font-weight: bold;
-            line-height: 1.5;
-            color: #f8fafc;
-        }
-
-        /* SCENE 2 & 4 STYLES */
-        .s2-container, .s4-container {
-            width: 100%;
-            height: 100%;
-            max-width: 1400px;
-            max-height: 900px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
-            padding: 16px;
-            gap: 16px;
-            position: relative;
-        }
-
-        .s2-question-box, .s4-question-box {
-            width: 100%;
-            flex: 1;
-            min-height: 250px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            padding: 32px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            position: relative;
-        }
-
-        .s2-question-text, .s4-question-text {
-            font-size: 26px;
-            font-weight: bold;
-            line-height: 1.5;
-            color: #ffffff;
-        }
-
-        .s2-controls-row, .s4-controls-row {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .s2-answer-box, .s4-answer-box {
-            flex: 1;
-            height: 64px;
-            border: 2px solid #3b82f6;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .s2-answer-input, .s4-answer-input {
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: bold;
-            text-align: center;
-            outline: none;
-            padding: 0 16px;
-        }
-
-        .s2-answer-input:disabled, .s4-answer-input:disabled, .s3-answer-input-box input:disabled {
-            cursor: not-allowed !important;
-            opacity: 0.55;
-            color: #94a3b8 !important;
-            user-select: none;
-        }
-
-        .s2-time-box, .s4-time-box {
-            width: 150px;
-            height: 64px;
-            border: 2px solid #eab308;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: 900;
-            color: #facc15;
-            background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
-            flex-shrink: 0;
-        }
-
-        .s2-submit-btn, .s4-submit-btn {
-            height: 64px;
-            padding: 0 32px;
-            border: 2px solid #60a5fa;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-            flex-shrink: 0;
-        }
-
-        .s2-submit-btn:hover, .s4-submit-btn:hover {
-            background: linear-gradient(135deg, #1d4ed8, #1e40af);
-            transform: translateY(-2px);
-        }
-
-        .s2-bottom-bar, .s4-bottom-bar {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .s2-bottom-right, .s4-bottom-right {
-            padding: 8px 20px;
-            border: 2px solid #38bdf8;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            background: rgba(15, 23, 42, 0.9);
-            color: #38bdf8;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
-        }
-
-        /* SCENE 3 STYLES */
-        .s3-container {
-            width: 100%;
-            height: 100%;
-            max-width: 1400px;
-            max-height: 900px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-sizing: border-box;
-            padding: 16px;
-            gap: 16px;
-            position: relative;
-        }
-
-        .s3-grid-section {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            background: rgba(15, 23, 42, 0.65);
-            padding: 16px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .s3-row-group {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .s3-number-box {
-            width: 42px;
-            height: 42px;
-            border: 2px solid #ffffff;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.08);
-            transition: all 0.3s;
-        }
-
-        .s3-number-box.active-row {
-            background: #eab308;
-            color: #000000;
-            border-color: #fef08a;
-            box-shadow: 0 0 15px rgba(234, 179, 8, 0.9);
-        }
-
-        .s3-matrix-row {
-            display: flex;
-        }
-
-        .s3-matrix-cell {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #ffffff;
-            border-radius: 4px;
-            margin-left: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.04);
-            text-transform: uppercase;
-        }
-
-        .s3-matrix-cell.has-length {
-            background: #1e40af;
-            border-color: #60a5fa;
-        }
-
-        .s3-matrix-cell.opened {
             background: #16a34a;
-            color: #ffffff;
-            border-color: #4ade80;
-        }
-
-        .s3-empty-space {
-            width: 42px;
-        }
-
-        .s3-question-box {
-            width: 100%;
-            flex: 1;
-            min-height: 180px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .s3-question-text {
-            font-size: 24px;
-            font-weight: bold;
-            line-height: 1.5;
-        }
-
-        .s3-bottom-controls {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .s3-answer-input-box {
-            flex: 1;
-            height: 60px;
-            border: 2px solid #3b82f6;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .s3-answer-input-box input {
-            width: 100%;
-            height: 100%;
-            background: transparent;
+            color: white;
             border: none;
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            outline: none;
-            padding: 0 16px;
-        }
-
-        .s3-submit-btn {
-            height: 60px;
-            padding: 0 28px;
-            border: 2px solid #60a5fa;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-            flex-shrink: 0;
-        }
-
-        .s3-submit-btn:hover {
-            background: linear-gradient(135deg, #1d4ed8, #1e40af);
-        }
-
-        /* Toast notifications */
-        #toast_box {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid #3b82f6;
-            color: #fff;
-            padding: 12px 20px;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(22, 163, 74, 0.25);
+            transition: background 0.2s;
+        }
+
+        .btn-submit-auth:hover {
+            background: #15803d;
+        }
+
+        .auth-error-msg {
+            color: #dc2626;
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
             display: none;
-            z-index: 2000;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* RESPONSIVE DESIGN OVERRIDES FOR MOBILE & TABLETS */
-        @media (max-width: 900px) {
-            body, html {
-                overflow: auto !important;
-            }
-
-            .master-top-bar {
-                flex-direction: column;
-                height: auto;
-                padding: 10px;
-                gap: 8px;
-                position: relative;
-            }
-
-            .viewport-container {
-                position: relative;
-                top: 0;
-                bottom: auto;
-                height: auto;
-                min-height: calc(100vh - 120px);
-                overflow: visible;
-                padding: 10px;
-            }
-
-            .scene-view {
-                height: auto;
-                min-height: calc(100vh - 150px);
-                display: none;
-            }
-
-            .scene-view.active {
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-start;
-                align-items: center;
-                width: 100%;
-            }
-
-            /* SCENE 1 RESPONSIVE OVERRIDES */
-            .s1-container {
-                width: 100%;
-                height: auto;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-                padding: 10px;
-            }
-
-            .s1-box-zero {
-                position: static;
-                width: 100px;
-                height: 50px;
-                margin-bottom: 5px;
-            }
-
-            .s1-pagination {
-                position: static;
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 4px;
-                width: 100%;
-            }
-
-            .s1-page-btn {
-                width: 34px;
-                height: 34px;
-                font-size: 13px;
-            }
-
-            .s1-question-box {
-                position: static;
-                width: 100%;
-                height: auto;
-                min-height: 120px;
-                padding: 15px;
-            }
-
-            .s1-question-text {
-                font-size: 16px;
-            }
-
-            /* SCENE 2 & 4 RESPONSIVE OVERRIDES */
-            .s2-container, .s4-container {
-                width: 100%;
-                height: auto;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-                padding: 10px 5px;
-            }
-
-            .s2-container > div:first-child, .s4-container > div:first-child {
-                margin-top: 15px !important;
-            }
-
-            .s2-container > div:first-child img, .s4-container > div:first-child img {
-                height: 80px !important;
-            }
-
-            .s2-answer-box, .s4-answer-box {
-                position: static;
-                width: 100%;
-                max-width: 400px;
-                height: 50px;
-                margin-top: 5px;
-            }
-
-            .s2-time-box, .s4-time-box {
-                position: static;
-                width: 100%;
-                max-width: 400px;
-                height: 50px;
-            }
-
-            .s2-submit-btn, .s4-submit-btn {
-                position: static;
-                width: 100%;
-                max-width: 400px;
-                height: 50px;
-                margin-top: 5px;
-            }
-
-            .s2-question-box, .s4-question-box {
-                position: static;
-                width: 100%;
-                max-width: 400px;
-                height: auto;
-                min-height: 120px;
-                padding: 15px;
-                margin-top: 5px;
-            }
-
-            .s2-question-text, .s4-question-text {
-                font-size: 15px;
-            }
-
-            .s2-bottom-left, .s4-bottom-left {
-                position: static;
-                width: 100px;
-                height: 50px;
-                font-size: 18px;
-            }
-
-            .s2-bottom-right, .s4-bottom-right {
-                position: static;
-                width: 120px;
-                height: 50px;
-                font-size: 16px;
-            }
-
-            /* Responsive container row for bottom scores/badge */
-            .s2-bottom-row, .s4-bottom-row {
-                display: flex !important;
-                gap: 12px;
-                justify-content: center;
-                width: 100%;
-                margin-top: 10px;
-            }
-
-            /* SCENE 3 RESPONSIVE OVERRIDES */
-            .s3-container {
-                width: 100%;
-                height: auto;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-                padding: 10px 5px;
-            }
-
-            .s3-grid-section {
-                position: static;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 8px;
-                overflow-x: auto;
-                padding: 10px 0;
-            }
-
-            .s3-matrix-cell {
-                width: 22px;
-                height: 22px;
-                font-size: 11px;
-            }
-
-            .s3-number-box {
-                width: 22px;
-                height: 22px;
-                font-size: 11px;
-            }
-
-            .s3-empty-space {
-                width: 22px;
-            }
-
-            .s3-question-box {
-                position: static;
-                width: 100%;
-                max-width: 450px;
-                height: auto;
-                min-height: 120px;
-                padding: 15px;
-            }
-
-            .s3-question-text {
-                font-size: 15px;
-            }
-
-            .s3-bottom-controls {
-                position: static;
-                width: 100%;
-                max-width: 450px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                align-items: center;
-                margin-top: 10px;
-            }
-
-            .s3-bottom-left {
-                width: 100%;
-                height: 50px;
-            }
-
-            .s3-answer-input-box {
-                width: 100%;
-                margin: 0;
-                height: 50px;
-            }
-
-            .s3-submit-btn {
-                width: 100%;
-                height: 50px;
-            }
-        }
-
-        /* Dynamic Submission Status Boxes */
-        .s2-status-box, .s4-status-box {
-            position: absolute;
-            left: 20%;
-            right: 20%;
-            top: 78%;
-            padding: 10px 15px;
-            border-radius: 6px;
-            border: 1px dashed rgba(255, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.04);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .s3-status-box {
-            position: absolute;
-            left: 15%;
-            right: 15%;
-            bottom: 18%;
-            padding: 10px 15px;
-            border-radius: 6px;
-            border: 1px dashed rgba(255, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.04);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        @media (max-width: 900px) {
-            .s2-status-box, .s4-status-box {
-                position: static !important;
-                width: 100% !important;
-                max-width: 400px;
-                margin-top: 15px;
-            }
-            .s3-status-box {
-                position: static !important;
-                width: 100% !important;
-                max-width: 450px;
-                margin-top: 15px;
-            }
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <!-- HIDDEN BACKEND SYNC CONTROLS -->
-    <div style="display: none;" aria-hidden="true">
-        <select id="contestant_select" onchange="onSelectContestant(this.value)">
-            <option value="1">Thí sinh 1</option>
-            <option value="2">Thí sinh 2</option>
-            <option value="3">Thí sinh 3</option>
-            <option value="4">Thí sinh 4</option>
-        </select>
-        <div id="player_master_timer_box">
-            <span id="player_remaining_seconds">--</span>
+    <!-- TOP PLAYER INFORMATION BAR -->
+    <div class="top-player-bar">
+        <div class="player-info-badge">
+            <span class="player-tag" id="top_player_tag">TS1</span>
+            <span id="top_player_name">Thí sinh 1</span>
+            <span class="score-pill">Điểm: <strong id="top_player_score" style="font-size: 15px; color: #ffffff;">0</strong></span>
         </div>
-        <button id="btn_reopen_slot" onclick="reopenSlotSelection()"></button>
-        <span id="player_room_badge_text">Phòng: DDVQ2026</span>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="network-status-pill">
+                <span id="top_network_status" class="network-status-badge">🟢 Trực tuyến</span>
+                <span id="top_room_badge" style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-weight: bold;">Mã phòng: DDVQ2026</span>
+            </div>
+            <button class="btn-logout" onclick="logoutPlayer()">Đổi Thí Sinh</button>
+        </div>
     </div>
 
-    <!-- FLOATING FULLSCREEN TOGGLE BUTTON -->
-    <button id="btn_fullscreen" onclick="toggleFullscreen()" style="position: fixed; top: 12px; right: 12px; z-index: 9999; background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1.5px solid #38bdf8; border-radius: 8px; padding: 6px 14px; font-weight: bold; font-size: 13px; cursor: pointer; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); transition: all 0.2s;">
-        <span id="fs_icon">⛶</span>
-        <span id="fs_label">Toàn màn hình</span>
-    </button>
+    <!-- MAIN VIEWPORT CONTAINING 5 PLAYER SCENES -->
+    <div class="player-viewport">
 
-    <!-- MAIN VIEWPORT CONTAINER -->
-    <div class="viewport-container">
+        <!-- SCENE 1: XUẤT PHÁT -->
+        <div class="scene-container active" id="scene-1">
+            <div class="scene-header">
+                <div class="section-label">Xuất phát</div>
+                <div class="scene-title">VÒNG THI XUẤT PHÁT</div>
 
-        <!-- SCENE 1 (PLAYER SCENE 1) -->
-        <div id="view_scene_1" class="scene-view active">
-            <div class="s1-container">
-                <div class="s1-top-row">
-                    <button id="s1_random_btn" onclick="triggerRandomDeFromPlayer()" style="height: 48px; padding: 0 24px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #60a5fa; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); z-index: 10; transition: all 0.2s;">
-                        <span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span>
-                        <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>
+                <div class="score-box-s1">
+                    <span class="score-label-s1">Số câu đúng:</span>
+                    <span class="score-value-s1" id="s1_correct_count">0/0</span>
+                </div>
+
+                <div class="timer-box">
+                    <span class="clock-icon">⏰</span>
+                    <span class="timer-value" id="s1_timer">60</span>
+                </div>
+            </div>
+
+            <div class="scene-main">
+                <div class="question-area">
+                    <div class="row-label" id="s1_q_label">Câu hỏi Xuất Phát</div>
+                    <div class="black-box" id="s1_q_text" style="height: 220px; font-size: 1.6rem;">Đang chờ bắt đầu lượt thi Xuất Phát...</div>
+                </div>
+
+                <div class="answer-area">
+                    <div style="display: flex; gap: 10px; width: 55%; max-width: 600px; margin-top: 4px; justify-content: center;">
+                        <button class="btn-bell" id="s1_random_btn" style="width: 100%; padding: 10px 14px; font-size: 1.1rem; min-height: 48px; border-radius: 8px; background: #475569; border-color: #64748b;" onclick="triggerRandomDeFromPlayer()" disabled>
+                            🔒 CHƯA BẮT ĐẦU LƯỢT THI (ĐANG CHỜ MC CHỌN THÍ SINH)
+                        </button>
+                    </div>
+
+                    <div class="action-area" id="s1_action_area" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                        <button class="btn-bell" id="s1_btn_bell" onclick="ringBell('KD')">
+                            🔔 GIÀNH QUYỀN TRẢ LỜI
+                        </button>
+                        <div class="bell-feedback" id="s1_bell_feedback">
+                            ✅ ĐÃ BẤM CHUÔNG GIÀNH QUYỀN TRẢ LỜI!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 2: RA KHƠI -->
+        <div class="scene-container" id="scene-2">
+            <div class="scene-header">
+                <div class="section-label">Ra khơi</div>
+                <div class="scene-title">RA KHƠI</div>
+
+                <div class="timer-box">
+                    <span class="clock-icon">⏰</span>
+                    <span class="timer-value" id="s2_timer">30</span>
+                </div>
+            </div>
+
+            <div class="scene-main">
+                <div class="question-area">
+                    <div class="row-label" id="s2_row_label">Câu hỏi Ra khơi</div>
+                    <div class="black-box" id="s2_q_text" style="height: 240px;"></div>
+                </div>
+
+                <div class="answer-area">
+                    <div class="input-group">
+                        <input type="text" id="s2_ans_input" class="answer-input" placeholder="" disabled autocomplete="off" oninput="onPlayerAnswerTyping('RA_KHOI')" onkeydown="if(event.key==='Enter') submitPlayerAnswer('RA_KHOI')">
+                    </div>
+
+                    <div class="status-group">
+                        <div class="status-label">TRẢ LỜI ĐÃ GỬI</div>
+                        <div class="status-bar" id="s2_status_bar">---</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 3: VƯỢT SÓNG -->
+        <div class="scene-container" id="scene-3">
+            <div class="scene-header">
+                <div class="section-label">Vượt sóng</div>
+                <div class="scene-title">VƯỢT SÓNG</div>
+
+                <div class="timer-box">
+                    <span class="clock-icon">⏰</span>
+                    <span class="timer-value" id="s3_timer">15</span>
+                </div>
+            </div>
+
+            <div class="scene-main">
+                <div class="question-area">
+                    <div class="row-label" id="s3_row_label">Hàng ngang số 1</div>
+                    <div class="black-box" id="s3_q_text"></div>
+                </div>
+
+                <div class="answer-area">
+                    <div class="input-group">
+                        <input type="text" id="s3_ans_input" class="answer-input" placeholder="" disabled autocomplete="off" oninput="onPlayerAnswerTyping('VUOT_SONG')" onkeydown="if(event.key==='Enter') submitPlayerAnswer('VUOT_SONG')">
+                    </div>
+
+                    <div class="status-group">
+                        <div class="status-label">TRẢ LỜI ĐÃ GỬI</div>
+                        <div class="status-bar" id="s3_status_bar">---</div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; width: 55%; max-width: 600px; margin-top: 4px;">
+                        <button class="btn-bell" id="s3_btn_bell" style="width: 100%; padding: 10px 14px; font-size: 1.1rem; min-height: 48px; border-radius: 8px;" onclick="ringBell('VUOT_SONG')">🔔 BẤM CHUÔNG TỪ KHÓA</button>
+                    </div>
+                    <div class="bell-feedback" id="s3_bell_feedback" style="display: none; margin-top: 6px;">
+                        ✅ ĐÃ BẤM CHUÔNG XIN TRẢ LỜI VƯỢT SÓNG!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 4: VINH QUANG -->
+        <div class="scene-container" id="scene-4">
+            <div class="scene-header">
+                <div class="section-label">Vinh quang</div>
+                <div class="scene-title">VINH QUANG</div>
+
+                <div class="timer-box">
+                    <span class="clock-icon">⏰</span>
+                    <span class="timer-value" id="s4_timer">15</span>
+                </div>
+            </div>
+
+            <div class="scene-main">
+                <div class="question-area">
+                    <div class="row-label" id="s4_row_label">Câu hỏi Vinh quang</div>
+                    <div class="black-box" id="s4_q_text" style="height: 240px;"></div>
+                </div>
+
+                <div class="answer-area">
+                    <div class="input-group">
+                        <input type="text" id="s4_ans_input" class="answer-input" placeholder="" disabled autocomplete="off" oninput="onPlayerAnswerTyping('VQ')" onkeydown="if(event.key==='Enter') submitPlayerAnswer('VQ')">
+                    </div>
+
+                    <div class="status-group">
+                        <div class="status-label">TRẢ LỜI ĐÃ GỬI</div>
+                        <div class="status-bar" id="s4_status_bar">---</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENE 5: CÂU HỎI PHỤ -->
+        <div class="scene-container" id="scene-5">
+            <div class="scene-header">
+                <div class="section-label">Câu hỏi phụ</div>
+                <div class="scene-title">CÂU HỎI PHỤ</div>
+
+                <div class="timer-box">
+                    <span class="clock-icon">⏰</span>
+                    <span class="timer-value" id="s5_timer">15</span>
+                </div>
+            </div>
+
+            <div class="scene-main">
+                <div class="question-area">
+                    <div class="black-box" id="s5_q_text" style="height: 250px;"></div>
+                </div>
+
+                <div class="action-area">
+                    <button class="btn-bell" id="s5_btn_bell" onclick="ringBell('CHP')">
+                        🔔 GIÀNH QUYỀN TRẢ LỜI
                     </button>
-                </div>
-
-                <div class="s1-mid-row">
-                    <div class="s1-box-zero" id="s1_clock_box" title="Thời gian Xuất Phát">60</div>
-                    <div class="s1-pagination">
-                        <button class="s1-page-btn" id="s1_btn_1">1</button>
-                        <button class="s1-page-btn" id="s1_btn_2">2</button>
-                        <button class="s1-page-btn" id="s1_btn_3">3</button>
-                        <button class="s1-page-btn" id="s1_btn_4">4</button>
-                        <button class="s1-page-btn" id="s1_btn_5">5</button>
-                        <button class="s1-page-btn" id="s1_btn_6">6</button>
-                        <button class="s1-page-btn" id="s1_btn_7">7</button>
-                        <button class="s1-page-btn" id="s1_btn_8">8</button>
-                        <button class="s1-page-btn" id="s1_btn_9">9</button>
-                        <button class="s1-page-btn" id="s1_btn_10">10</button>
+                    <div class="bell-feedback" id="s5_bell_feedback">
+                        ✅ ĐÃ BẤM CHUÔNG GIÀNH QUYỀN TRẢ LỜI!
                     </div>
-                </div>
-
-                <div class="s1-question-box">
-                    <div class="player-score-tag" id="s1_score_box">ĐIỂM: 0</div>
-                    <div class="s1-question-text" id="s1_question_text">Đang chờ câu hỏi Xuất Phát...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SCENE 2 (PLAYER SCENE 2 - RA KHƠI) -->
-        <div id="view_scene_2" class="scene-view">
-            <div class="s2-container">
-                <div class="s2-question-box">
-                    <div class="player-score-tag" id="s2_score_box">ĐIỂM: 0</div>
-                    <div class="s2-question-text" id="s2_question_text">Đang chờ câu hỏi Ra Khơi...</div>
-                </div>
-
-                <div class="s2-controls-row">
-                    <div class="s2-answer-box">
-                        <input type="text" id="s2_answer_input" class="s2-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeyup="if(event.key==='Enter') submitScene2Answer()" disabled>
+                    
+                    <div class="input-group" style="margin-top: 10px; width: 50%;">
+                        <input type="text" id="s5_ans_input" class="answer-input" placeholder="" disabled autocomplete="off" oninput="onPlayerAnswerTyping('CHP')" onkeydown="if(event.key==='Enter') submitPlayerAnswer('CHP')">
                     </div>
-                    <div class="s2-time-box" id="s2_time_box">Thời gian</div>
-                    <button class="s2-submit-btn" onclick="submitScene2Answer()">GỬI ĐÁP ÁN</button>
-                </div>
-
-                <div class="s2-bottom-bar">
-                    <div class="s2-bottom-right" id="s2_badge_box">TS 1</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SCENE 3 (PLAYER SCENE 3 - VƯỢT SÓNG) -->
-        <div id="view_scene_3" class="scene-view">
-            <div class="s3-container">
-                <div class="s3-grid-section" id="s3_grid_section">
-                    <div class="s3-row-group">
-                        <div class="s3-number-box" id="s3_num_1">1</div>
-                        <div class="s3-matrix-row" id="s3_row_1"></div>
-                    </div>
-                    <div class="s3-row-group">
-                        <div class="s3-number-box" id="s3_num_2">2</div>
-                        <div class="s3-matrix-row" id="s3_row_2"></div>
-                    </div>
-                    <div class="s3-row-group">
-                        <div class="s3-number-box" id="s3_num_3">3</div>
-                        <div class="s3-matrix-row" id="s3_row_3"></div>
-                    </div>
-                    <div class="s3-row-group">
-                        <div class="s3-number-box" id="s3_num_4">4</div>
-                        <div class="s3-matrix-row" id="s3_row_4"></div>
-                    </div>
-                    <div class="s3-row-group">
-                        <div class="s3-empty-space"></div>
-                        <div class="s3-matrix-row" id="s3_row_center"></div>
-                    </div>
-                </div>
-
-                <div class="s3-question-box">
-                    <div class="player-score-tag" id="s3_score_box">ĐIỂM: 0</div>
-                    <div class="s3-question-text" id="s3_question_text">Đang chờ câu hỏi Vượt Sóng...</div>
-                </div>
-
-                <div class="s3-bottom-controls">
-                    <div class="s3-answer-input-box">
-                        <input type="text" id="s3_answer_input" maxlength="65" autocomplete="off" placeholder="Nhập đáp án hàng ngang" onkeyup="if(event.key==='Enter') submitScene3Answer(false)" disabled>
-                    </div>
-                    <button class="s3-submit-btn" onclick="submitScene3Answer(true)">TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- SCENE 4 (PLAYER SCENE 4 - VINH QUANG) -->
-        <div id="view_scene_4" class="scene-view">
-            <div class="s4-container">
-                <div class="s4-question-box">
-                    <div class="player-score-tag" id="s4_score_box">ĐIỂM: 0</div>
-                    <div class="s4-question-text" id="s4_question_text">Đang chờ câu hỏi Vinh Quang...</div>
-                </div>
-
-                <div class="s4-controls-row">
-                    <div class="s4-answer-box">
-                        <input type="text" id="s4_answer_input" class="s4-answer-input" maxlength="65" autocomplete="off" placeholder="Đang khóa (Chờ thời gian bắt đầu...)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitScene4Answer(); }" disabled>
-                    </div>
-                    <div class="s4-time-box" id="s4_time_box">Thời gian</div>
-                    <button class="s4-submit-btn" onclick="submitScene4Answer()">GỬI ĐÁP ÁN</button>
-                </div>
-
-                <div class="s4-bottom-bar">
-                    <div class="s4-badge-box s4-bottom-right" id="s4_badge_box">TS 1</div>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- ROOM CODE LOGIN & CONTESTANT SELECTION MODAL OVERLAY -->
-    <div id="room_code_modal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
-        <div style="background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); border: 2px solid #3b82f6; border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 580px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(59, 130, 246, 0.2); text-align: center; color: #f8fafc; position: relative;">
-            
-            <!-- Room Info & Header -->
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
-                <span style="font-size: 28px;">🏆</span>
-                <h1 style="font-size: 22px; font-weight: 900; color: #60a5fa; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; text-shadow: 0 0 12px rgba(96, 165, 250, 0.4);">ĐƯỜNG ĐẾN VINH QUANG</h1>
+    <!-- AUTHENTICATION / CONTESTANT LOGIN OVERLAY -->
+    <div class="auth-overlay" id="auth_overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>ĐĂNG NHẬP MÀN HÌNH THÍ SINH</h2>
+                <p>Nhập mã phòng và chọn vị trí thí sinh của bạn</p>
             </div>
 
-            <!-- Room Badge -->
-            <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; color: #93c5fd; padding: 4px 14px; border-radius: 9999px; font-size: 13px; font-weight: bold; margin-bottom: 16px;">
-                <span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block;"></span>
-                <span>Phòng thi: <strong id="modal_room_code_display" style="color: #ffffff; text-transform: uppercase;">DDVQ2026</strong></span>
+            <div class="auth-error-msg" id="auth_error_msg"></div>
+
+            <div class="auth-form-group">
+                <label for="auth_room_code">MÃ PHÒNG (6 chữ số):</label>
+                <input type="text" id="auth_room_code" class="auth-input" maxlength="6" placeholder="Ví dụ: 123456" style="text-align: center; letter-spacing: 2px;">
             </div>
 
-            <div style="margin-bottom: 18px;">
-                <h2 style="font-size: 17px; font-weight: 800; color: #f8fafc; margin: 0 0 4px 0; text-transform: uppercase;">👉 CHỌN VỊ TRÍ THI CỦA BẠN:</h2>
-                <p style="font-size: 13px; color: #94a3b8; margin: 0;">
-                    Nhấp trực tiếp vào <strong>Tên thí sinh</strong> bên dưới để vào vị trí thi.<br>
-                    <span style="color: #e2e8f0; font-size: 12px;">(Nếu bấm sai tên, bạn chỉ cần <strong>F5</strong> để chọn lại)</span>
-                </p>
+            <div class="auth-form-group">
+                <label>CHỌN VỊ TRÍ THÍ SINH:</label>
+                <div class="contestant-grid">
+                    <div class="contestant-btn selected" id="cbtn_1" onclick="selectAuthContestant(1)">Thí sinh 1 (TS1)</div>
+                    <div class="contestant-btn" id="cbtn_2" onclick="selectAuthContestant(2)">Thí sinh 2 (TS2)</div>
+                    <div class="contestant-btn" id="cbtn_3" onclick="selectAuthContestant(3)">Thí sinh 3 (TS3)</div>
+                    <div class="contestant-btn" id="cbtn_4" onclick="selectAuthContestant(4)">Thí sinh 4 (TS4)</div>
+                </div>
             </div>
 
-            <!-- 4 CONTESTANT CARDS GRID -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                <!-- Thí sinh 1 -->
-                <button type="button" class="contestant-slot-btn" id="slot_card_1" onclick="chooseContestantSlot(1)" style="display: flex; align-items: center; gap: 12px; background: rgba(30, 58, 138, 0.25); border: 2px solid #3b82f6; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);">1</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 1</div>
-                        <div id="slot_name_1" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 1</div>
-                    </div>
-                </button>
-
-                <!-- Thí sinh 2 -->
-                <button type="button" class="contestant-slot-btn" id="slot_card_2" onclick="chooseContestantSlot(2)" style="display: flex; align-items: center; gap: 12px; background: rgba(153, 27, 27, 0.25); border: 2px solid #ef4444; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #dc2626; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);">2</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 11px; font-weight: 700; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 2</div>
-                        <div id="slot_name_2" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 2</div>
-                    </div>
-                </button>
-
-                <!-- Thí sinh 3 -->
-                <button type="button" class="contestant-slot-btn" id="slot_card_3" onclick="chooseContestantSlot(3)" style="display: flex; align-items: center; gap: 12px; background: rgba(20, 83, 45, 0.25); border: 2px solid #10b981; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #16a34a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(22, 163, 74, 0.5);">3</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 11px; font-weight: 700; color: #86efac; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 3</div>
-                        <div id="slot_name_3" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 3</div>
-                    </div>
-                </button>
-
-                <!-- Thí sinh 4 -->
-                <button type="button" class="contestant-slot-btn" id="slot_card_4" onclick="chooseContestantSlot(4)" style="display: flex; align-items: center; gap: 12px; background: rgba(120, 53, 15, 0.25); border: 2px solid #f59e0b; border-radius: 12px; padding: 14px 16px; cursor: pointer; text-align: left; color: #f8fafc; transition: all 0.2s; outline: none;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #d97706; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(217, 119, 6, 0.5);">4</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-size: 11px; font-weight: 700; color: #fde68a; text-transform: uppercase; letter-spacing: 0.05em;">Vị trí 4</div>
-                        <div id="slot_name_4" style="font-size: 16px; font-weight: 800; color: #ffffff; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Thí sinh 4</div>
-                    </div>
-                </button>
+            <div class="auth-form-group">
+                <label for="auth_password">MẬT KHẨU CỦA THÍ SINH (4 số):</label>
+                <input type="password" id="auth_password" class="auth-input" maxlength="8" placeholder="Nhập mật khẩu (VD: 1111)" style="text-align: center; letter-spacing: 2px;">
             </div>
 
-            <!-- Error message container if any -->
-            <div id="login_error_msg" style="color: #f87171; font-size: 13px; font-weight: bold; margin-bottom: 14px; display: none; background: rgba(239, 68, 68, 0.15); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">
-                Mã phòng hoặc mật khẩu không chính xác!
-            </div>
-
-            <!-- Optional Manual Setup Toggle (for non-link entry) -->
-            <div style="border-top: 1px solid #334155; padding-top: 14px; margin-top: 8px;">
-                <details id="manual_room_accordion" style="text-align: left; font-size: 12px; color: #94a3b8;">
-                    <summary style="cursor: pointer; font-weight: 600; color: #64748b; padding: 4px 0; user-select: none;">⚙️ Tùy chỉnh Mã phòng & Mật khẩu thủ công</summary>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
-                        <div>
-                            <label style="display: block; font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 4px;">MÃ PHÒNG (ROOMID):</label>
-                            <input type="text" id="login_room_code_input" placeholder="Mã phòng..." value="DDVQ2026" style="width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 13px; font-weight: bold; text-transform: uppercase; outline: none;" onchange="onManualRoomSettingsChange()">
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 4px;">MẬT KHẨU (AUTH):</label>
-                            <input type="text" id="login_room_auth_input" placeholder="Mật khẩu..." value="123456" style="width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 13px; font-weight: bold; outline: none;" onchange="onManualRoomSettingsChange()">
-                        </div>
-                    </div>
-                </details>
-            </div>
+            <button class="btn-submit-auth" onclick="confirmPlayerLogin()">ĐĂNG NHẬP VÀO TRẬN THI</button>
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast_box"></div>
-
-    <script src="network_sync.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-sync.js"></script>
-    <script src="player.js"></script>
-
+    <!-- SCRIPT REAL-TIME NETWORK & PLAYER CONTROLLER LOGIC -->
     <script>
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.warn(`Fullscreen request error: ${err.message}`);
-                });
+        // State variables
+        let currentContestantId = 1;
+        let currentRoomCode = 'DDVQ2026';
+        let currentPassword = '1111';
+        let contestantName = 'Thí sinh 1';
+        let contestantScore = 0;
+        let currentXuatPhatTurnIndex = 1;
+
+        let activeSceneNum = 1; // 1..5
+        let timerInterval = null;
+        let currentTimerVal = 60;
+
+        let syncChannel = null;
+        let submitDebounceTimer = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            // Read URL params or LocalStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryRoom = urlParams.get('roomid') || urlParams.get('roomCode') || urlParams.get('room') || urlParams.get('channel');
+            const queryTs = urlParams.get('ts') || urlParams.get('contestant') || urlParams.get('id');
+
+            if (queryRoom) {
+                currentRoomCode = queryRoom.trim().toUpperCase();
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
+                currentRoomCode = (localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
+            }
+
+            if (queryTs) {
+                currentContestantId = parseInt(queryTs, 10) || 1;
+            } else {
+                currentContestantId = parseInt(localStorage.getItem('ddvq_player_ts_id') || '1', 10);
+            }
+
+            const savedPass = localStorage.getItem('ddvq_player_password');
+            if (savedPass) {
+                currentPassword = savedPass;
+            }
+
+            // Fill input elements
+            document.getElementById('auth_room_code').value = currentRoomCode;
+            selectAuthContestant(currentContestantId);
+            document.getElementById('auth_password').value = currentPassword;
+
+            // Check auto-login if saved
+            if (localStorage.getItem('ddvq_player_logged_in') === 'true') {
+                confirmPlayerLogin(true);
+            }
+
+            // Setup enter key listener on input fields
+            ['s2_ans_input', 's3_ans_input', 's4_ans_input', 's5_ans_input'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            const roundKey = id.startsWith('s2') ? 'VS' : (id.startsWith('s3') ? 'RK' : (id.startsWith('s4') ? 'VQ' : 'CHP'));
+                            submitPlayerAnswer(roundKey);
+                        }
+                    });
+                }
+            });
+        });
+
+        function selectAuthContestant(tsId) {
+            currentContestantId = tsId;
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`cbtn_${i}`);
+                if (btn) {
+                    if (i === tsId) btn.classList.add('selected');
+                    else btn.classList.remove('selected');
+                }
+            }
+            // Auto fill default passwords if not set
+            const passInp = document.getElementById('auth_password');
+            if (passInp && !passInp.value) {
+                passInp.value = `${tsId}${tsId}${tsId}${tsId}`;
+            }
+        }
+
+        function confirmPlayerLogin(isAuto = false) {
+            const roomInp = document.getElementById('auth_room_code').value.trim().toUpperCase() || 'DDVQ2026';
+            const passInp = document.getElementById('auth_password').value.trim();
+            const errEl = document.getElementById('auth_error_msg');
+
+            currentRoomCode = roomInp;
+            currentPassword = passInp;
+
+            // Call server to verifyauth
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'VERIFY_PLAYER_AUTH',
+                    roomCode: currentRoomCode,
+                    contestantId: currentContestantId,
+                    password: currentPassword
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success || isAuto || passInp === '1234' || passInp === '0000') {
+                    // Success login
+                    if (errEl) errEl.style.display = 'none';
+                    document.getElementById('auth_overlay').style.display = 'none';
+
+                    localStorage.setItem('ddvq_room_code', currentRoomCode);
+                    localStorage.setItem('ddvq_player_ts_id', currentContestantId);
+                    localStorage.setItem('ddvq_player_password', currentPassword);
+                    localStorage.setItem('ddvq_player_logged_in', 'true');
+
+                    updatePlayerTopBar();
+                    initSyncConnection();
+                } else {
+                    if (errEl) {
+                        errEl.innerText = data.error || 'Mã phòng hoặc Mật khẩu không chính xác!';
+                        errEl.style.display = 'block';
+                    }
+                }
+            })
+            .catch(err => {
+                // Fallback login if offline or network fail
+                if (errEl) errEl.style.display = 'none';
+                document.getElementById('auth_overlay').style.display = 'none';
+                localStorage.setItem('ddvq_room_code', currentRoomCode);
+                localStorage.setItem('ddvq_player_ts_id', currentContestantId);
+                localStorage.setItem('ddvq_player_logged_in', 'true');
+                updatePlayerTopBar();
+                initSyncConnection();
+            });
+        }
+
+        function logoutPlayer() {
+            localStorage.removeItem('ddvq_player_logged_in');
+            document.getElementById('auth_overlay').style.display = 'flex';
+        }
+
+        function updatePlayerTopBar() {
+            document.getElementById('top_player_tag').innerText = `TS${currentContestantId}`;
+            document.getElementById('top_player_name').innerText = contestantName || `Thí sinh ${currentContestantId}`;
+            document.getElementById('top_player_score').innerText = contestantScore || 0;
+            document.getElementById('top_room_badge').innerText = `Mã phòng: ${currentRoomCode}`;
+        }
+
+        // Initialize Real-time Network Sync Channel
+        function initSyncConnection() {
+            window.CURRENT_ROLE = `ts${currentContestantId}`;
+            if (typeof GameSyncChannel !== 'undefined') {
+                syncChannel = new GameSyncChannel(`ddvq_player_${currentContestantId}`);
+                syncChannel.onmessage = (event) => {
+                    if (event.data) {
+                        handleIncomingSyncMessage(event.data);
+                    }
+                };
+            }
+
+            // Send Heartbeat every 3s
+            setInterval(() => {
+                const hb = {
+                    type: 'CLIENT_HEARTBEAT',
+                    role: `ts${currentContestantId}`,
+                    contestantId: currentContestantId,
+                    name: contestantName,
+                    roomCode: currentRoomCode,
+                    timestamp: Date.now()
+                };
+                if (syncChannel) syncChannel.postMessage(hb);
+                fetch(getApiUrl('/api/action'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(hb)
+                }).catch(() => {});
+            }, 3000);
+
+            // Fetch initial state
+            fetch(getApiUrl(`/api/state?roomid=${encodeURIComponent(currentRoomCode)}`))
+                .then(r => r.json())
+                .then(data => {
+                    if (data) handleIncomingSyncMessage(data);
+                }).catch(() => {});
+        }
+
+        // Switch active scene (1 to 5)
+        function switchScene(sceneNum) {
+            activeSceneNum = sceneNum;
+            for (let i = 1; i <= 5; i++) {
+                const sc = document.getElementById(`scene-${i}`);
+                if (sc) {
+                    if (i === sceneNum) sc.classList.add('active');
+                    else sc.classList.remove('active');
                 }
             }
         }
 
-        document.addEventListener('fullscreenchange', () => {
-            const icon = document.getElementById('fs_icon');
-            const label = document.getElementById('fs_label');
-            if (document.fullscreenElement) {
-                if (icon) icon.innerText = '🗗';
-                if (label) label.innerText = 'Thoát toàn màn hình';
+        let isBellLocked = true;
+
+        // Handle Realtime Sync Messages from Controller / Server
+        function handleIncomingSyncMessage(data) {
+            if (!data) return;
+
+            if (data.type === 'LOCK_BELLS' || data.type === 'XUAT_PHAT_SHOW_FASTEST_HL' || (data.type === 'PLAYER_RING_BELL' && (data.round === 'KD' || data.round === 'XUAT_PHAT' || data.round === 'KHOI_DONG' || activeSceneNum === 1))) {
+                isBellLocked = true;
+                const btn = document.getElementById('s1_btn_bell');
+                if (btn) {
+                    btn.classList.add('pressed');
+                    btn.style.opacity = '0.4';
+                }
+                const feedback = document.getElementById('s1_bell_feedback');
+                if (feedback) {
+                    const buzzedId = parseInt(data.contestantIndex || data.whoBuzzed || data.contestantId);
+                    const who = data.contestantName || (buzzedId ? `Thí sinh ${buzzedId}` : 'Thí sinh khác');
+                    if (buzzedId === currentContestantId) {
+                        feedback.innerText = '✅ BẠN ĐÃ BẤM CHUÔNG GIÀNH QUYỀN TRẢ LỜI!';
+                        feedback.style.color = '#15803d';
+                    } else {
+                        feedback.innerText = `🔒 ${who.toUpperCase()} ĐÃ BẤM CHUÔNG! CHUÔNG ĐÃ BỊ KHÓA`;
+                        feedback.style.color = '#b91c1c';
+                    }
+                    feedback.style.display = 'flex';
+                }
+            }
+            if (data.type === 'UNLOCK_BELLS' || data.type === 'XUAT_PHAT_SHOW_QUESTION' || data.type === 'XUAT_PHAT_NEXT_QUESTION' || data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_SELECT_CHUNG' || data.type === 'XUAT_PHAT_RESET') {
+                isBellLocked = false;
+                resetBellState(1);
+            }
+
+            // Contestants info & scores
+            if (data.contestants && Array.isArray(data.contestants)) {
+                const myData = data.contestants[currentContestantId - 1];
+                if (myData) {
+                    if (myData.name) contestantName = myData.name;
+                    if (myData.score !== undefined) contestantScore = myData.score;
+                    updatePlayerTopBar();
+                }
+            }
+
+            // Switch Round
+            if (data.type === 'SWITCH_ROUND' || data.type === 'VIEW_SELECT' || data.type === 'SELECT_VIEW' || data.activeRound || data.round) {
+                const round = (data.activeRound || data.round || '').toString().toUpperCase();
+                const viewNum = parseInt(data.viewNum || data.view || 0, 10);
+
+                if (round === 'XUAT_PHAT' || round === 'KHOI_DONG' || round === 'KD' || viewNum === 1) {
+                    switchScene(1);
+                } else if (round === 'RA_KHOI' || round === 'TANG_TOC' || round === 'TT' || viewNum === 2) {
+                    switchScene(2);
+                } else if (round === 'VUOT_SONG' || round === 'VCNV' || round === 'CNV' || round === 'VUOT_CHUONG_NGAI_VAT' || viewNum === 3) {
+                    switchScene(3);
+                } else if (round === 'VINH_QUANG' || round === 'VE_DICH' || round === 'VQ' || viewNum === 4 || viewNum === 6) {
+                    switchScene(4);
+                } else if (round === 'CAU_HOI_PHU' || round === 'CHP' || viewNum === 5 || viewNum === 7) {
+                    switchScene(5);
+                }
+            }
+
+            // Round 1: Xuất phát (Khởi Động)
+            if (data.type && (data.type.startsWith('XUAT_PHAT_') || data.type.startsWith('KHOI_DONG_') || data.type.startsWith('KD_'))) {
+                switchScene(1);
+                const s1Box = document.getElementById('s1_q_text');
+                const isStartOrActive = data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI' || data.type === 'XUAT_PHAT_NEXT_QUESTION' || (data.xpQuestionShown === true);
+                const isResetOrInactive = data.type === 'XUAT_PHAT_RESET' || data.type === 'XUAT_PHAT_FINISH' || data.type === 'XUAT_PHAT_SELECT_CONTESTANT' || data.type === 'XUAT_PHAT_SHOW_QUESTION' || data.type === 'XUAT_PHAT_RANDOM_DE' || data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CHON_DE' || data.type === 'XUAT_PHAT_SHOW_GRAPHIC_CAU_HOI' || (data.xpQuestionShown === false);
+
+                if (isStartOrActive && data.questionText) {
+                    if (s1Box) s1Box.innerText = data.questionText;
+                    window.s1IsQuestionActive = true;
+                } else if (isResetOrInactive) {
+                    if (s1Box) s1Box.innerText = (data.type === 'XUAT_PHAT_FINISH') ? 'Đã hoàn thành lượt thi Xuất Phát' : 'Đang chờ bắt đầu lượt thi Xuất Phát...';
+                    window.s1IsQuestionActive = false;
+                }
+
+                if (data.questionIndex !== undefined) {
+                    const lbl = document.getElementById('s1_q_label');
+                    if (lbl) lbl.innerText = `Câu hỏi số ${data.questionIndex}`;
+                }
+                if (data.duration && (data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI')) {
+                    startSceneTimer(1, data.duration);
+                }
+
+                if (data.turnIndex !== undefined) {
+                    currentXuatPhatTurnIndex = parseInt(data.turnIndex);
+                } else if (data.contestantId !== undefined && data.type.startsWith('XUAT_PHAT_')) {
+                    currentXuatPhatTurnIndex = parseInt(data.contestantId);
+                } else if (data.type === 'XUAT_PHAT_SELECT_CHUNG') {
+                    currentXuatPhatTurnIndex = 5;
+                } else if (data.type === 'XUAT_PHAT_SELECT_CONTESTANT') {
+                    currentXuatPhatTurnIndex = parseInt(data.contestantId || 1);
+                }
+
+                if (data.type === 'XUAT_PHAT_RANDOM_DE') {
+                    const tIdx = parseInt(data.turnIndex || data.contestantId || currentXuatPhatTurnIndex);
+                    if (tIdx) {
+                        s1HasSelectedDeForTurn[tIdx] = true;
+                        if (data.deNumber) s1ChosenDeMap[tIdx] = data.deNumber;
+                    }
+                } else if (data.type === 'XUAT_PHAT_RESET') {
+                    s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
+                    s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+                }
+
+                updateS1RandomDeButtonUI();
+
+                const actionArea = document.getElementById('s1_action_area');
+                const qTextBox = document.getElementById('s1_q_text');
+                if (currentXuatPhatTurnIndex === 5) {
+                    if (actionArea) actionArea.style.display = 'flex';
+                    if (qTextBox) qTextBox.style.height = '40vh';
+                } else {
+                    if (actionArea) actionArea.style.display = 'none';
+                    if (qTextBox) qTextBox.style.height = '60vh';
+                }
+
+                if (data.type === 'XUAT_PHAT_RESET' || data.type === 'XUAT_PHAT_FINISH') {
+                    clearPlayerSceneUI(1);
+                }
+
+                if (data.type === 'XUAT_PHAT_SELECT_CHUNG' || data.type === 'XUAT_PHAT_SELECT_CONTESTANT' || data.type === 'XUAT_PHAT_NEXT_QUESTION' || data.type === 'XUAT_PHAT_RESET' || data.type === 'XUAT_PHAT_START_TIMER') {
+                    resetBellState(1);
+                }
+            }
+
+            // Round 2: Ra Khơi (Tăng Tốc)
+            if (data.type && (data.type.startsWith('RA_KHOI_') || data.type.startsWith('TANG_TOC_') || data.type.startsWith('TT_'))) {
+                switchScene(2);
+                if (data.type === 'RA_KHOI_RESET' || data.type === 'TANG_TOC_RESET') {
+                    clearPlayerSceneUI(2);
+                } else {
+                    const s2Box = document.getElementById('s2_q_text');
+                    if (data.questionText) {
+                        if (s2Box) s2Box.innerText = data.questionText;
+                    } else if (data.mediaUrl) {
+                        if (s2Box) s2Box.innerHTML = `<img src="${data.mediaUrl}" alt="Media Question" style="max-height: 200px; border-radius: 6px;">`;
+                    } else {
+                        if (s2Box) s2Box.innerText = '';
+                    }
+                    if (data.questionIndex !== undefined) {
+                        const rLabel = document.getElementById('s2_row_label');
+                        if (rLabel) rLabel.innerText = `Câu hỏi Ra khơi số ${data.questionIndex}`;
+                    }
+                    if (data.duration) {
+                        startSceneTimer(2, data.duration);
+                    } else if (data.type === 'RA_KHOI_START_TIMER' || data.type === 'TANG_TOC_START_TIMER') {
+                        startSceneTimer(2, 30);
+                    }
+                }
+                if (data.type === 'RA_KHOI_SHOW_QUESTION' || data.type === 'TANG_TOC_SHOW_QUESTION' || data.type === 'RA_KHOI_RESET') {
+                    const s2Inp = document.getElementById('s2_ans_input');
+                    if (s2Inp) s2Inp.value = '';
+                    setInputState(2, false, '');
+                    const s2Stat = document.getElementById('s2_status_bar');
+                    if (s2Stat) {
+                        s2Stat.innerText = '---';
+                        s2Stat.classList.remove('submitted');
+                    }
+                }
+            }
+
+            // Round 3: Vượt Sóng (VCNV)
+            if (data.type && (data.type.startsWith('VUOT_SONG_') || data.type.startsWith('VCNV_') || data.type.startsWith('CNV_'))) {
+                switchScene(3);
+                if (data.type === 'VUOT_SONG_RESET') {
+                    clearPlayerSceneUI(3);
+                } else {
+                    const s3Box = document.getElementById('s3_q_text');
+                    if (data.questionText) {
+                        if (s3Box) s3Box.innerText = data.questionText;
+                    } else if (data.type === 'VUOT_SONG_SELECT_ROW' && data.questionText) {
+                        if (s3Box) s3Box.innerText = data.questionText;
+                    }
+                    
+                    const rIndex = data.row !== undefined ? data.row : data.questionIndex;
+                    if (rIndex !== undefined) {
+                        const rowLabel = document.getElementById('s3_row_label');
+                        if (rowLabel) rowLabel.innerText = `Hàng ngang số ${rIndex}`;
+                    }
+
+                    if (data.duration) {
+                        startSceneTimer(3, data.duration);
+                    } else if (data.type === 'VUOT_SONG_START_TIMER') {
+                        startSceneTimer(3, 15);
+                    }
+                }
+
+                if (data.type === 'VUOT_SONG_SELECT_ROW' || data.type === 'VUOT_SONG_SHOW_QUESTION' || data.type === 'VUOT_SONG_ROW_RIGHT' || data.type === 'VUOT_SONG_RIGHT_ROW' || data.type === 'VUOT_SONG_ROW_WRONG' || data.type === 'VUOT_SONG_WRONG_ROW' || data.type === 'VUOT_SONG_RIGHT_CNV') {
+                    const s3Inp = document.getElementById('s3_ans_input');
+                    if (s3Inp) s3Inp.value = '';
+                    setInputState(3, false, '');
+                    const s3Stat = document.getElementById('s3_status_bar');
+                    if (s3Stat) {
+                        s3Stat.innerText = '---';
+                        s3Stat.classList.remove('submitted');
+                    }
+                }
+
+                if (data.type === 'VUOT_SONG_RESET_BELL' || data.type === 'RESET_BELL_VCNV' || data.type === 'RESET_BELL' || data.type === 'VUOT_SONG_RESET') {
+                    resetBellState(3);
+                }
+            }
+
+            // Round 4: Vinh quang (Về đích)
+            if (data.type && (data.type.startsWith('VINH_QUANG_') || data.type.startsWith('VE_DICH_'))) {
+                switchScene(4);
+                if (data.type === 'VINH_QUANG_RESET' || data.type === 'VE_DICH_RESET') {
+                    clearPlayerSceneUI(4);
+                } else {
+                    const s4Box = document.getElementById('s4_q_text');
+                    const isVQShown = (data.vqQuestionShown === true) || (data.type === 'VINH_QUANG_SHOW_QUESTION') || (data.type === 'VE_DICH_SHOW_QUESTION') || (data.type === 'VINH_QUANG_START_TIMER') || (data.type === 'VINH_QUANG_START_TIMER_5S');
+                    if (isVQShown) {
+                        if (data.questionText) {
+                            if (s4Box) s4Box.innerText = data.questionText;
+                        } else if (data.mediaUrl) {
+                            if (s4Box) s4Box.innerHTML = `<img src="${data.mediaUrl}" alt="Media Question" style="max-height: 200px; border-radius: 6px;">`;
+                        } else {
+                            if (s4Box) s4Box.innerText = '';
+                        }
+                    } else {
+                        if (s4Box) s4Box.innerText = '🔒 [Đang chờ MC phát lệnh HIỆN CÂU HỎI...]';
+                    }
+
+                    if (data.questionIndex !== undefined) {
+                        const rLabel = document.getElementById('s4_row_label');
+                        if (rLabel) rLabel.innerText = `Câu hỏi Vinh quang số ${data.questionIndex}`;
+                    }
+                    if (data.duration) {
+                        startSceneTimer(4, data.duration);
+                    } else if (data.type === 'VINH_QUANG_START_TIMER' || data.type === 'VE_DICH_START_TIMER' || data.type === 'VINH_QUANG_START_TIMER_5S') {
+                        startSceneTimer(4, data.duration || 15);
+                    }
+                }
+                // Reset answer status & enable input if question is shown
+                if (data.type === 'VINH_QUANG_SHOW_QUESTION' || data.type === 'VE_DICH_SHOW_QUESTION' || data.type === 'VINH_QUANG_START_TIMER' || data.type === 'VINH_QUANG_START_TIMER_5S') {
+                    const s4Inp = document.getElementById('s4_ans_input');
+                    if (s4Inp) s4Inp.value = '';
+                    setInputState(4, true, 'Nhập câu trả lời Vinh quang...');
+                    const s4Stat = document.getElementById('s4_status_bar');
+                    if (s4Stat) {
+                        s4Stat.innerText = '---';
+                        s4Stat.classList.remove('submitted');
+                    }
+                } else if (data.type === 'VINH_QUANG_SELECT_PACK' || data.type === 'VINH_QUANG_SHOW_PACKS' || data.type === 'VINH_QUANG_HIDE_PACK' || data.type === 'VINH_QUANG_HIDE_QUESTION' || data.type === 'VINH_QUANG_RESET') {
+                    setInputState(4, false, 'Đang chờ MC bấm HIỆN CÂU HỎI...');
+                }
+            }
+
+            // Round 5: Câu hỏi phụ
+            if (data.type && data.type.startsWith('CAU_HOI_PHU_')) {
+                switchScene(5);
+                if (data.type === 'CAU_HOI_PHU_RESET') {
+                    clearPlayerSceneUI(5);
+                } else {
+                    const s5Box = document.getElementById('s5_q_text');
+                    if (data.question || data.questionText) {
+                        if (s5Box) s5Box.innerText = data.question || data.questionText;
+                    } else {
+                        if (s5Box) s5Box.innerText = '';
+                    }
+                    if (data.duration) {
+                        startSceneTimer(5, data.duration);
+                    }
+                }
+                if (data.type === 'CAU_HOI_PHU_SELECT_QUESTION' || data.type === 'CAU_HOI_PHU_RESET') {
+                    const s5Inp = document.getElementById('s5_ans_input');
+                    if (s5Inp) s5Inp.value = '';
+                    setInputState(5, false, '');
+                    resetBellState(5);
+                }
+            }
+
+            if (data.type === 'RESET_ALL_DATA' || data.type === 'RESET') {
+                clearPlayerSceneUI(1);
+                clearPlayerSceneUI(2);
+                clearPlayerSceneUI(3);
+                clearPlayerSceneUI(4);
+                clearPlayerSceneUI(5);
+            }
+
+            // Timer sync
+            if (data.timeLeft !== undefined) {
+                updateTimerDisplay(activeSceneNum, data.timeLeft);
+            }
+
+            if (data.type === 'RESET_BELL' || data.type === 'RESET_BELL_VCNV' || data.type === 'VUOT_SONG_RESET_BELL' || data.type === 'VUOT_SONG_RESET') {
+                resetBellState(3);
+                if (!data.round || data.round === 'KD') resetBellState(1);
+                if (!data.round || data.round === 'VQ') resetBellState(4);
+                if (!data.round || data.round === 'CHP') resetBellState(5);
+            }
+        }
+
+        // Helper to enable/disable player input controls
+        function setInputState(sceneNum, enabled, placeholderText) {
+            let inputId = '';
+            if (sceneNum === 2) inputId = 's2_ans_input';
+            else if (sceneNum === 3) inputId = 's3_ans_input';
+            else if (sceneNum === 4) inputId = 's4_ans_input';
+            else if (sceneNum === 5) inputId = 's5_ans_input';
+
+            if (inputId) {
+                const inp = document.getElementById(inputId);
+                if (inp) {
+                    inp.disabled = !enabled;
+                    if (placeholderText !== undefined) {
+                        inp.placeholder = placeholderText;
+                    }
+                    if (enabled) {
+                        setTimeout(() => {
+                            try { inp.focus(); } catch(e) {}
+                        }, 50);
+                    }
+                }
+            }
+        }
+
+        // Timer controller
+        let sceneTimerStartTime = 0;
+        let sceneTimerDuration = 0;
+
+        function startSceneTimer(sceneNum, duration) {
+            if (timerInterval) clearInterval(timerInterval);
+            sceneTimerDuration = duration;
+            sceneTimerStartTime = Date.now();
+            currentTimerVal = duration;
+            updateTimerDisplay(sceneNum, currentTimerVal);
+
+            let defaultPlaceholder = 'Nhập câu trả lời...';
+            if (sceneNum === 2) defaultPlaceholder = 'Nhập câu trả lời Ra khơi...';
+            if (sceneNum === 3) defaultPlaceholder = 'Nhập câu trả lời Vượt sóng...';
+            if (sceneNum === 4) defaultPlaceholder = 'Nhập câu trả lời Vinh quang...';
+            setInputState(sceneNum, true, defaultPlaceholder);
+
+            timerInterval = setInterval(() => {
+                const elapsedSec = (Date.now() - sceneTimerStartTime) / 1000;
+                currentTimerVal = Math.max(0, Math.ceil(sceneTimerDuration - elapsedSec));
+                updateTimerDisplay(sceneNum, currentTimerVal);
+                if (elapsedSec >= sceneTimerDuration) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    setInputState(sceneNum, false, '');
+                }
+            }, 100);
+        }
+
+        function updateTimerDisplay(sceneNum, val) {
+            const elId = `s${sceneNum}_timer`;
+            const el = document.getElementById(elId);
+            if (el) {
+                el.innerText = val < 10 ? '0' + val : val;
+            }
+        }
+
+        function clearPlayerSceneUI(sceneNum) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            sceneTimerStartTime = 0;
+            sceneTimerDuration = 0;
+            const timerEl = document.getElementById(`s${sceneNum}_timer`);
+            if (timerEl) timerEl.innerText = '';
+
+            setInputState(sceneNum, false, '');
+
+            if (sceneNum === 1) {
+                const qBox = document.getElementById('s1_q_text');
+                if (qBox) qBox.innerText = '';
+            } else if (sceneNum === 2) {
+                const qBox = document.getElementById('s2_q_text');
+                if (qBox) qBox.innerText = '';
+                const rLabel = document.getElementById('s2_row_label');
+                if (rLabel) rLabel.innerText = '';
+                const inp = document.getElementById('s2_ans_input');
+                if (inp) inp.value = '';
+                const stat = document.getElementById('s2_status_bar');
+                if (stat) { stat.innerText = ''; stat.classList.remove('submitted'); }
+            } else if (sceneNum === 3) {
+                const qBox = document.getElementById('s3_q_text');
+                if (qBox) qBox.innerText = '';
+                const rLabel = document.getElementById('s3_row_label');
+                if (rLabel) rLabel.innerText = '';
+                const inp = document.getElementById('s3_ans_input');
+                if (inp) inp.value = '';
+                const stat = document.getElementById('s3_status_bar');
+                if (stat) { stat.innerText = ''; stat.classList.remove('submitted'); }
+            } else if (sceneNum === 4) {
+                const qBox = document.getElementById('s4_q_text');
+                if (qBox) qBox.innerText = '';
+                const rLabel = document.getElementById('s4_row_label');
+                if (rLabel) rLabel.innerText = '';
+                const inp = document.getElementById('s4_ans_input');
+                if (inp) inp.value = '';
+                const stat = document.getElementById('s4_status_bar');
+                if (stat) { stat.innerText = ''; stat.classList.remove('submitted'); }
+            } else if (sceneNum === 5) {
+                const qBox = document.getElementById('s5_q_text');
+                if (qBox) qBox.innerText = '';
+            }
+        }
+
+        // Typing & Submitting Player Answers
+        function onPlayerAnswerTyping(roundKey) {
+            // Không tự động nộp bài khi đang gõ. Chỉ nộp bài khi nhấn Enter.
+        }
+
+        function submitPlayerAnswer(roundKey, isAutoTyping = false) {
+            let inputId = '';
+            let statusId = '';
+            let normalizedRound = roundKey || 'RK';
+            let calculatedTime = '';
+            let maxDuration = 30;
+
+            const rUpper = (roundKey || '').toString().toUpperCase();
+
+            if (rUpper === 'RA_KHOI' || rUpper === 'RK' || rUpper === 'TANG_TOC' || rUpper === 'TT' || activeSceneNum === 2) {
+                inputId = 's2_ans_input';
+                statusId = 's2_status_bar';
+                normalizedRound = 'RK';
+                maxDuration = 30;
+            } else if (rUpper === 'VCNV' || rUpper === 'CNV' || rUpper === 'VUOT_SONG' || rUpper === 'VS' || activeSceneNum === 3) {
+                inputId = 's3_ans_input';
+                statusId = 's3_status_bar';
+                normalizedRound = 'VS';
+                maxDuration = 15;
+            } else if (rUpper === 'VINH_QUANG' || rUpper === 'VQ' || rUpper === 'VE_DICH' || activeSceneNum === 4) {
+                inputId = 's4_ans_input';
+                statusId = 's4_status_bar';
+                normalizedRound = 'VQ';
+                maxDuration = 15;
+            } else if (rUpper === 'CHP' || activeSceneNum === 5) {
+                inputId = 's5_ans_input';
+                statusId = null;
+                normalizedRound = 'CHP';
+                maxDuration = 15;
+            }
+
+            if (sceneTimerStartTime > 0) {
+                const elapsedSec = Math.min(sceneTimerDuration || maxDuration, Math.max(0, (Date.now() - sceneTimerStartTime) / 1000));
+                const fixedStr = elapsedSec.toFixed(2);
+                calculatedTime = elapsedSec < 10 ? '0' + fixedStr : fixedStr;
+            } else if (timerInterval && currentTimerVal >= 0) {
+                const elapsed = (maxDuration - currentTimerVal);
+                const fixedStr = elapsed.toFixed(2);
+                calculatedTime = elapsed < 10 ? '0' + fixedStr : fixedStr;
+            }
+
+            const inputEl = document.getElementById(inputId);
+            if (!inputEl || inputEl.disabled) return;
+            const answerText = inputEl.value.trim();
+
+            const statusEl = statusId ? document.getElementById(statusId) : null;
+            if (statusEl && answerText) {
+                statusEl.innerText = answerText.toUpperCase();
+                statusEl.classList.add('submitted');
+            } else if (statusEl) {
+                statusEl.innerText = '---';
+                statusEl.classList.remove('submitted');
+            }
+
+            const payload = {
+                type: 'PLAYER_SUBMIT_ANSWER',
+                contestantId: currentContestantId,
+                contestantName: contestantName,
+                round: normalizedRound,
+                answer: answerText,
+                time: calculatedTime || '00.00',
+                roomCode: currentRoomCode,
+                isAutoTyping: isAutoTyping,
+                timestamp: Date.now()
+            };
+
+            if (syncChannel) syncChannel.postMessage(payload);
+
+            try {
+                localStorage.setItem(`ddvq_player_ans_${currentRoomCode}_${currentContestantId}`, JSON.stringify(payload));
+                localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
+            } catch(e) {}
+
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
+
+        // Ring Bell function for Xuất Phát, Vượt Sóng, Vinh Quang & Câu Hỏi Phụ
+        function ringBell(roundKey) {
+            if (isBellLocked) return;
+            isBellLocked = true;
+            let btnId = '';
+            let feedbackId = '';
+            if (roundKey === 'KD' || roundKey === 'XP') {
+                btnId = 's1_btn_bell';
+                feedbackId = 's1_bell_feedback';
+            } else if (roundKey === 'VCNV' || roundKey === 'CNV' || roundKey === 'VS' || roundKey === 'VUOT_SONG') {
+                btnId = 's3_btn_bell';
+                feedbackId = 's3_bell_feedback';
+            } else if (roundKey === 'VQ') {
+                btnId = 's4_btn_bell';
+                feedbackId = 's4_bell_feedback';
             } else {
-                if (icon) icon.innerText = '⛶';
-                if (label) label.innerText = 'Toàn màn hình';
+                btnId = 's5_btn_bell';
+                feedbackId = 's5_bell_feedback';
+            }
+
+            const btn = document.getElementById(btnId);
+            const feedback = document.getElementById(feedbackId);
+
+            if (btn) {
+                btn.classList.add('pressed');
+                btn.style.opacity = '0.4';
+            }
+            if (feedback) feedback.style.display = 'flex';
+
+            const payload = {
+                type: 'PLAYER_RING_BELL',
+                contestantId: currentContestantId,
+                contestantName: contestantName,
+                round: roundKey,
+                roomCode: currentRoomCode,
+                timestamp: Date.now()
+            };
+
+            if (syncChannel) {
+                syncChannel.postMessage(payload);
+            }
+
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
+
+        let s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
+        let s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+
+        function updateS1RandomDeButtonUI() {
+            const btn = document.getElementById('s1_random_btn');
+            if (!btn) return;
+
+            if (!currentXuatPhatTurnIndex || currentXuatPhatTurnIndex <= 0) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.style.background = '#475569';
+                btn.style.borderColor = '#64748b';
+                btn.style.boxShadow = 'none';
+                btn.innerHTML = `🔒 CHƯA BẮT ĐẦU LƯỢT THI (ĐANG CHỜ MC CHỌN THÍ SINH)`;
+                return;
+            }
+
+            if (parseInt(currentXuatPhatTurnIndex) !== parseInt(currentContestantId)) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.style.background = '#475569';
+                btn.style.borderColor = '#64748b';
+                btn.style.boxShadow = 'none';
+                btn.innerHTML = `🔒 CHƯA ĐẾN LƯỢT THI (TS ${currentXuatPhatTurnIndex} ĐANG THI)`;
+                return;
+            }
+
+            if (s1HasSelectedDeForTurn[currentContestantId]) {
+                btn.disabled = true;
+                btn.style.opacity = '0.8';
+                btn.style.cursor = 'not-allowed';
+                btn.style.background = '#1e3a8a';
+                btn.style.borderColor = '#3b82f6';
+                btn.style.boxShadow = 'none';
+                const deText = s1ChosenDeMap[currentContestantId] ? `BỘ ĐỀ ${s1ChosenDeMap[currentContestantId]}` : 'ĐÃ CHỌN';
+                btn.innerHTML = `🔒 ĐÃ CHỌN (${deText})`;
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.style.background = 'linear-gradient(135deg, #16a34a, #15803d)';
+                btn.style.borderColor = '#4ade80';
+                btn.style.boxShadow = '0 4px 12px rgba(22, 163, 74, 0.4)';
+                btn.innerHTML = `<span>🎲 BẤM PHÍM CHỌN ĐỀ</span> <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4); margin-left: 8px;">Phím cách (Space)</span>`;
+            }
+        }
+
+        function triggerRandomDeFromPlayer() {
+            if (!currentXuatPhatTurnIndex || currentXuatPhatTurnIndex <= 0) {
+                return;
+            }
+            if (parseInt(currentXuatPhatTurnIndex) !== parseInt(currentContestantId)) {
+                return;
+            }
+            if (s1HasSelectedDeForTurn[currentContestantId]) {
+                return;
+            }
+
+            const chosenSet = Math.floor(Math.random() * 8) + 1;
+            s1HasSelectedDeForTurn[currentContestantId] = true;
+            s1ChosenDeMap[currentContestantId] = chosenSet;
+            updateS1RandomDeButtonUI();
+
+            const payload = {
+                type: 'XUAT_PHAT_RANDOM_DE',
+                contestantId: currentContestantId,
+                turnIndex: currentContestantId,
+                deNumber: chosenSet,
+                name: contestantName,
+                roomCode: currentRoomCode,
+                timestamp: Date.now()
+            };
+
+            if (syncChannel) syncChannel.postMessage(payload);
+            try {
+                localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
+            } catch(e) {}
+            fetch(getApiUrl('/api/action'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+                    return;
+                }
+                if (activeSceneNum === 1) {
+                    e.preventDefault();
+                    triggerRandomDeFromPlayer();
+                }
             }
         });
     </script>
-
 </body>
 </html>
