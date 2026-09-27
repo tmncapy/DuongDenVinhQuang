@@ -1,4 +1,25 @@
-let contestantId = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) ? window.FIXED_CONTESTANT_ID : (parseInt(localStorage.getItem('contestant_id')) || 1);
+function getInitialContestantId() {
+    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
+        return parseInt(window.FIXED_CONTESTANT_ID);
+    }
+    if (typeof window !== 'undefined' && window.location) {
+        const path = window.location.pathname.toLowerCase();
+        if (path.includes('player1')) return 1;
+        if (path.includes('player2')) return 2;
+        if (path.includes('player3')) return 3;
+        if (path.includes('player4')) return 4;
+
+        const params = new URLSearchParams(window.location.search);
+        const slotParam = parseInt(params.get('slot') || params.get('ts') || params.get('id') || params.get('contestant') || '0');
+        if (slotParam >= 1 && slotParam <= 4) return slotParam;
+    }
+    const sessionSlot = (typeof sessionStorage !== 'undefined') ? parseInt(sessionStorage.getItem('ddvq_active_slot') || '0') : 0;
+    if (sessionSlot >= 1 && sessionSlot <= 4) return sessionSlot;
+
+    return 1;
+}
+
+let contestantId = getInitialContestantId();
 let currentRoomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
 let currentRoomAuth = localStorage.getItem('ddvq_room_auth') || '123456';
 let playerContestants = [];
@@ -10,7 +31,10 @@ function updateS1RandomDeButtonUI() {
     const btn = document.getElementById('s1_random_btn');
     if (!btn) return;
 
-    if (!currentS1TurnIndex || currentS1TurnIndex <= 0) {
+    const currentTurn = parseInt(currentS1TurnIndex) || 0;
+    const myId = parseInt(contestantId) || 1;
+
+    if (!currentTurn || currentTurn <= 0) {
         btn.disabled = true;
         btn.style.opacity = '0.5';
         btn.style.cursor = 'not-allowed';
@@ -21,25 +45,25 @@ function updateS1RandomDeButtonUI() {
         return;
     }
 
-    if (parseInt(currentS1TurnIndex) !== parseInt(contestantId)) {
+    if (currentTurn !== myId) {
         btn.disabled = true;
         btn.style.opacity = '0.5';
         btn.style.cursor = 'not-allowed';
         btn.style.background = '#475569';
         btn.style.borderColor = '#64748b';
         btn.style.boxShadow = 'none';
-        btn.innerHTML = `<span>🔒 CHƯA ĐẾN LƯỢT THI (TS ${currentS1TurnIndex} ĐANG THI)</span>`;
+        btn.innerHTML = `<span>🔒 CHƯA ĐẾN LƯỢT THI (TS ${currentTurn} ĐANG THI)</span>`;
         return;
     }
 
-    if (s1HasSelectedDeForTurn[contestantId]) {
+    if (s1HasSelectedDeForTurn && s1HasSelectedDeForTurn[myId]) {
         btn.disabled = true;
         btn.style.opacity = '0.8';
         btn.style.cursor = 'not-allowed';
         btn.style.background = '#1e3a8a';
         btn.style.borderColor = '#3b82f6';
         btn.style.boxShadow = 'none';
-        const deText = s1ChosenDeMap[contestantId] ? `BỘ ĐỀ ${s1ChosenDeMap[contestantId]}` : 'ĐÃ CHỌN';
+        const deText = (s1ChosenDeMap && s1ChosenDeMap[myId]) ? `BỘ ĐỀ ${s1ChosenDeMap[myId]}` : 'ĐÃ CHỌN';
         btn.innerHTML = `<span>🔒 ĐÃ CHỌN (${deText})</span>`;
     } else {
         btn.disabled = false;
@@ -48,7 +72,7 @@ function updateS1RandomDeButtonUI() {
         btn.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)';
         btn.style.borderColor = '#60a5fa';
         btn.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.4)';
-        btn.innerHTML = `<span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span><span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4);">Phím cách (Space)</span>`;
+        btn.innerHTML = `<span>🎲 CHỌN ĐỀ NGẪU NHIÊN</span><span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid rgba(255,255,255,0.4); margin-left: 8px;">Phím cách (Space)</span>`;
     }
 }
 
@@ -136,15 +160,15 @@ function onManualRoomSettingsChange() {
 
 function onSelectContestant(val) {
     if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
-        contestantId = window.FIXED_CONTESTANT_ID;
+        contestantId = parseInt(window.FIXED_CONTESTANT_ID);
         const sel = document.getElementById('contestant_select');
         if (sel) sel.value = contestantId;
-        localStorage.setItem('contestant_id', contestantId);
         return;
     }
     contestantId = parseInt(val) || 1;
-    localStorage.setItem('contestant_id', contestantId);
-    sessionStorage.setItem('ddvq_active_slot', contestantId);
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('ddvq_active_slot', contestantId);
+    }
     highlightLastChosenSlot();
 
     const myName = (playerContestants[contestantId - 1]?.name || `Thí sinh ${contestantId}`).toLocaleUpperCase('vi-VN');
@@ -163,8 +187,25 @@ function onSelectContestant(val) {
 }
 
 function chooseContestantSlot(slotId) {
-    slotId = parseInt(slotId) || 1;
+    if (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID) {
+        slotId = parseInt(window.FIXED_CONTESTANT_ID);
+    } else if (typeof window !== 'undefined' && window.location) {
+        const path = window.location.pathname.toLowerCase();
+        if (path.includes('player1')) slotId = 1;
+        else if (path.includes('player2')) slotId = 2;
+        else if (path.includes('player3')) slotId = 3;
+        else if (path.includes('player4')) slotId = 4;
+        else {
+            slotId = parseInt(slotId) || 1;
+        }
+    } else {
+        slotId = parseInt(slotId) || 1;
+    }
     contestantId = slotId;
+
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('ddvq_active_slot', slotId);
+    }
 
     const sel = document.getElementById('contestant_select');
     if (sel) sel.value = slotId;
@@ -203,14 +244,13 @@ function chooseContestantSlot(slotId) {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                localStorage.setItem('contestant_id', slotId);
-                sessionStorage.setItem('ddvq_active_slot', slotId);
+                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('ddvq_active_slot', slotId);
                 const modal = document.getElementById('room_code_modal');
                 if (modal) modal.style.display = 'none';
                 showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
                 startHeartbeat();
             } else {
-                sessionStorage.removeItem('ddvq_active_slot');
+                if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('ddvq_active_slot');
                 if (heartbeatInterval) clearInterval(heartbeatInterval);
                 const modal = document.getElementById('room_code_modal');
                 if (modal) modal.style.display = 'flex';
@@ -223,16 +263,14 @@ function chooseContestantSlot(slotId) {
         })
         .catch((err) => {
             console.error("Join fallback error:", err);
-            localStorage.setItem('contestant_id', slotId);
-            sessionStorage.setItem('ddvq_active_slot', slotId);
+            if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('ddvq_active_slot', slotId);
             const modal = document.getElementById('room_code_modal');
             if (modal) modal.style.display = 'none';
             showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
             startHeartbeat();
         });
     } else {
-        localStorage.setItem('contestant_id', slotId);
-        sessionStorage.setItem('ddvq_active_slot', slotId);
+        if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('ddvq_active_slot', slotId);
         const modal = document.getElementById('room_code_modal');
         if (modal) modal.style.display = 'none';
         showToast(`🏆 Đã vào vị trí Thí sinh ${contestantId}: ${myName}`);
@@ -330,11 +368,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // 1. Slot auto-restoration:
     // Enter directly without blocking modal
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramSlot = parseInt(urlParams.get('slot') || urlParams.get('ts') || urlParams.get('id') || '0');
-    const savedSlot = (typeof window !== 'undefined' && window.FIXED_CONTESTANT_ID)
-        ? window.FIXED_CONTESTANT_ID
-        : (paramSlot || parseInt(sessionStorage.getItem('ddvq_active_slot')) || parseInt(localStorage.getItem('contestant_id')) || 1);
+    const savedSlot = getInitialContestantId();
 
     chooseContestantSlot(savedSlot || 1);
     const modal = document.getElementById('room_code_modal');
@@ -456,6 +490,21 @@ function applyPlayerGameState(data) {
             updateContestantScoreDisplay(myData.score);
         }
     }
+
+    // Sync Xuất Phát turn selected de maps
+    if (data.s1HasSelectedDeForTurn) {
+        s1HasSelectedDeForTurn = { ...data.s1HasSelectedDeForTurn };
+    }
+    if (data.s1ChosenDeMap) {
+        s1ChosenDeMap = { ...data.s1ChosenDeMap };
+    }
+    // Update S1 turn index if provided in state
+    if (data.currentXuatPhatTurn !== undefined) {
+        currentS1TurnIndex = parseInt(data.currentXuatPhatTurn) || 0;
+    } else if (data.turnIndex !== undefined && round === 'XUAT_PHAT') {
+        currentS1TurnIndex = parseInt(data.turnIndex) || 0;
+    }
+    updateS1RandomDeButtonUI();
 
     // 3. Sync Vuot Song grid & row
     if (data.vuotSong) {
@@ -715,10 +764,32 @@ let s4TimerInterval = null;
 let s4TimeLeft = 0;
 let s4TimerStartTime = 0;
 let s1QIndex = 0;
+let s1Corrects = 0;
+let s1Totals = 0;
 let s3SelectedRow = 0;
 
 let playerVsData = null;
 let playerOpenedRows = {};
+let s1QuestionStates = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null };
+
+function updateS1CorrectCountFromButtons() {
+    let corrects = 0;
+    let totals = 0;
+    for (let i = 1; i <= 10; i++) {
+        if (s1QuestionStates[i] === 'correct') {
+            corrects++;
+            totals++;
+        } else if (s1QuestionStates[i] === 'wrong') {
+            totals++;
+        }
+    }
+    s1Corrects = corrects;
+    s1Totals = totals;
+    const correctEl = document.getElementById('s1_correct_count');
+    if (correctEl) {
+        correctEl.innerText = `${s1Corrects}/${s1Totals}`;
+    }
+}
 
 function updateMasterRemainingTime(secStr) {
     const el = document.getElementById('player_remaining_seconds');
@@ -1520,8 +1591,14 @@ function setS1QuestionIndex(idx) {
     for (let i = 1; i <= 10; i++) {
         const btn = document.getElementById(`s1_btn_${i}`);
         if (btn) {
-            if (i === idx + 1) btn.className = 's1-page-btn active';
-            else if (!btn.classList.contains('correct') && !btn.classList.contains('wrong')) btn.className = 's1-page-btn';
+            let classes = ['s1-page-btn'];
+            if (i === idx + 1) {
+                classes.push('active');
+            }
+            if (s1QuestionStates[i]) {
+                classes.push(s1QuestionStates[i]);
+            }
+            btn.className = classes.join(' ');
         }
     }
 }
@@ -1709,6 +1786,10 @@ function handlePlayerMessage(data) {
             if (document.getElementById('s1_score_box')) {
                 document.getElementById('s1_score_box').innerText = `Điểm: ${data.score || 0}`;
             }
+            s1Corrects = 0;
+            s1Totals = 0;
+            updateS1CorrectCountFromButtons();
+            updateS1RandomDeButtonUI();
         } else if (data.turnIndex !== undefined || data.currentXuatPhatTurn !== undefined) {
             currentS1TurnIndex = parseInt(data.turnIndex !== undefined ? data.turnIndex : data.currentXuatPhatTurn) || 0;
         }
@@ -1723,6 +1804,10 @@ function handlePlayerMessage(data) {
             currentS1TurnIndex = parseInt(data.turnIndex) || 0;
             s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
             s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
+            s1QuestionStates = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null };
+            s1Corrects = 0;
+            s1Totals = 0;
+            updateS1CorrectCountFromButtons();
         }
 
         updateS1RandomDeButtonUI();
@@ -1775,6 +1860,7 @@ function handlePlayerMessage(data) {
 
         if (data.questionIndex !== undefined) {
             setS1QuestionIndex(data.questionIndex - 1);
+            updateS1CorrectCountFromButtons();
         }
 
         if (data.type === 'XUAT_PHAT_START_TIMER' || data.type === 'XUAT_PHAT_BAT_DAU_CAU_HOI') {
@@ -1791,11 +1877,13 @@ function handlePlayerMessage(data) {
                 }));
             } catch(e) {}
         } else if (data.type === 'XUAT_PHAT_RIGHT') {
-            const btn = document.getElementById(`s1_btn_${s1QIndex + 1}`);
-            if (btn) btn.className = 's1-page-btn correct';
+            s1QuestionStates[s1QIndex + 1] = 'correct';
+            setS1QuestionIndex(s1QIndex);
+            updateS1CorrectCountFromButtons();
         } else if (data.type === 'XUAT_PHAT_WRONG') {
-            const btn = document.getElementById(`s1_btn_${s1QIndex + 1}`);
-            if (btn) btn.className = 's1-page-btn wrong';
+            s1QuestionStates[s1QIndex + 1] = 'wrong';
+            setS1QuestionIndex(s1QIndex);
+            updateS1CorrectCountFromButtons();
         } else if (data.type === 'XUAT_PHAT_FINISH') {
             clearInterval(s1TimerInterval);
             s1TimerInterval = null;
@@ -1811,6 +1899,7 @@ function handlePlayerMessage(data) {
             const clockEl = document.getElementById('s1_clock_box');
             if (clockEl) clockEl.innerText = "60";
             document.getElementById('s1_question_text').innerText = "Đang chờ câu hỏi Xuất Phát...";
+            s1QuestionStates = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null };
             for (let i = 1; i <= 10; i++) {
                 const btn = document.getElementById(`s1_btn_${i}`);
                 if (btn) btn.className = 's1-page-btn';

@@ -756,21 +756,28 @@
 
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
-            // Read URL params or LocalStorage
+            // Read URL params or SessionStorage (tab-isolated)
             const urlParams = new URLSearchParams(window.location.search);
             const queryRoom = urlParams.get('roomid') || urlParams.get('roomCode') || urlParams.get('room') || urlParams.get('channel');
-            const queryTs = urlParams.get('ts') || urlParams.get('contestant') || urlParams.get('id');
+            const queryTs = parseInt(urlParams.get('slot') || urlParams.get('ts') || urlParams.get('contestant') || urlParams.get('id') || '0', 10);
+
+            if (queryTs >= 1 && queryTs <= 4) {
+                currentContestantId = queryTs;
+                sessionStorage.setItem('ddvq_player_ts_id', queryTs.toString());
+                sessionStorage.setItem('ddvq_active_slot', queryTs.toString());
+            } else {
+                const sessSlot = parseInt(sessionStorage.getItem('ddvq_player_ts_id') || sessionStorage.getItem('ddvq_active_slot') || '0', 10);
+                if (sessSlot >= 1 && sessSlot <= 4) {
+                    currentContestantId = sessSlot;
+                } else {
+                    currentContestantId = 1;
+                }
+            }
 
             if (queryRoom) {
                 currentRoomCode = queryRoom.trim().toUpperCase();
             } else {
                 currentRoomCode = (localStorage.getItem('ddvq_room_code') || 'DDVQ2026').trim().toUpperCase();
-            }
-
-            if (queryTs) {
-                currentContestantId = parseInt(queryTs, 10) || 1;
-            } else {
-                currentContestantId = parseInt(localStorage.getItem('ddvq_player_ts_id') || '1', 10);
             }
 
             const savedPass = localStorage.getItem('ddvq_player_password');
@@ -779,16 +786,15 @@
             }
 
             localStorage.setItem('ddvq_room_code', currentRoomCode);
-            localStorage.setItem('ddvq_player_ts_id', currentContestantId);
-            localStorage.setItem('ddvq_player_logged_in', 'true');
 
             // Setup enter key listener on input fields
             ['s2_ans_input', 's3_ans_input', 's4_ans_input', 's5_ans_input'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
-                    el.addEventListener('keypress', (e) => {
+                    el.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
-                            const roundKey = id.startsWith('s2') ? 'VS' : (id.startsWith('s3') ? 'RK' : (id.startsWith('s4') ? 'VQ' : 'CHP'));
+                            e.preventDefault();
+                            const roundKey = id.startsWith('s2') ? 'RA_KHOI' : (id.startsWith('s3') ? 'VUOT_SONG' : (id.startsWith('s4') ? 'VINH_QUANG' : 'CHP'));
                             submitPlayerAnswer(roundKey);
                         }
                     });
@@ -828,7 +834,7 @@
                 };
             }
 
-            // Send Heartbeat every 3s
+            // Send Heartbeat every 8s
             setInterval(() => {
                 const hb = {
                     type: 'CLIENT_HEARTBEAT',
@@ -838,13 +844,16 @@
                     roomCode: currentRoomCode,
                     timestamp: Date.now()
                 };
-                if (syncChannel) syncChannel.postMessage(hb);
-                fetch(getApiUrl('/api/action'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(hb)
-                }).catch(() => {});
-            }, 3000);
+                if (syncChannel) {
+                    syncChannel.postMessage(hb);
+                } else {
+                    fetch(getApiUrl('/api/action'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(hb)
+                    }).catch(() => {});
+                }
+            }, 8000);
 
             // Fetch initial state
             fetch(getApiUrl(`/api/state?roomid=${encodeURIComponent(currentRoomCode)}`))
@@ -1344,33 +1353,37 @@
         function submitPlayerAnswer(roundKey, isAutoTyping = false) {
             let inputId = '';
             let statusId = '';
-            let normalizedRound = roundKey || 'RK';
+            let normalizedRound = 'RK';
             let calculatedTime = '';
             let maxDuration = 30;
 
             const rUpper = (roundKey || '').toString().toUpperCase();
 
-            if (rUpper === 'RA_KHOI' || rUpper === 'RK' || rUpper === 'TANG_TOC' || rUpper === 'TT' || activeSceneNum === 2) {
+            if (rUpper === 'RA_KHOI' || rUpper === 'RK' || rUpper === 'TANG_TOC' || rUpper === 'TT' || (!roundKey && activeSceneNum === 2)) {
                 inputId = 's2_ans_input';
                 statusId = 's2_status_bar';
                 normalizedRound = 'RK';
                 maxDuration = 30;
-            } else if (rUpper === 'VCNV' || rUpper === 'CNV' || rUpper === 'VUOT_SONG' || rUpper === 'VS' || activeSceneNum === 3) {
+            } else if (rUpper === 'VCNV' || rUpper === 'CNV' || rUpper === 'VUOT_SONG' || rUpper === 'VS' || (!roundKey && activeSceneNum === 3)) {
                 inputId = 's3_ans_input';
                 statusId = 's3_status_bar';
                 normalizedRound = 'VS';
                 maxDuration = 15;
-            } else if (rUpper === 'VINH_QUANG' || rUpper === 'VQ' || rUpper === 'VE_DICH' || activeSceneNum === 4) {
+            } else if (rUpper === 'VINH_QUANG' || rUpper === 'VQ' || rUpper === 'VE_DICH' || (!roundKey && activeSceneNum === 4)) {
                 inputId = 's4_ans_input';
                 statusId = 's4_status_bar';
                 normalizedRound = 'VQ';
                 maxDuration = 15;
-            } else if (rUpper === 'CHP' || activeSceneNum === 5) {
+            } else if (rUpper === 'CHP' || (!roundKey && activeSceneNum === 5)) {
                 inputId = 's5_ans_input';
                 statusId = null;
                 normalizedRound = 'CHP';
                 maxDuration = 15;
             }
+
+            const inputEl = document.getElementById(inputId);
+            if (!inputEl) return;
+            const answerText = inputEl.value.trim();
 
             if (sceneTimerStartTime > 0) {
                 const elapsedSec = Math.min(sceneTimerDuration || maxDuration, Math.max(0, (Date.now() - sceneTimerStartTime) / 1000));
@@ -1380,11 +1393,9 @@
                 const elapsed = (maxDuration - currentTimerVal);
                 const fixedStr = elapsed.toFixed(2);
                 calculatedTime = elapsed < 10 ? '0' + fixedStr : fixedStr;
+            } else {
+                calculatedTime = '00.00';
             }
-
-            const inputEl = document.getElementById(inputId);
-            if (!inputEl || inputEl.disabled) return;
-            const answerText = inputEl.value.trim();
 
             const statusEl = statusId ? document.getElementById(statusId) : null;
             if (statusEl && answerText) {
@@ -1395,19 +1406,33 @@
                 statusEl.classList.remove('submitted');
             }
 
+            const nameEl = document.getElementById('top_player_name');
+            const tsName = (nameEl && nameEl.innerText.trim()) || contestantName || `Thí sinh ${currentContestantId}`;
+
             const payload = {
+                id: 'ans_' + currentContestantId + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                 type: 'PLAYER_SUBMIT_ANSWER',
                 contestantId: currentContestantId,
-                contestantName: contestantName,
+                contestantName: tsName,
+                name: tsName,
                 round: normalizedRound,
                 answer: answerText,
                 time: calculatedTime || '00.00',
                 roomCode: currentRoomCode,
+                auth: currentPassword || '',
                 isAutoTyping: isAutoTyping,
                 timestamp: Date.now()
             };
 
-            if (syncChannel) syncChannel.postMessage(payload);
+            if (syncChannel) {
+                try { syncChannel.postMessage(payload); } catch(e) {}
+            }
+            try {
+                if (typeof BroadcastChannel !== 'undefined') {
+                    const bc = new BroadcastChannel('ddvq_game_channel');
+                    bc.postMessage(payload);
+                }
+            } catch(e) {}
 
             try {
                 localStorage.setItem(`ddvq_player_ans_${currentRoomCode}_${currentContestantId}`, JSON.stringify(payload));

@@ -552,15 +552,6 @@ class GameSyncChannel {
             }
         } else if (hasLocalServerBackend()) {
             if (this.wsQueue.length < 30) this.wsQueue.push(payload);
-            // Fallback HTTP POST if WS is still connecting
-            try {
-                const actionUrl = getApiUrl('/api/action');
-                fetch(actionUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }).catch(() => {});
-            } catch(e) {}
         }
 
         // 3. Send via MQTT WebSocket for Internet / remote connections

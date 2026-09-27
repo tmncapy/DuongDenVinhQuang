@@ -1128,6 +1128,35 @@ function handleProjectorMessage(data) {
             }
         }
     } else if (data.type === 'PLAYER_SUBMIT_ANSWER' || data.type === 'PLAYER_RING_BELL') {
+        const tsIdx = parseInt(data.contestantId) || 1;
+        const ans = (data.answer || '').toString().trim();
+        const rawTime = (data.time || '').toString();
+        const cleanTime = rawTime.replace(/s|giây/gi, '').trim() || '00.00';
+        const round = (data.round || '').toUpperCase();
+
+        if (round === 'RK' || round === 'RA_KHOI' || round === 'TANG_TOC' || !round) {
+            const tenEl = document.getElementById(`ten_ts${tsIdx}`);
+            const tgEl = document.getElementById(`thoi_gian_ts${tsIdx}`);
+            const daEl = document.getElementById(`dap_an_ts${tsIdx}`);
+            if (tenEl && (data.contestantName || data.name)) tenEl.innerText = data.contestantName || data.name;
+            if (tgEl && cleanTime) tgEl.innerText = cleanTime;
+            if (daEl && ans) fitAnswerText(daEl, ans);
+        }
+        if (round === 'VS' || round === 'VUOT_SONG') {
+            const daEl = document.getElementById(`vs_ans_ts${tsIdx}`);
+            const tgEl = document.getElementById(`vs_time_ts${tsIdx}`);
+            if (daEl && ans) daEl.innerText = ans;
+            if (tgEl && cleanTime) tgEl.innerText = cleanTime;
+        }
+        if (round === 'VQ' || round === 'VINH_QUANG') {
+            const vqAns = document.getElementById(`vq_ans_val_${tsIdx}`);
+            const vqTime = document.getElementById(`vq_ans_time_${tsIdx}`);
+            const ansEl = document.getElementById(`vq_ans_ts${tsIdx}`);
+            if (vqAns && ans) vqAns.innerText = ans;
+            if (vqTime && cleanTime) vqTime.innerText = cleanTime;
+            if (ansEl && ans) ansEl.innerText = ans;
+        }
+
         if (data.round === 'RK' || data.round === 'RA_KHOI' || data.round === 'TANG_TOC' || (data.round === 'VS' && data.isVongThi) || data.type === 'PLAYER_RING_BELL') {
             safePlay(soundActivate);
         }
@@ -1402,6 +1431,43 @@ function handleProjectorMessage(data) {
         if (overlay) {
             overlay.style.display = 'none';
         }
+    } else if (data.type === 'PLAY_SOUND') {
+        const soundFile = data.sound || '';
+        if (soundFile) {
+            playCustomSound(soundFile);
+        }
+    } else if (data.type === 'STOP_SOUND') {
+        stopCustomSound();
+    }
+}
+
+let currentCustomAudio = null;
+function playCustomSound(soundFile) {
+    if (currentCustomAudio) {
+        try { currentCustomAudio.pause(); } catch(e) {}
+    }
+    try {
+        let src = soundFile;
+        if (!src.includes('/') && !src.startsWith('http')) {
+            src = `sounds/${src}`;
+        }
+        if (typeof getApiUrl === 'function') {
+            src = getApiUrl(src);
+        }
+        currentCustomAudio = new Audio(src);
+        currentCustomAudio.play().catch(e => console.warn("Audio play blocked on projector:", e));
+    } catch(e) {
+        console.error("Error playing custom sound:", e);
+    }
+}
+
+function stopCustomSound() {
+    if (currentCustomAudio) {
+        try {
+            currentCustomAudio.pause();
+            currentCustomAudio.currentTime = 0;
+        } catch(e) {}
+        currentCustomAudio = null;
     }
 }
 
@@ -1844,35 +1910,58 @@ function handleRKPlayClip(data) {
     if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
     rkTimerAlreadyTriggered = false;
 
-    const targetMediaUrl = (data.mediaUrl || '').trim();
+    let targetMediaUrl = (data.mediaUrl || '').trim();
+    // Fallback to gameData.raKhoi if missing from event payload
+    if (!targetMediaUrl && typeof gameData !== 'undefined' && gameData.raKhoi) {
+        const qIdx = (data.questionIndex || 1) - 1;
+        targetMediaUrl = (gameData.raKhoi[qIdx]?.m || gameData.raKhoi[qIdx]?.mediaUrl || '').trim();
+    }
+
     if (targetMediaUrl !== '' && targetMediaUrl !== '...') {
         if (video) {
             video.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
 
-            let targetAbsoluteUrl = targetMediaUrl;
-            try {
-                targetAbsoluteUrl = new URL(targetMediaUrl, window.location.href).href;
-            } catch(e) {}
+            let resolvedUrl = targetMediaUrl;
+            if (typeof getApiUrl === 'function') {
+                resolvedUrl = getApiUrl(targetMediaUrl);
+            } else {
+                try {
+                    resolvedUrl = new URL(targetMediaUrl, window.location.href).href;
+                } catch(e) {}
+            }
 
-            const isSameSrc = (video.src === targetAbsoluteUrl) || (video.src.endsWith(targetMediaUrl));
+            const isSameSrc = (video.src === resolvedUrl) || (video.src.endsWith(targetMediaUrl));
             const isExplicitNewTrigger = data.timestamp && (data.timestamp !== lastRKClipTimestamp);
 
             if (data.timestamp) {
                 lastRKClipTimestamp = data.timestamp;
             }
 
-            if (!isSameSrc || !video.src || (isExplicitNewTrigger && data.type === 'RA_KHOI_PLAY_CLIP')) {
+            if (!isSameSrc || !video.src || isExplicitNewTrigger || data.type === 'RA_KHOI_PLAY_CLIP') {
                 lastRKMediaUrl = targetMediaUrl;
-                video.src = targetMediaUrl;
+                video.src = resolvedUrl;
+                video.currentTime = 0;
                 video.load();
+
+                if (data.type === 'RA_KHOI_PLAY_CLIP') {
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(err => {
+                            console.warn("Video play error, trying muted autoplay:", err);
+                            video.muted = true;
+                            video.play().catch(e => console.error("Muted playback also failed:", e));
+                        });
+                    }
+                }
+            } else if (data.type === 'RA_KHOI_PLAY_CLIP') {
+                video.currentTime = 0;
                 video.play().catch(err => {
-                    console.warn("Video play error:", err);
+                    video.muted = true;
+                    video.play().catch(() => {});
                 });
             } else if (video.paused && !video.ended) {
-                video.play().catch(err => {
-                    console.warn("Video play resume error:", err);
-                });
+                video.play().catch(() => {});
             }
         }
     } else {

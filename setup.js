@@ -853,6 +853,18 @@ function fillIntroInputs() {
     if (v2El && gameData.intros.v2) v2El.value = gameData.intros.v2;
     if (v3El && gameData.intros.v3) v3El.value = gameData.intros.v3;
     if (v4El && gameData.intros.v4) v4El.value = gameData.intros.v4;
+
+    for (let i = 1; i <= 10; i++) {
+        const imgEl = document.getElementById(`intro_media_img${i}`);
+        if (imgEl && gameData.intros[`img${i}`]) {
+            imgEl.value = gameData.intros[`img${i}`];
+        }
+    }
+
+    const customSoundEl = document.getElementById('controller_custom_sound_url');
+    if (customSoundEl && gameData.intros.customSound) {
+        customSoundEl.value = gameData.intros.customSound;
+    }
 }
 
 function saveAllData(notify = false) {
@@ -931,6 +943,18 @@ function saveAllData(notify = false) {
         if (v2El) gameData.intros.v2 = v2El.value;
         if (v3El) gameData.intros.v3 = v3El.value;
         if (v4El) gameData.intros.v4 = v4El.value;
+
+        for (let i = 1; i <= 10; i++) {
+            const imgEl = document.getElementById(`intro_media_img${i}`);
+            if (imgEl) {
+                gameData.intros[`img${i}`] = imgEl.value;
+            }
+        }
+
+        const customSoundEl = document.getElementById('controller_custom_sound_url');
+        if (customSoundEl) {
+            gameData.intros.customSound = customSoundEl.value;
+        }
 
         safeSetStorage('duong_den_vinh_quang_data', JSON.stringify(gameData));
         const syncPayload = {
@@ -1184,39 +1208,40 @@ function updateContestantName(i, val) {
         saveAllData(false);
 
         const payload = {
-            type: 'UPDATE_CONTESTANTS',
+            type: 'UPDATE_SCORES',
             contestants: gameData.contestants,
             gameData: gameData,
             timestamp: Date.now()
         };
 
-        sendToProjector('UPDATE_CONTESTANTS', payload);
         sendToProjector('UPDATE_SCORES', payload);
-
-        try {
-            if (typeof BroadcastChannel !== 'undefined' && controllerChannel) {
-                controllerChannel.postMessage(payload);
-            }
-        } catch(e) {}
 
         try {
             localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
             localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
         } catch(e) {}
 
+        debouncePostServerState({
+            contestants: gameData.contestants,
+            gameData: gameData
+        });
+    }, 400);
+}
+
+let __postServerStateTimeout = null;
+function debouncePostServerState(data) {
+    if (__postServerStateTimeout) clearTimeout(__postServerStateTimeout);
+    __postServerStateTimeout = setTimeout(() => {
         try {
             if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
                 fetch(getApiUrl('/api/state'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contestants: gameData.contestants,
-                        gameData: gameData
-                    })
+                    body: JSON.stringify(data)
                 }).catch(() => {});
             }
         } catch(e) {}
-    }, 200);
+    }, 600);
 }
 
 function updateContestantNames() {
@@ -1232,18 +1257,10 @@ function syncDataToProjector() {
     saveAllData();
     updateContestantNames();
     sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants, gameData: gameData });
-    try {
-        if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-            fetch(getApiUrl('/api/state'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contestants: gameData.contestants,
-                    gameData: gameData
-                })
-            }).catch(() => {});
-        }
-    } catch(e) {}
+    debouncePostServerState({
+        contestants: gameData.contestants,
+        gameData: gameData
+    });
     showToast('Đã đồng bộ toàn bộ dữ liệu sang Màn Hình Chiếu!');
 }
 
@@ -1351,12 +1368,12 @@ function handleIncomingPlayerAnswer(data) {
         const rawTime = (data.time || '').toString();
         const cleanTime = rawTime.replace(/s|giây/gi, '').trim();
         const round = data.round || 'GEN';
-        const dedupeKey = `${tsIdx}_${round}_${ans}_${cleanTime}`;
+        const dedupeKey = `${tsIdx}_${round}_${ans}_${cleanTime}_${data.id || ''}`;
 
         const lastProcessed = processedPlayerAnswersCache.get(dedupeKey);
         const now = Date.now();
-        if (lastProcessed && (now - lastProcessed < 2500)) {
-            return; // Duplicate submission from multi-channel delivery within 2.5s
+        if (lastProcessed && (now - lastProcessed < 300)) {
+            return; // Duplicate submission from multi-channel delivery within 300ms
         }
         processedPlayerAnswersCache.set(dedupeKey, now);
         if (processedPlayerAnswersCache.size > 100) {
@@ -1767,7 +1784,7 @@ function getPlayerDirectLink(slot) {
     if (slot && parseInt(slot) >= 1 && parseInt(slot) <= 4) {
         const slotNum = parseInt(slot);
         const slotAuth = getSlotAuth(slotNum);
-        return `${baseUrl}/player.html?roomid=${encodeURIComponent(code)}&slot=${slotNum}&auth=${encodeURIComponent(slotAuth)}`;
+        return `${baseUrl}/player.html?roomid=${encodeURIComponent(code)}&slot=${slotNum}&id=${slotNum}&auth=${encodeURIComponent(slotAuth)}`;
     }
     const authInput = document.getElementById('room_auth_input');
     const masterAuth = (authInput ? authInput.value.trim() : '') || localStorage.getItem('ddvq_room_auth') || '123456';
@@ -1862,6 +1879,32 @@ function playSelectedSoundController() {
 
     sendToProjector('PLAY_SOUND', { sound: soundFile });
     if (typeof showToast === 'function') showToast(`Đang phát âm thanh: ${soundFile}`);
+}
+
+function playCustomSoundController() {
+    const inputEl = document.getElementById('controller_custom_sound_url');
+    if (!inputEl || !inputEl.value || !inputEl.value.trim()) {
+        if (typeof showToast === 'function') showToast("Chưa chọn / tải lên tệp âm thanh bổ sung!");
+        return;
+    }
+    const soundFile = inputEl.value.trim();
+
+    if (currentControllerAudio) {
+        currentControllerAudio.pause();
+        currentControllerAudio.currentTime = 0;
+    }
+
+    try {
+        let src = soundFile;
+        if (typeof getApiUrl === 'function') {
+            src = getApiUrl(src);
+        }
+        currentControllerAudio = new Audio(src);
+        currentControllerAudio.play().catch(e => console.warn("Audio play blocked locally:", e));
+    } catch(e) {}
+
+    sendToProjector('PLAY_SOUND', { sound: soundFile });
+    if (typeof showToast === 'function') showToast(`Đang phát âm thanh tự chọn: ${soundFile}`);
 }
 
 function stopSoundController() {
@@ -2036,12 +2079,16 @@ window.addEventListener('message', function(event) {
     }
 });
 
-setInterval(() => {
-    if (Date.now() - lastProjectorPing > 5000) {
-        updateProjectorStatus(false);
-    }
+// Single initial state fetch on controller startup with strict one-time guard
+let hasFetchedInitialServerState = false;
+let lastStateFetchTimestamp = 0;
 
-    // Attempt fetching state from server if backend is present
+function fetchInitialServerState() {
+    const now = Date.now();
+    if (hasFetchedInitialServerState || (now - lastStateFetchTimestamp < 15000)) return;
+    hasFetchedInitialServerState = true;
+    lastStateFetchTimestamp = now;
+
     if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
         fetch(getApiUrl('/api/state'))
             .then(res => res.json())
@@ -2065,10 +2112,16 @@ setInterval(() => {
             })
             .catch(() => {});
     }
+}
+setTimeout(fetchInitialServerState, 500);
 
-    // Refresh status badges with time-based check
+setInterval(() => {
+    if (Date.now() - lastProjectorPing > 8000) {
+        updateProjectorStatus(false);
+    }
+    // Refresh status badges with time-based check locally
     updateClientStatusBadges(controllerConnectedClients);
-}, 1500);
+}, 3000);
 
 function updateProjectorStatus(isConnected) {
     const badge = document.getElementById('projector_status_badge');
@@ -2135,21 +2188,24 @@ function sendToProjector(type, payload = {}) {
         round: round,
         ...payload,
         timestamp: Date.now(),
-        id: Math.random().toString(36).substring(2, 9)
+        id: Math.random().toString(36).substring(2, 9),
+        _fromNetwork: true
     };
+
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(message);
-    }
-    if (controllerChannel) {
+    } else if (controllerChannel) {
         try {
             controllerChannel.postMessage(message);
         } catch(e) {
             console.warn("Error posting to projector channel:", e);
         }
     }
+
     try {
         localStorage.setItem('ddvq_latest_action', JSON.stringify(message));
     } catch(e) {}
+
     try {
         if (projectorWindow && !projectorWindow.closed) {
             projectorWindow.postMessage(message, '*');
@@ -2157,14 +2213,23 @@ function sendToProjector(type, payload = {}) {
             window.opener.postMessage(message, '*');
         }
     } catch(e) {}
+
     if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        try {
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(message)
-            }).catch(() => {});
-        } catch(e) {}
+        const isWsActive = (window.globalSyncChannel && window.globalSyncChannel.isWsConnected);
+        if (!isWsActive && !window.__recentActionSentMap?.has(type + '_' + (payload.turnIndex || payload.round || ''))) {
+            window.__recentActionSentMap = window.__recentActionSentMap || new Map();
+            const actionKey = type + '_' + (payload.turnIndex || payload.round || '');
+            window.__recentActionSentMap.set(actionKey, Date.now());
+            setTimeout(() => window.__recentActionSentMap?.delete(actionKey), 800);
+
+            try {
+                fetch(getApiUrl('/api/action'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(message)
+                }).catch(() => {});
+            } catch(e) {}
+        }
     }
 }
 
@@ -2183,6 +2248,222 @@ function promptScore(idx) {
     }
 }
 
+// Floating upload progress manager
+let activeUploadProgressHud = null;
+
+function showUploadProgress(fileName, percent, speedStr, etaStr) {
+    let hud = document.getElementById('upload_progress_hud');
+    if (!hud) {
+        hud = document.createElement('div');
+        hud.id = 'upload_progress_hud';
+        hud.style.position = 'fixed';
+        hud.style.bottom = '24px';
+        hud.style.right = '24px';
+        hud.style.zIndex = '99999';
+        hud.style.background = '#0f172a';
+        hud.style.color = '#ffffff';
+        hud.style.padding = '14px 18px';
+        hud.style.borderRadius = '10px';
+        hud.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)';
+        hud.style.border = '1px solid #38bdf8';
+        hud.style.minWidth = '280px';
+        hud.style.maxWidth = '360px';
+        hud.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+        hud.style.transition = 'all 0.3s ease';
+        document.body.appendChild(hud);
+    }
+    hud.style.display = 'block';
+    hud.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                ⚡ TẢI VIDEO TỐC ĐỘ CAO
+            </span>
+            <span style="font-weight: 800; font-size: 14px; color: #4ade80;">${percent}%</span>
+        </div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            📁 ${fileName}
+        </div>
+        <div style="width: 100%; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
+            <div style="width: ${percent}%; height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8, #4ade80); border-radius: 4px; transition: width 0.15s ease;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #cbd5e1;">
+            <span>Tốc độ: <strong>${speedStr || '-- MB/s'}</strong></span>
+            <span>${etaStr ? 'Còn ' + etaStr : ''}</span>
+        </div>
+    `;
+}
+
+function hideUploadProgress(successMsg) {
+    const hud = document.getElementById('upload_progress_hud');
+    if (hud) {
+        if (successMsg) {
+            hud.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px; color: #4ade80; font-weight: bold; font-size: 13px;">
+                    <span>✅</span> <span>${successMsg}</span>
+                </div>
+            `;
+            setTimeout(() => {
+                hud.style.opacity = '0';
+                setTimeout(() => { hud.style.display = 'none'; hud.style.opacity = '1'; }, 300);
+            }, 2500);
+        } else {
+            hud.style.display = 'none';
+        }
+    }
+}
+
+// Optimized Parallel Chunked Media Uploader
+async function uploadMediaOptimized(file, targetInputId) {
+    if (!file) return;
+
+    // Instant local binding for 0ms lag
+    const tempBlobUrl = URL.createObjectURL(file);
+    const inputEl = document.getElementById(targetInputId);
+    if (inputEl) {
+        inputEl.value = tempBlobUrl;
+        inputEl.dispatchEvent(new Event('change'));
+    }
+    saveAllData();
+
+    const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+    const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov|m4v|avi|mkv)$/i);
+
+    // Fast path for small files (< 3MB)
+    if (file.size <= 3 * 1024 * 1024) {
+        showUploadProgress(file.name, 30, 'Đang gửi...', '');
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success && data.url) {
+                if (inputEl) {
+                    inputEl.value = data.url;
+                    inputEl.dispatchEvent(new Event('change'));
+                }
+                saveAllData();
+                hideUploadProgress(`Tải xong ${file.name} (${fileSizeMB} MB)`);
+                showToast(`Đã tải lên thành công: ${file.name}`);
+                return data.url;
+            }
+        } catch (err) {
+            console.warn('Single upload error, retaining local blob:', err);
+            hideUploadProgress(`Đã dùng file cục bộ: ${file.name}`);
+            return tempBlobUrl;
+        }
+    }
+
+    // High performance Chunked Parallel Streaming for large videos / audio
+    const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB chunks
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    const uploadId = 'up_' + Date.now() + '_' + Math.round(Math.random() * 1e8);
+    let uploadedBytes = 0;
+    const startTime = Date.now();
+
+    showUploadProgress(file.name, 0, 'Khởi động...', 'tính toán...');
+
+    // Chunk queue worker with 3 concurrent connections
+    const CONCURRENCY = 3;
+    let nextChunkIndex = 0;
+    let completedChunks = 0;
+    let hasError = false;
+
+    async function uploadNextChunk() {
+        while (nextChunkIndex < totalChunks && !hasError) {
+            const chunkIndex = nextChunkIndex++;
+            const start = chunkIndex * CHUNK_SIZE;
+            const end = Math.min(file.size, start + CHUNK_SIZE);
+            const chunkBlob = file.slice(start, end);
+            const chunkSize = end - start;
+
+            let attempts = 0;
+            let success = false;
+            while (attempts < 3 && !success && !hasError) {
+                attempts++;
+                try {
+                    const formData = new FormData();
+                    formData.append('chunk', chunkBlob, `chunk_${chunkIndex}`);
+                    formData.append('uploadId', uploadId);
+                    formData.append('chunkIndex', chunkIndex.toString());
+                    formData.append('totalChunks', totalChunks.toString());
+
+                    const res = await fetch('/api/upload-chunk', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.success) {
+                            success = true;
+                            uploadedBytes += chunkSize;
+                            completedChunks++;
+
+                            const elapsedSec = (Date.now() - startTime) / 1000;
+                            const speedBytesSec = elapsedSec > 0 ? (uploadedBytes / elapsedSec) : 0;
+                            const speedMBs = (speedBytesSec / 1024 / 1024).toFixed(1) + ' MB/s';
+                            const percent = Math.min(99, Math.round((uploadedBytes / file.size) * 100));
+                            const remainingBytes = file.size - uploadedBytes;
+                            const etaSec = speedBytesSec > 0 ? Math.ceil(remainingBytes / speedBytesSec) : 0;
+                            const etaStr = etaSec > 0 ? `${etaSec}s` : '1s';
+
+                            showUploadProgress(file.name, percent, speedMBs, etaStr);
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Chunk ${chunkIndex} attempt ${attempts} error:`, e);
+                    if (attempts >= 3) {
+                        hasError = true;
+                        throw e;
+                    }
+                    await new Promise(r => setTimeout(r, 400));
+                }
+            }
+        }
+    }
+
+    try {
+        const workers = Array.from({ length: Math.min(CONCURRENCY, totalChunks) }, () => uploadNextChunk());
+        await Promise.all(workers);
+
+        if (hasError || completedChunks < totalChunks) {
+            throw new Error("Không thể tải hết các phần của video");
+        }
+
+        showUploadProgress(file.name, 99, 'Hoàn tất ghép nối...', '0s');
+
+        // Complete and merge on server
+        const completeRes = await fetch('/api/upload-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                uploadId: uploadId,
+                originalName: file.name,
+                totalChunks: totalChunks,
+                mediaType: isVideo ? 'rakhoi_video' : 'media'
+            })
+        });
+
+        const completeData = await completeRes.json();
+        if (completeData.success && completeData.url) {
+            if (inputEl) {
+                inputEl.value = completeData.url;
+                inputEl.dispatchEvent(new Event('change'));
+            }
+            saveAllData();
+            hideUploadProgress(`Tải thành công: ${file.name} (${fileSizeMB} MB)`);
+            showToast(`⚡ Đã tải lên và tối ưu video thành công: ${file.name}`);
+            return completeData.url;
+        } else {
+            throw new Error(completeData.error || "Lỗi ghép video");
+        }
+    } catch (err) {
+        console.warn("Lỗi upload tối ưu, giữ nguyên link cục bộ:", err);
+        hideUploadProgress(`Dùng video cục bộ: ${file.name}`);
+        showToast(`Video đã sẵn sàng phát cục bộ: ${file.name}`);
+        return tempBlobUrl;
+    }
+}
+
 function triggerFilePicker(targetInputId, acceptType) {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -2190,43 +2471,58 @@ function triggerFilePicker(targetInputId, acceptType) {
     fileInput.onchange = function(e) {
         const file = e.target.files[0];
         if (!file) return;
-
-        showToast(`Đang tải file ${file.name} lên hệ thống...`);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success && data.url) {
-                const inputEl = document.getElementById(targetInputId);
-                if (inputEl) {
-                    inputEl.value = data.url;
-                    inputEl.dispatchEvent(new Event('change'));
-                }
-                saveAllData();
-                showToast(`Đã tải lên thành công: ${file.name}`);
-            } else {
-                throw new Error(data.error || 'Lỗi tải file');
-            }
-        })
-        .catch(err => {
-            console.warn("Upload API error, fallback to Blob URL:", err);
-            const blobUrl = URL.createObjectURL(file);
-            const inputEl = document.getElementById(targetInputId);
-            if (inputEl) {
-                inputEl.value = blobUrl;
-                inputEl.dispatchEvent(new Event('change'));
-            }
-            saveAllData();
-            showToast(`Đã chọn file thành công: ${file.name}`);
-        });
+        uploadMediaOptimized(file, targetInputId);
     };
     fileInput.click();
+}
+
+// Quick preview modal / popup for any video or media URL
+function previewVideoModal(inputIdOrUrl) {
+    let url = '';
+    const inputEl = document.getElementById(inputIdOrUrl);
+    if (inputEl && inputEl.value) {
+        url = inputEl.value.trim();
+    } else if (typeof inputIdOrUrl === 'string') {
+        url = inputIdOrUrl.trim();
+    }
+
+    if (!url) {
+        showToast('Chưa có đường dẫn hoặc file video để xem thử!');
+        return;
+    }
+
+    let modal = document.getElementById('video_preview_modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'video_preview_modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0, 0, 0, 0.85)';
+        modal.style.zIndex = '999999';
+        modal.style.display = 'flex';
+        modal.style.flexDirection = 'column';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.backdropFilter = 'blur(6px)';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div style="background: #0f172a; border: 2px solid #38bdf8; border-radius: 12px; padding: 18px; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="color: #38bdf8; font-weight: bold; font-size: 15px;">🎬 XEM THỬ VIDEO / MEDIA RA KHƠI</span>
+                <button onclick="document.getElementById('video_preview_modal').style.display='none'; const v=document.getElementById('rk_preview_video_tag'); if(v) v.pause();" style="background: #ef4444; color: white; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: bold;">✕ Đóng</button>
+            </div>
+            <video id="rk_preview_video_tag" src="${url}" controls autoplay style="max-width: 80vw; max-height: 70vh; border-radius: 8px; background: #000000;"></video>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; word-break: break-all;">
+                URL: ${url}
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
 }
 
 function playIntroVideo(inputIdOrDefault) {

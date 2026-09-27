@@ -471,7 +471,16 @@
                 this.localChannel.postMessage(payload);
             } catch (e) {}
 
-            // 2. Send via MQTT WebSocket (cross-device)
+            // 2. Send via Backend WebSocket (LAN / Cloud instant sync)
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                try {
+                    this.ws.send(JSON.stringify(payload));
+                } catch (e) {}
+            } else if (this.wsQueue) {
+                if (this.wsQueue.length < 50) this.wsQueue.push(payload);
+            }
+
+            // 3. Send via MQTT WebSocket (cross-device fallback)
             if (this.mqttClient && this.mqttClient.connected) {
                 try {
                     const str = JSON.stringify(payload);

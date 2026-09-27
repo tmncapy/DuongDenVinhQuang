@@ -29,14 +29,23 @@ function selectRKQuestion(num) {
 
     rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
     updateTab2Preview();
-    const qItem = gameData.raKhoi ? (gameData.raKhoi[num - 1] || { q: '', a: '' }) : { q: '', a: '' };
+
+    const mInput = document.getElementById(`rk_m_${num}`);
+    const qInput = document.getElementById(`rk_q_${num}`);
+    const aInput = document.getElementById(`rk_a_${num}`);
+    const qItem = (gameData.raKhoi && gameData.raKhoi[num - 1]) || {};
+    const mediaUrl = (mInput && mInput.value.trim()) || qItem.m || qItem.mediaUrl || '';
+    const qText = (qInput && qInput.value.trim()) || qItem.q || `Nội dung câu hỏi Ra Khơi số ${num}`;
+    const aText = (aInput && aInput.value.trim()) || qItem.a || '';
+
     const payload = {
         type: 'RA_KHOI_SHOW_QUESTION',
         round: 'RK',
         questionIndex: num,
-        questionText: qItem.q || `Nội dung câu hỏi Ra Khơi số ${num}`,
-        answerText: qItem.a || '',
-        answer: qItem.a || '',
+        questionText: qText,
+        answerText: aText,
+        answer: aText,
+        mediaUrl: mediaUrl,
         gameData: gameData,
         contestants: gameData.contestants,
         timestamp: Date.now()
@@ -54,15 +63,21 @@ function cycleRKQuestion() {
 }
 
 function updateTab2Preview() {
-    const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '' }) : { q: '', a: '' };
+    const mInput = document.getElementById(`rk_m_${currentRKQuestion}`);
+    const qInput = document.getElementById(`rk_q_${currentRKQuestion}`);
+    const aInput = document.getElementById(`rk_a_${currentRKQuestion}`);
+    const qItem = (gameData.raKhoi && gameData.raKhoi[currentRKQuestion - 1]) || {};
+    const qText = (qInput && qInput.value.trim()) || qItem.q || `Nội dung câu hỏi Ra Khơi số ${currentRKQuestion}...`;
+    const aText = (aInput && aInput.value.trim()) || qItem.a || '...';
+
     const titleEl = document.getElementById('rk_preview_title');
     if (titleEl) titleEl.innerText = `VÒNG THI RA KHƠI: CÂU HỎI THỨ ${currentRKQuestion}`;
     const selectBarTitle = document.getElementById('rk_select_bar_title');
     if (selectBarTitle) selectBarTitle.innerText = `Câu hỏi thứ ${currentRKQuestion}`;
     const qTextEl = document.getElementById('rk_preview_q_text');
-    if (qTextEl) qTextEl.innerText = qItem.q || `Nội dung câu hỏi Ra Khơi số ${currentRKQuestion}...`;
+    if (qTextEl) qTextEl.innerText = qText;
     const aTextEl = document.getElementById('rk_preview_a_text');
-    if (aTextEl) aTextEl.innerText = `Đáp án: ${qItem.a || '...'}`;
+    if (aTextEl) aTextEl.innerText = `Đáp án: ${aText}`;
     const timerEl = document.getElementById('rk_preview_timer');
     if (timerEl) timerEl.innerText = rkTimeLeft;
     const statusEl = document.getElementById('rk_preview_status');
@@ -70,14 +85,22 @@ function updateTab2Preview() {
 }
 
 function onClickBatDauDoanBang() {
-    const qItem = gameData.raKhoi ? (gameData.raKhoi[currentRKQuestion - 1] || { q: '', a: '', m: '' }) : { q: '', a: '', m: '' };
+    if (typeof saveAllData === 'function') saveAllData();
+    const mInput = document.getElementById(`rk_m_${currentRKQuestion}`);
+    const qInput = document.getElementById(`rk_q_${currentRKQuestion}`);
+    const aInput = document.getElementById(`rk_a_${currentRKQuestion}`);
+    const qItem = (gameData.raKhoi && gameData.raKhoi[currentRKQuestion - 1]) || {};
+    const mediaUrl = (mInput && mInput.value.trim()) || qItem.m || qItem.mediaUrl || '';
+    const qText = (qInput && qInput.value.trim()) || qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`;
+    const aText = (aInput && aInput.value.trim()) || qItem.a || '';
+
     const payload = {
         type: 'RA_KHOI_PLAY_CLIP',
         questionIndex: currentRKQuestion,
-        questionText: qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`,
-        answerText: qItem.a || '',
-        answer: qItem.a || '',
-        mediaUrl: qItem.m || '',
+        questionText: qText,
+        answerText: aText,
+        answer: aText,
+        mediaUrl: mediaUrl,
         timestamp: Date.now()
     };
     sendToProjector('RA_KHOI_PLAY_CLIP', payload);

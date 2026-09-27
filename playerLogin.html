@@ -194,7 +194,8 @@
                     sessionStorage.setItem('ddvq_room_code', roomCode);
                     sessionStorage.setItem('ddvq_player_auth', res.auth || password);
                     sessionStorage.setItem('ddvq_contestant_id', contestantId);
-                    window.location.href = `player${contestantId}.html?id=${contestantId}&roomid=${encodeURIComponent(roomCode)}&auth=${encodeURIComponent(res.auth || password)}`;
+                    sessionStorage.setItem('ddvq_active_slot', contestantId);
+                    window.location.href = `player.html?slot=${contestantId}&id=${contestantId}&roomid=${encodeURIComponent(roomCode)}&auth=${encodeURIComponent(res.auth || password)}`;
                 } else {
                     showError(res.error || 'Mã phòng hoặc Mật khẩu không chính xác!');
                 }
