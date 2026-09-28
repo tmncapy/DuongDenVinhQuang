@@ -2,10 +2,10 @@
 let gameData = {
     xuatPhat: {}, // Turn 1..8 -> [ { q: "", a: "" }, ... 10 items ]
     raKhoi: [
-        { q: "", a: "", m: "", am: "" },
-        { q: "", a: "", m: "", am: "" },
-        { q: "", a: "", m: "", am: "" },
-        { q: "", a: "", m: "", am: "" }
+        { q: "", a: "", m: "./cau1.mp4", am: "" },
+        { q: "", a: "", m: "./cau2.mp4", am: "" },
+        { q: "", a: "", m: "./cau3.mp4", am: "" },
+        { q: "", a: "", m: "./cau4.mp4", am: "" }
     ],
     vuotSong: {
         h1: { q: "", a: "" },
@@ -795,17 +795,22 @@ function parseCauHoiPhuSheet(rows) {
 
 function fillRaKhoiInputs() {
     if (!Array.isArray(gameData.raKhoi)) {
-        gameData.raKhoi = [ {q:"",a:"",m:""}, {q:"",a:"",m:""}, {q:"",a:"",m:""}, {q:"",a:"",m:""} ];
+        gameData.raKhoi = [
+            { q: "", a: "", m: "./cau1.mp4" },
+            { q: "", a: "", m: "./cau2.mp4" },
+            { q: "", a: "", m: "./cau3.mp4" },
+            { q: "", a: "", m: "./cau4.mp4" }
+        ];
     }
     for (let i = 1; i <= 4; i++) {
-        const item = gameData.raKhoi[i - 1] || { q: '', a: '', m: '' };
+        const item = gameData.raKhoi[i - 1] || { q: '', a: '', m: `./cau${i}.mp4` };
         const qEl = document.getElementById(`rk_q_${i}`);
         const aEl = document.getElementById(`rk_a_${i}`);
         const mEl = document.getElementById(`rk_m_${i}`);
         const amEl = document.getElementById(`rk_am_${i}`);
         if (qEl) qEl.value = item.q || '';
         if (aEl) aEl.value = item.a || '';
-        if (mEl) mEl.value = item.m || '';
+        if (mEl) mEl.value = item.m || `./cau${i}.mp4`;
         if (amEl) amEl.value = item.am || '';
     }
 }
@@ -878,12 +883,12 @@ function saveAllData(notify = false) {
             if (qEl || aEl || mEl || amEl) {
                 const qVal = qEl?.value || '';
                 const aVal = aEl?.value || '';
-                const mVal = mEl?.value || '';
+                const mVal = mEl?.value !== undefined ? mEl.value : '';
                 const amVal = amEl?.value || '';
                 gameData.raKhoi[i - 1] = {
                     q: qVal || gameData.raKhoi[i - 1]?.q || '',
                     a: aVal || gameData.raKhoi[i - 1]?.a || '',
-                    m: mVal || gameData.raKhoi[i - 1]?.m || '',
+                    m: mVal || gameData.raKhoi[i - 1]?.m || `./cau${i}.mp4`,
                     am: amVal || gameData.raKhoi[i - 1]?.am || ''
                 };
             }
@@ -1395,20 +1400,22 @@ function handleIncomingPlayerAnswer(data) {
         if (data.round === 'VS' || data.round === 'VUOT_SONG' || !data.round) {
             const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
             const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
-            if (data.isVongThi === false) {
-                // Thời gian trong ô màu trắng: tính từ lúc 20s trả lời câu hỏi hàng ngang
-                if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
-                if (inputAns && inputAns.value !== ans) inputAns.value = ans;
-            } else {
-                // Thời gian màu đỏ: kể từ lúc bắt đầu vòng thi đến lúc bấm chuông trả lời đáp án vòng thi
+            if (data.isVongThi === true) {
+                // Thời gian màu đỏ: kể từ lúc bắt đầu vòng thi đến lúc bấm nút trả lời đáp án vòng thi
                 if (typeof markVSContestantSubmitted === 'function') {
                     markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
                 } else if (typeof window.markVSContestantSubmitted === 'function') {
                     window.markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
                 }
                 if (ans && inputAns) {
-                    inputAns.value = `[CNV] ${ans}`;
+                    inputAns.value = ans.startsWith('[CNV]') ? ans : `[CNV] ${ans}`;
                 }
+            } else {
+                // Thí sinh trả lời câu hỏi hàng ngang (và nhấn Enter):
+                // Thời gian trong ô màu trắng: tính từ lúc 20s trả lời câu hỏi hàng ngang
+                // BẢNG ĐIỂM KHÔNG NHẤP NHÁY
+                if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
+                if (inputAns && inputAns.value !== ans) inputAns.value = ans;
             }
         }
         if (data.round === 'VQ' || data.round === 'VINH_QUANG' || !data.round) {
@@ -1441,16 +1448,16 @@ function handleIncomingPlayerAnswer(data) {
                 if (ansObj.round === 'VS' || ansObj.round === 'VUOT_SONG' || !ansObj.round) {
                     const inputAns = document.getElementById(`ts${tsIdx}_ans_vs`);
                     const inputTime = document.getElementById(`ts${tsIdx}_extra_vs`);
-                    if (ansObj.isVongThi === false) {
-                        if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
-                        if (inputAns && inputAns.value !== ans) inputAns.value = ans;
-                    } else {
+                    if (ansObj.isVongThi === true) {
                         if (typeof markVSContestantSubmitted === 'function') {
                             markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
                         }
                         if (ans && inputAns) {
                             inputAns.value = ans.startsWith('[CNV]') ? ans : `[CNV] ${ans}`;
                         }
+                    } else {
+                        if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';
+                        if (inputAns && inputAns.value !== ans) inputAns.value = ans;
                     }
                 }
                 if (ansObj.round === 'VQ' || ansObj.round === 'VINH_QUANG' || !ansObj.round) {
@@ -1466,11 +1473,54 @@ function handleIncomingPlayerAnswer(data) {
 window.handleIncomingPlayerAnswer = handleIncomingPlayerAnswer;
 
 function getApiUrl(path) {
-    if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + path;
+    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
+        return window.getApiUrl(path);
     }
-    return path;
+    if (!path) return path;
+    if (typeof window === 'undefined') return path;
+
+    if (/^(https?:|blob:|data:)/i.test(path)) {
+        return path;
+    }
+
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+
+    if (customHost) {
+        const cleanCustom = customHost.replace(/\/$/, '');
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return cleanCustom + cleanP;
+    }
+
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return 'http://localhost:3000' + cleanP;
+    }
+
+    let cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+        cleanPath = cleanPath.substring(2);
+    }
+
+    const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
+
+    if (basePath && basePath !== '/') {
+        if (cleanPath.startsWith('/')) {
+            if (cleanPath.startsWith(basePath)) {
+                return cleanPath;
+            }
+            return basePath.replace(/\/$/, '') + cleanPath;
+        } else {
+            return basePath + cleanPath;
+        }
+    }
+
+    if (!cleanPath.startsWith('/')) {
+        return '/' + cleanPath;
+    }
+    return cleanPath;
 }
+window.getApiUrl = getApiUrl;
 
 let controllerConnectedClients = {
     ts1: { connected: false, name: 'Thí sinh 1', lastSeen: 0 },
@@ -2193,8 +2243,9 @@ function sendToProjector(type, payload = {}) {
     };
 
     if (typeof sendSupabaseAction === 'function') {
-        sendSupabaseAction(message);
-    } else if (controllerChannel) {
+        try { sendSupabaseAction(message); } catch(e) {}
+    }
+    if (controllerChannel) {
         try {
             controllerChannel.postMessage(message);
         } catch(e) {
@@ -2214,7 +2265,7 @@ function sendToProjector(type, payload = {}) {
         }
     } catch(e) {}
 
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+    if (!window.__serverActionApiUnavailable && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
         const isWsActive = (window.globalSyncChannel && window.globalSyncChannel.isWsConnected);
         if (!isWsActive && !window.__recentActionSentMap?.has(type + '_' + (payload.turnIndex || payload.round || ''))) {
             window.__recentActionSentMap = window.__recentActionSentMap || new Map();
@@ -2227,8 +2278,14 @@ function sendToProjector(type, payload = {}) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(message)
-                }).catch(() => {});
-            } catch(e) {}
+                }).then(res => {
+                    if (!res.ok) window.__serverActionApiUnavailable = true;
+                }).catch(() => {
+                    window.__serverActionApiUnavailable = true;
+                });
+            } catch(e) {
+                window.__serverActionApiUnavailable = true;
+            }
         }
     }
 }

@@ -8,12 +8,47 @@ function getApiUrl(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
         return window.getApiUrl(path);
     }
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    if (!path) return path;
+    if (typeof window === 'undefined') return path;
+
+    if (/^(https?:|blob:|data:)/i.test(path)) {
+        return path;
+    }
+
     const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
         (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
-    if (customHost) return customHost.replace(/\/$/, '') + cleanPath;
+
+    if (customHost) {
+        const cleanCustom = customHost.replace(/\/$/, '');
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return cleanCustom + cleanP;
+    }
+
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + cleanPath;
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return 'http://localhost:3000' + cleanP;
+    }
+
+    let cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+        cleanPath = cleanPath.substring(2);
+    }
+
+    const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
+
+    if (basePath && basePath !== '/') {
+        if (cleanPath.startsWith('/')) {
+            if (cleanPath.startsWith(basePath)) {
+                return cleanPath;
+            }
+            return basePath.replace(/\/$/, '') + cleanPath;
+        } else {
+            return basePath + cleanPath;
+        }
+    }
+
+    if (!cleanPath.startsWith('/')) {
+        return '/' + cleanPath;
     }
     return cleanPath;
 }

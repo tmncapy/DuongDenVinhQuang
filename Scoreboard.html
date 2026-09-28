@@ -144,7 +144,7 @@
             if (
                 data.type === 'S3_FLASH_SCOREBOARD' ||
                 (data.type === 'PLAYER_RING_BELL' && (data.round === 'VUOT_SONG' || data.round === 'VS' || data.round === 'VCNV')) ||
-                (data.type === 'PLAYER_SUBMIT_ANSWER' && (data.round === 'VS' || data.round === 'VUOT_SONG') && (data.isVongThi || !data.answer || data.answer.startsWith('[CNV]')))
+                (data.type === 'PLAYER_SUBMIT_ANSWER' && (data.round === 'VS' || data.round === 'VUOT_SONG') && (data.isVongThi === true || (data.answer && data.answer.startsWith('[CNV]'))))
             ) {
                 const myId = playerIdx + 1;
                 const targetC = data.contestantId;

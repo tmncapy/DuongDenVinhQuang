@@ -1871,6 +1871,7 @@ function playRKVideoExplicitly() {
     const video = document.getElementById('rk_video_player');
     const overlay = document.getElementById('rk_video_play_overlay');
     if (video) {
+        video.muted = false;
         video.play().then(() => {
             if (overlay) overlay.style.display = 'none';
         }).catch(err => {
@@ -1899,6 +1900,7 @@ function handleRKPlayClip(data) {
     if (clockEl) clockEl.innerText = "30";
 
     const video = document.getElementById('rk_video_player');
+    const overlay = document.getElementById('rk_video_play_overlay');
     const placeholder = document.getElementById('rk_video_placeholder');
     const placeholderText = document.getElementById('rk_placeholder_text');
 
@@ -1906,11 +1908,23 @@ function handleRKPlayClip(data) {
     if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
     rkTimerAlreadyTriggered = false;
 
+    const qIdx = (data.questionIndex || 1) - 1;
     let targetMediaUrl = (data.mediaUrl || '').trim();
-    // Fallback to gameData.raKhoi if missing from event payload
-    if (!targetMediaUrl && typeof gameData !== 'undefined' && gameData.raKhoi) {
-        const qIdx = (data.questionIndex || 1) - 1;
-        targetMediaUrl = (gameData.raKhoi[qIdx]?.m || gameData.raKhoi[qIdx]?.mediaUrl || '').trim();
+
+    // Fallback to gameData.raKhoi if missing or if targetMediaUrl is a local blob URL
+    if ((!targetMediaUrl || targetMediaUrl.startsWith('blob:')) && typeof gameData !== 'undefined' && gameData.raKhoi) {
+        const item = gameData.raKhoi[qIdx];
+        if (item) {
+            const serverM = (item.m || item.mediaUrl || item.am || '').trim();
+            if (serverM && !serverM.startsWith('blob:')) {
+                targetMediaUrl = serverM;
+            }
+        }
+    }
+
+    // Fallback to default cau1.mp4..cau4.mp4 video if mediaUrl is still empty
+    if (!targetMediaUrl || targetMediaUrl === '...') {
+        targetMediaUrl = `./cau${qIdx + 1}.mp4`;
     }
 
     if (targetMediaUrl !== '' && targetMediaUrl !== '...') {
@@ -1919,12 +1933,14 @@ function handleRKPlayClip(data) {
             if (placeholder) placeholder.style.display = 'none';
 
             let resolvedUrl = targetMediaUrl;
-            if (typeof getApiUrl === 'function') {
-                resolvedUrl = getApiUrl(targetMediaUrl);
-            } else {
-                try {
-                    resolvedUrl = new URL(targetMediaUrl, window.location.href).href;
-                } catch(e) {}
+            if (!targetMediaUrl.startsWith('blob:')) {
+                if (typeof getApiUrl === 'function') {
+                    resolvedUrl = getApiUrl(targetMediaUrl);
+                } else {
+                    try {
+                        resolvedUrl = new URL(targetMediaUrl, window.location.href).href;
+                    } catch(e) {}
+                }
             }
 
             const isSameSrc = (video.src === resolvedUrl) || (video.src.endsWith(targetMediaUrl));
@@ -1934,30 +1950,35 @@ function handleRKPlayClip(data) {
                 lastRKClipTimestamp = data.timestamp;
             }
 
+            video.muted = false;
+
             if (!isSameSrc || !video.src || isExplicitNewTrigger || data.type === 'RA_KHOI_PLAY_CLIP') {
                 lastRKMediaUrl = targetMediaUrl;
                 video.src = resolvedUrl;
                 video.currentTime = 0;
                 video.load();
 
-                if (data.type === 'RA_KHOI_PLAY_CLIP') {
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(err => {
-                            console.warn("Video play error in graphic screen, trying muted autoplay:", err);
-                            video.muted = true;
-                            video.play().catch(e => console.error("Muted playback also failed:", e));
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        if (overlay) overlay.style.display = 'none';
+                    }).catch(err => {
+                        console.warn("Video play error in graphic screen, trying muted autoplay:", err);
+                        video.muted = true;
+                        video.play().then(() => {
+                            if (overlay) overlay.style.display = 'flex';
+                        }).catch(e => {
+                            console.error("Muted playback also failed:", e);
+                            if (overlay) overlay.style.display = 'flex';
                         });
-                    }
+                    });
                 }
-            } else if (data.type === 'RA_KHOI_PLAY_CLIP') {
-                video.currentTime = 0;
-                video.play().catch(err => {
-                    video.muted = true;
-                    video.play().catch(() => {});
-                });
             } else if (video.paused && !video.ended) {
-                video.play().catch(() => {});
+                video.play().then(() => {
+                    if (overlay) overlay.style.display = 'none';
+                }).catch(() => {
+                    if (overlay) overlay.style.display = 'flex';
+                });
             }
         }
     } else {
@@ -1970,6 +1991,7 @@ function handleRKPlayClip(data) {
             } catch(e) {}
             video.style.display = 'none';
         }
+        if (overlay) overlay.style.display = 'none';
         if (placeholder) placeholder.style.display = 'flex';
         if (placeholderText) placeholderText.innerText = `Đang phát đoạn băng câu ${data.questionIndex || 1}...`;
     }
@@ -2026,12 +2048,47 @@ function getApiUrlProj(path) {
     if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function') {
         return window.getApiUrl(path);
     }
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    if (!path) return path;
+    if (typeof window === 'undefined') return path;
+
+    if (/^(https?:|blob:|data:)/i.test(path)) {
+        return path;
+    }
+
     const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
         (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
-    if (customHost) return customHost.replace(/\/$/, '') + cleanPath;
+
+    if (customHost) {
+        const cleanCustom = customHost.replace(/\/$/, '');
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return cleanCustom + cleanP;
+    }
+
     if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + cleanPath;
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return 'http://localhost:3000' + cleanP;
+    }
+
+    let cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+        cleanPath = cleanPath.substring(2);
+    }
+
+    const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
+
+    if (basePath && basePath !== '/') {
+        if (cleanPath.startsWith('/')) {
+            if (cleanPath.startsWith(basePath)) {
+                return cleanPath;
+            }
+            return basePath.replace(/\/$/, '') + cleanPath;
+        } else {
+            return basePath + cleanPath;
+        }
+    }
+
+    if (!cleanPath.startsWith('/')) {
+        return '/' + cleanPath;
     }
     return cleanPath;
 }

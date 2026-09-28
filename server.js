@@ -54,6 +54,26 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
+  // Strip subfolder prefix if present in request (e.g. /DuongDenVinhQuang-main/api/state -> /api/state)
+  if (req.url) {
+    if (req.url.includes('/api/')) {
+      req.url = req.url.substring(req.url.indexOf('/api/'));
+    } else if (req.url.includes('/action')) {
+      req.url = '/api/action';
+    } else if (req.url.includes('/state')) {
+      req.url = '/api/state';
+    } else if (req.url.includes('/events')) {
+      req.url = '/api/events';
+    } else if (req.url.includes('/uploads/')) {
+      req.url = req.url.substring(req.url.indexOf('/uploads/'));
+    } else if (req.url.includes('/sounds/')) {
+      req.url = req.url.substring(req.url.indexOf('/sounds/'));
+    } else if (req.url.includes('/Images/')) {
+      req.url = req.url.substring(req.url.indexOf('/Images/'));
+    } else if (req.url.includes('/images/')) {
+      req.url = req.url.substring(req.url.indexOf('/images/'));
+    }
+  }
   next();
 });
 
@@ -624,8 +644,23 @@ function handleIncomingAction(action, senderWs = null) {
   }
 }
 
-// Initialize WebSocket Server on /ws and root paths
-const wss = new WebSocketServer({ server, path: '/ws' });
+// Initialize WebSocket Server to handle /ws and subfolder /ws (e.g. /DuongDenVinhQuang-main/ws)
+const wss = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (request, socket, head) => {
+  try {
+    const pathname = new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname;
+    if (pathname === '/ws' || pathname.endsWith('/ws')) {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  } catch (err) {
+    socket.destroy();
+  }
+});
 
 wss.on('connection', (ws, req) => {
   ws.isAlive = true;

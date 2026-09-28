@@ -28,18 +28,56 @@
     }
     window.hasLocalServerBackend = hasLocalServerBackend;
 
+    function getAppBasePath() {
+        if (typeof window === 'undefined' || !window.location || !window.location.pathname) return '/';
+        const path = window.location.pathname;
+        const dir = path.substring(0, path.lastIndexOf('/') + 1);
+        return dir || '/';
+    }
+    window.getAppBasePath = getAppBasePath;
+
     function getApiUrl(path) {
+        if (!path) return path;
         if (typeof window === 'undefined') return path;
-        const cleanPath = path.startsWith('/') ? path : '/' + path;
-        
+
+        if (/^(https?:|blob:|data:)/i.test(path)) {
+            return path;
+        }
+
         const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
             (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+
         if (customHost) {
-            return customHost.replace(/\/$/, '') + cleanPath;
+            const cleanCustom = customHost.replace(/\/$/, '');
+            const cleanP = path.startsWith('/') ? path : '/' + path;
+            return cleanCustom + cleanP;
         }
 
         if (window.location.protocol === 'file:' || !window.location.host) {
-            return 'http://localhost:3000' + cleanPath;
+            const cleanP = path.startsWith('/') ? path : '/' + path;
+            return 'http://localhost:3000' + cleanP;
+        }
+
+        let cleanPath = path;
+        if (cleanPath.startsWith('./')) {
+            cleanPath = cleanPath.substring(2);
+        }
+
+        const basePath = getAppBasePath();
+
+        if (basePath && basePath !== '/') {
+            if (cleanPath.startsWith('/')) {
+                if (cleanPath.startsWith(basePath)) {
+                    return cleanPath;
+                }
+                return basePath.replace(/\/$/, '') + cleanPath;
+            } else {
+                return basePath + cleanPath;
+            }
+        }
+
+        if (!cleanPath.startsWith('/')) {
+            return '/' + cleanPath;
         }
         return cleanPath;
     }
@@ -56,7 +94,9 @@
             return 'ws://localhost:3000/ws';
         }
         const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        return `${proto}//${window.location.host}/ws`;
+        const basePath = getAppBasePath();
+        const wsPath = (basePath && basePath !== '/' ? basePath.replace(/\/$/, '') : '') + '/ws';
+        return `${proto}//${window.location.host}${wsPath}`;
     }
     window.getWsUrl = getWsUrl;
 

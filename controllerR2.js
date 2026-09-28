@@ -90,7 +90,14 @@ function onClickBatDauDoanBang() {
     const qInput = document.getElementById(`rk_q_${currentRKQuestion}`);
     const aInput = document.getElementById(`rk_a_${currentRKQuestion}`);
     const qItem = (gameData.raKhoi && gameData.raKhoi[currentRKQuestion - 1]) || {};
-    const mediaUrl = (mInput && mInput.value.trim()) || qItem.m || qItem.mediaUrl || '';
+    let mediaUrl = (mInput && mInput.value.trim()) || qItem.m || qItem.mediaUrl || '';
+    if (mediaUrl.startsWith('blob:')) {
+        if (qItem.m && !qItem.m.startsWith('blob:')) mediaUrl = qItem.m;
+        else if (qItem.mediaUrl && !qItem.mediaUrl.startsWith('blob:')) mediaUrl = qItem.mediaUrl;
+    }
+    if (!mediaUrl || mediaUrl.startsWith('blob:')) {
+        mediaUrl = `./cau${currentRKQuestion}.mp4`;
+    }
     const qText = (qInput && qInput.value.trim()) || qItem.q || `Nội dung câu hỏi đoạn băng số ${currentRKQuestion}`;
     const aText = (aInput && aInput.value.trim()) || qItem.a || '';
 

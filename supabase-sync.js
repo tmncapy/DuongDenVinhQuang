@@ -32,26 +32,62 @@ function hasLocalServerBackend() {
 window.hasLocalServerBackend = hasLocalServerBackend;
 
 function getApiUrl(path) {
+    if (typeof window !== 'undefined' && typeof window.getApiUrl === 'function' && window.getApiUrl !== getApiUrl) {
+        return window.getApiUrl(path);
+    }
+    if (!path) return path;
     if (typeof window === 'undefined') return path;
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
-    
-    const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
-    if (customHost) {
-        return customHost.replace(/\/$/, '') + cleanPath;
+
+    if (/^(https?:|blob:|data:)/i.test(path)) {
+        return path;
     }
 
-    // When opened directly as a file (file://), connect to localhost:3000
-    if (window.location.protocol === 'file:' || !window.location.host) {
-        return 'http://localhost:3000' + cleanPath;
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+
+    if (customHost) {
+        const cleanCustom = customHost.replace(/\/$/, '');
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return cleanCustom + cleanP;
     }
-    // When served over HTTP/HTTPS
+
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        const cleanP = path.startsWith('/') ? path : '/' + path;
+        return 'http://localhost:3000' + cleanP;
+    }
+
+    let cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+        cleanPath = cleanPath.substring(2);
+    }
+
+    const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
+
+    if (basePath && basePath !== '/') {
+        if (cleanPath.startsWith('/')) {
+            if (cleanPath.startsWith(basePath)) {
+                return cleanPath;
+            }
+            return basePath.replace(/\/$/, '') + cleanPath;
+        } else {
+            return basePath + cleanPath;
+        }
+    }
+
+    if (!cleanPath.startsWith('/')) {
+        return '/' + cleanPath;
+    }
     return cleanPath;
 }
 window.getApiUrl = getApiUrl;
 
 function getWsUrl() {
+    if (typeof window !== 'undefined' && typeof window.getWsUrl === 'function' && window.getWsUrl !== getWsUrl) {
+        return window.getWsUrl();
+    }
     if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
-    const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
     if (customHost) {
         return customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
     }
@@ -59,7 +95,9 @@ function getWsUrl() {
         return 'ws://localhost:3000/ws';
     }
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${window.location.host}/ws`;
+    const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : '/';
+    const wsPath = (basePath && basePath !== '/' ? basePath.replace(/\/$/, '') : '') + '/ws';
+    return `${proto}//${window.location.host}${wsPath}`;
 }
 window.getWsUrl = getWsUrl;
 

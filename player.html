@@ -663,10 +663,10 @@
                     </div>
 
                     <div style="display: flex; gap: 10px; width: 55%; max-width: 600px; margin-top: 4px;">
-                        <button class="btn-bell" id="s3_btn_bell" style="width: 100%; padding: 10px 14px; font-size: 1.1rem; min-height: 48px; border-radius: 8px;" onclick="ringBell('VUOT_SONG')">🔔 BẤM CHUÔNG TỪ KHÓA</button>
+                        <button class="btn-bell" id="s3_btn_bell" style="width: 100%; padding: 10px 14px; font-size: 1.1rem; min-height: 48px; border-radius: 8px;" onclick="ringBell('VUOT_SONG')">🔔 TRẢ LỜI ĐÁP ÁN VÒNG THI</button>
                     </div>
                     <div class="bell-feedback" id="s3_bell_feedback" style="display: none; margin-top: 6px;">
-                        ✅ ĐÃ BẤM CHUÔNG XIN TRẢ LỜI VƯỢT SÓNG!
+                        ✅ ĐÃ BẤM CHUÔNG TRẢ LỜI ĐÁP ÁN VÒNG THI!
                     </div>
                 </div>
             </div>
@@ -1421,6 +1421,7 @@
                 roomCode: currentRoomCode,
                 auth: currentPassword || '',
                 isAutoTyping: isAutoTyping,
+                isVongThi: false,
                 timestamp: Date.now()
             };
 
@@ -1507,14 +1508,29 @@
                 timestamp: Date.now()
             };
 
+            const flashPayload = {
+                type: 'S3_FLASH_SCOREBOARD',
+                contestantId: currentContestantId,
+                round: 'VUOT_SONG',
+                timestamp: Date.now()
+            };
+
             if (syncChannel) {
                 try { syncChannel.postMessage(payload); } catch(e) {}
                 try { syncChannel.postMessage(ansPayload); } catch(e) {}
+                try { syncChannel.postMessage(flashPayload); } catch(e) {}
             }
             if (typeof sendSupabaseAction === 'function') {
                 sendSupabaseAction(payload);
                 sendSupabaseAction(ansPayload);
+                sendSupabaseAction(flashPayload);
             }
+            try {
+                if (typeof BroadcastChannel !== 'undefined') {
+                    const bc = new BroadcastChannel('ddvq_game_channel');
+                    bc.postMessage(flashPayload);
+                }
+            } catch(e) {}
             try {
                 localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
             } catch(e) {}
