@@ -389,11 +389,6 @@ function markVSContestantSubmitted(tsIdx, timeStr) {
         };
     }
 
-    const ansInput = document.getElementById(`ts${idx}_ans_vs`);
-    if (ansInput && (!ansInput.value || ansInput.value === '[CNV] Bấm chuông')) {
-        ansInput.value = '[CNV] Bấm chuông';
-    }
-
     updateVSBuzzerLabels();
 
     // Trigger full-screen orange flash on corresponding scoreboard (10 flashes)
@@ -418,10 +413,6 @@ function triggerVSBell(idx) {
     let elapsed = (Date.now() - window.vsRoundStartTime) / 1000;
     let timeStr = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
     
-    const ansInput = document.getElementById(`ts${idx}_ans_vs`);
-    if (ansInput && !ansInput.value) {
-        ansInput.value = '[CNV] Bấm chuông';
-    }
     markVSContestantSubmitted(idx, timeStr);
 }
 

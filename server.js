@@ -354,7 +354,7 @@ function handleIncomingAction(action, senderWs = null) {
     const rKey = action.round ? `ts${tsIdx}_${action.round}` : `ts${tsIdx}`;
     serverState.playerAnswers[`ts${tsIdx}`] = {
       contestantId: tsIdx,
-      answer: action.answer || '[CNV] Bấm chuông',
+      answer: action.answer || '',
       time: action.time || '00.00',
       round: action.round || 'VS',
       isVongThi: true,

@@ -128,7 +128,7 @@ function onSwitchTabRound(index) {
         sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
         sendToProjector('SWITCH_VIEW', { viewNum: 6, round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
     } else if (index === 5) {
-        sendToProjector('SWITCH_VIEW', { viewNum: 6, round: 'CAU_HOI_PHU', activeRound: 'CAU_HOI_PHU' });
+        sendToProjector('SWITCH_VIEW', { viewNum: 0, round: 'CAU_HOI_PHU', activeRound: 'CAU_HOI_PHU' });
     } else if (index === 0) {
         sendToProjector('SWITCH_ROUND', { round: 'HE_THONG', activeRound: 'HE_THONG', tabIndex: 0 });
     }
@@ -837,8 +837,14 @@ function fillVuotSongInputs() {
 }
 
 function fillCauHoiPhuInputs() {
+    if (!Array.isArray(gameData.cauHoiPhu)) gameData.cauHoiPhu = [];
     for (let i = 1; i <= 3; i++) {
         const item = gameData.cauHoiPhu[i - 1] || { q: '', a: '' };
+        const sysQ = document.getElementById(`sys_chp_q_${i}`);
+        const sysA = document.getElementById(`sys_chp_a_${i}`);
+        if (sysQ) sysQ.value = item.q || '';
+        if (sysA) sysA.value = item.a || '';
+
         const qEl = document.getElementById(`chp_q_${i}`);
         const aEl = document.getElementById(`chp_a_${i}`);
         if (qEl) qEl.value = item.q || '';
@@ -924,8 +930,8 @@ function saveAllData(notify = false) {
 
         if (!Array.isArray(gameData.cauHoiPhu)) gameData.cauHoiPhu = [];
         for (let i = 1; i <= 3; i++) {
-            const qVal = document.getElementById(`chp_q_${i}`)?.value || '';
-            const aVal = document.getElementById(`chp_a_${i}`)?.value || '';
+            const qVal = document.getElementById(`chp_q_${i}`)?.value || document.getElementById(`sys_chp_q_${i}`)?.value || '';
+            const aVal = document.getElementById(`chp_a_${i}`)?.value || document.getElementById(`sys_chp_a_${i}`)?.value || '';
             if (qVal || aVal) gameData.cauHoiPhu[i - 1] = { q: qVal, a: aVal };
         }
 
@@ -1062,11 +1068,6 @@ function markVSContestantSubmitted(tsIdx, timeStr) {
             numTime: parseFloat(cleanTime) || 999,
             timestamp: Date.now()
         };
-    }
-
-    const ansInput = document.getElementById(`ts${idx}_ans_vs`);
-    if (ansInput && (!ansInput.value || ansInput.value === '[CNV] Bấm chuông')) {
-        ansInput.value = '[CNV] Bấm chuông';
     }
 
     updateVSBuzzerLabels();
@@ -1359,10 +1360,6 @@ function handleIncomingPlayerAnswer(data) {
             if (typeof markVSContestantSubmitted === 'function') {
                 markVSContestantSubmitted(tsIdx, data.time || null);
             }
-            const ansInput = document.getElementById(`ts${tsIdx}_ans_vs`);
-            if (ansInput && !ansInput.value) {
-                ansInput.value = '[CNV] Bấm chuông';
-            }
         }
         return;
     }
@@ -1407,8 +1404,9 @@ function handleIncomingPlayerAnswer(data) {
                 } else if (typeof window.markVSContestantSubmitted === 'function') {
                     window.markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
                 }
-                if (ans && inputAns) {
-                    inputAns.value = ans.startsWith('[CNV]') ? ans : `[CNV] ${ans}`;
+                const cleanAns = (ans || '').replace(/^\[CNV\]\s*/i, '').trim();
+                if (cleanAns && cleanAns !== 'Bấm chuông' && inputAns && !inputAns.value) {
+                    inputAns.value = cleanAns;
                 }
             } else {
                 // Thí sinh trả lời câu hỏi hàng ngang (và nhấn Enter):
@@ -1418,10 +1416,16 @@ function handleIncomingPlayerAnswer(data) {
                 if (inputAns && inputAns.value !== ans) inputAns.value = ans;
             }
         }
-        if (data.round === 'VQ' || data.round === 'VINH_QUANG' || !data.round) {
+        if (data.round === 'VQ' || data.round === 'VINH_QUANG') {
             const inputExtra = document.getElementById(`ts${tsIdx}_extra_vq`);
             if (inputExtra && inputExtra.value !== (cleanTime || '00.00')) inputExtra.value = cleanTime || '00.00';
             const inputAns = document.getElementById(`ts${tsIdx}_ans_vq`);
+            if (inputAns && inputAns.value !== ans) inputAns.value = ans;
+        }
+        if (data.round === 'CHP' || data.round === 'CAU_HOI_PHU') {
+            const inputExtra = document.getElementById(`ts${tsIdx}_extra_chp`);
+            if (inputExtra && inputExtra.value !== (cleanTime || '00.00')) inputExtra.value = cleanTime || '00.00';
+            const inputAns = document.getElementById(`ts${tsIdx}_ans_chp`);
             if (inputAns && inputAns.value !== ans) inputAns.value = ans;
         }
 
@@ -1452,8 +1456,9 @@ function handleIncomingPlayerAnswer(data) {
                         if (typeof markVSContestantSubmitted === 'function') {
                             markVSContestantSubmitted(tsIdx, cleanTime || '00.00');
                         }
-                        if (ans && inputAns) {
-                            inputAns.value = ans.startsWith('[CNV]') ? ans : `[CNV] ${ans}`;
+                        const cleanAns = (ans || '').replace(/^\[CNV\]\s*/i, '').trim();
+                        if (cleanAns && cleanAns !== 'Bấm chuông' && inputAns && !inputAns.value) {
+                            inputAns.value = cleanAns;
                         }
                     } else {
                         if (inputTime && inputTime.value !== (cleanTime || '00.00')) inputTime.value = cleanTime || '00.00';

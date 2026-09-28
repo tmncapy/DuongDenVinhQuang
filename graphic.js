@@ -19,7 +19,7 @@ let currentViewIndex = 1;
 
 function switchView(viewNum) {
     currentViewIndex = viewNum;
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 10; i++) {
         const viewEl = document.getElementById(`view-file-${i}`);
         const btnEl = document.getElementById(`btn-view-${i}`);
         if (viewEl) viewEl.classList.remove('active-view');
@@ -1028,6 +1028,22 @@ function handleProjectorMessage(data) {
         }
     } else if (data.type === 'XUAT_PHAT_STOP_SOUND') {
         stopAllAudio1();
+    } else if (data.type === 'CAU_HOI_PHU_SHOW_QUESTION') {
+        switchView(9);
+        safePlay(soundBeginQues1);
+        handleCHPShowQuestion(data);
+    } else if (data.type === 'CAU_HOI_PHU_START_TIMER') {
+        switchView(9);
+        handleCHPStartTimer(data);
+    } else if (data.type === 'CAU_HOI_PHU_SHOW_CONTESTANT_ANSWERS') {
+        switchView(10);
+        safePlay(soundRKAnswer);
+        handleCHPShowContestantAnswers(data);
+    } else if (data.type === 'CAU_HOI_PHU_SHOW_ANSWER') {
+        switchView(9);
+        handleCHPShowAnswer(data);
+    } else if (data.type === 'CAU_HOI_PHU_RESET') {
+        handleCHPReset();
     } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO' || data.type === 'RA_KHOI_SHOW_QUESTION') {
         handleRKPlayClip(data);
     } else if (data.type === 'RA_KHOI_START_TIMER') {
@@ -1151,6 +1167,14 @@ function handleProjectorMessage(data) {
             if (vqAns && ans) vqAns.innerText = ans;
             if (vqTime && cleanTime) vqTime.innerText = cleanTime;
             if (ansEl && ans) ansEl.innerText = ans;
+        }
+        if (round === 'CHP' || round === 'CAU_HOI_PHU') {
+            const chpAns = document.getElementById(`chp_ans_val_${tsIdx}`);
+            const chpTime = document.getElementById(`chp_ans_time_${tsIdx}`);
+            const chpName = document.getElementById(`chp_ans_name_${tsIdx}`);
+            if (chpAns && ans) chpAns.innerText = ans;
+            if (chpTime && cleanTime) chpTime.innerText = cleanTime;
+            if (chpName && (data.contestantName || data.name)) chpName.innerText = data.contestantName || data.name;
         }
 
         if (data.round === 'RK' || data.round === 'RA_KHOI' || data.round === 'TANG_TOC' || (data.round === 'VS' && data.isVongThi) || data.type === 'PLAYER_RING_BELL') {
@@ -2116,3 +2140,92 @@ function sendProjectorHeartbeat() {
 
 sendProjectorHeartbeat();
 setInterval(sendProjectorHeartbeat, 8000);
+
+/* CÂU HỎI PHỤ - CHP FUNCTIONS */
+let chpTimerIntervalProj = null;
+
+function handleCHPShowQuestion(data) {
+    if (chpTimerIntervalProj) clearInterval(chpTimerIntervalProj);
+    const qEl = document.getElementById('chp_question_text');
+    if (qEl) qEl.innerText = data.questionText || `Nội dung câu hỏi phụ số ${data.questionIndex || 1}...`;
+    const clockEl = document.getElementById('chp_clock_box');
+    if (clockEl) clockEl.innerText = "15";
+    const ansBox = document.getElementById('chp_correct_answer_box');
+    if (ansBox) {
+        ansBox.style.display = 'none';
+        ansBox.innerText = "";
+    }
+}
+
+function handleCHPStartTimer(data) {
+    if (chpTimerIntervalProj) clearInterval(chpTimerIntervalProj);
+    let duration = data.duration || 15;
+    const clockEl = document.getElementById('chp_clock_box');
+    if (clockEl) clockEl.innerText = duration < 10 ? '0' + duration : duration;
+
+    const audio = document.getElementById('chpAudio15s');
+    if (audio) {
+        try {
+            audio.currentTime = 0;
+            audio.play().catch(e => console.warn("CHP audio play blocked:", e));
+        } catch(e) {}
+    }
+
+    chpTimerIntervalProj = setInterval(() => {
+        duration--;
+        if (clockEl) clockEl.innerText = duration < 10 ? ('0' + Math.max(0, duration)) : duration;
+        if (duration <= 0) {
+            clearInterval(chpTimerIntervalProj);
+        }
+    }, 1000);
+}
+
+function handleCHPShowContestantAnswers(data) {
+    const answers = data.answers || {};
+    const participants = data.participatingContestants || [1, 2, 3, 4];
+
+    for (let i = 1; i <= 4; i++) {
+        const row = document.getElementById(`chp_ans_row_${i}`);
+        const nameEl = document.getElementById(`chp_ans_name_${i}`);
+        const ansEl = document.getElementById(`chp_ans_val_${i}`);
+        const timeEl = document.getElementById(`chp_ans_time_${i}`);
+
+        if (row) {
+            const isIncluded = participants.some(p => Number(p) === Number(i));
+            if (isIncluded) {
+                row.style.display = 'block';
+                const sub = answers[i] || answers[i.toString()] || {};
+                if (nameEl) nameEl.innerText = sub.name || (gameData.contestants?.[i - 1]?.name || `Thí sinh ${i}`);
+                if (ansEl) ansEl.innerText = sub.answer || '---';
+                if (timeEl) timeEl.innerText = (sub.time || '00.00').toString().replace(/s|giây/gi, '').trim();
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+}
+
+function handleCHPShowAnswer(data) {
+    const ansBox = document.getElementById('chp_correct_answer_box');
+    if (ansBox) {
+        ansBox.innerText = `ĐÁP ÁN ĐÚNG: ${data.answerText || ''}`;
+        ansBox.style.display = 'flex';
+    }
+}
+
+function handleCHPReset() {
+    if (chpTimerIntervalProj) clearInterval(chpTimerIntervalProj);
+    const clockEl = document.getElementById('chp_clock_box');
+    if (clockEl) clockEl.innerText = "15";
+    const qEl = document.getElementById('chp_question_text');
+    if (qEl) qEl.innerText = "Nội dung câu hỏi phụ...";
+    const ansBox = document.getElementById('chp_correct_answer_box');
+    if (ansBox) {
+        ansBox.style.display = 'none';
+        ansBox.innerText = "";
+    }
+    const audio = document.getElementById('chpAudio15s');
+    if (audio) {
+        try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+    }
+}

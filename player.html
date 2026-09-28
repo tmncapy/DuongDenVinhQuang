@@ -717,19 +717,18 @@
 
             <div class="scene-main">
                 <div class="question-area">
-                    <div class="black-box" id="s5_q_text" style="height: 250px;"></div>
+                    <div class="row-label" id="s5_row_label">Câu hỏi phụ số 1</div>
+                    <div class="black-box" id="s5_q_text" style="height: 240px;"></div>
                 </div>
 
-                <div class="action-area">
-                    <button class="btn-bell" id="s5_btn_bell" onclick="ringBell('CHP')">
-                        🔔 GIÀNH QUYỀN TRẢ LỜI
-                    </button>
-                    <div class="bell-feedback" id="s5_bell_feedback">
-                        ✅ ĐÃ BẤM CHUÔNG GIÀNH QUYỀN TRẢ LỜI!
-                    </div>
-                    
-                    <div class="input-group" style="margin-top: 10px; width: 50%;">
+                <div class="answer-area">
+                    <div class="input-group">
                         <input type="text" id="s5_ans_input" class="answer-input" placeholder="" disabled autocomplete="off" oninput="onPlayerAnswerTyping('CHP')" onkeydown="if(event.key==='Enter') submitPlayerAnswer('CHP')">
+                    </div>
+
+                    <div class="status-group">
+                        <div class="status-label">TRẢ LỜI ĐÃ GỬI</div>
+                        <div class="status-bar" id="s5_status_bar">---</div>
                     </div>
                 </div>
             </div>
@@ -1158,24 +1157,35 @@
             // Round 5: Câu hỏi phụ
             if (data.type && data.type.startsWith('CAU_HOI_PHU_')) {
                 switchScene(5);
+                const participants = data.participatingContestants || [1, 2, 3, 4];
+                const isParticipant = participants.includes(parseInt(currentContestantId));
+
                 if (data.type === 'CAU_HOI_PHU_RESET') {
                     clearPlayerSceneUI(5);
-                } else {
+                } else if (data.type === 'CAU_HOI_PHU_SHOW_QUESTION') {
                     const s5Box = document.getElementById('s5_q_text');
-                    if (data.question || data.questionText) {
-                        if (s5Box) s5Box.innerText = data.question || data.questionText;
-                    } else {
-                        if (s5Box) s5Box.innerText = '';
-                    }
-                    if (data.duration) {
-                        startSceneTimer(5, data.duration);
-                    }
-                }
-                if (data.type === 'CAU_HOI_PHU_SELECT_QUESTION' || data.type === 'CAU_HOI_PHU_RESET') {
+                    const s5Label = document.getElementById('s5_row_label');
+                    if (s5Box) s5Box.innerText = data.questionText || data.question || '';
+                    if (s5Label) s5Label.innerText = `Câu hỏi phụ số ${data.questionIndex || 1}`;
                     const s5Inp = document.getElementById('s5_ans_input');
                     if (s5Inp) s5Inp.value = '';
-                    setInputState(5, false, '');
-                    resetBellState(5);
+                    const s5Stat = document.getElementById('s5_status_bar');
+                    if (s5Stat) { s5Stat.innerText = '---'; s5Stat.classList.remove('submitted'); }
+
+                    if (isParticipant) {
+                        setInputState(5, false, 'Nhập câu trả lời (khi bấm Bắt đầu 15s)...');
+                    } else {
+                        setInputState(5, false, 'Thí sinh không tham gia phần thi này');
+                    }
+                } else if (data.type === 'CAU_HOI_PHU_START_TIMER') {
+                    const s5Box = document.getElementById('s5_q_text');
+                    if (data.questionText && s5Box) s5Box.innerText = data.questionText;
+                    if (isParticipant) {
+                        startSceneTimer(5, data.duration || 15);
+                        setInputState(5, true, 'Nhập câu trả lời Câu hỏi phụ...');
+                    } else {
+                        setInputState(5, false, 'Thí sinh không tham gia phần thi này');
+                    }
                 }
             }
 
@@ -1342,6 +1352,12 @@
             } else if (sceneNum === 5) {
                 const qBox = document.getElementById('s5_q_text');
                 if (qBox) qBox.innerText = '';
+                const rLabel = document.getElementById('s5_row_label');
+                if (rLabel) rLabel.innerText = 'Câu hỏi phụ số 1';
+                const inp = document.getElementById('s5_ans_input');
+                if (inp) inp.value = '';
+                const stat = document.getElementById('s5_status_bar');
+                if (stat) { stat.innerText = '---'; stat.classList.remove('submitted'); }
             }
         }
 
@@ -1376,7 +1392,7 @@
                 maxDuration = 15;
             } else if (rUpper === 'CHP' || (!roundKey && activeSceneNum === 5)) {
                 inputId = 's5_ans_input';
-                statusId = null;
+                statusId = 's5_status_bar';
                 normalizedRound = 'CHP';
                 maxDuration = 15;
             }
@@ -1502,7 +1518,7 @@
                 contestantName: contestantName,
                 round: 'VS',
                 isVongThi: true,
-                answer: '[CNV] Bấm chuông',
+                answer: '',
                 time: elapsedStr,
                 roomCode: currentRoomCode,
                 timestamp: Date.now()
