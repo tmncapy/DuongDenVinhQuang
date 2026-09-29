@@ -83,7 +83,7 @@ try {
     if (tStr) window.currentActiveTimer = JSON.parse(tStr);
 } catch(e) {}
 
-// Switch main tabs
+// Switch main tabs (Dành riêng cho máy Controller -> đồng bộ màn hình Thí sinh & MC, KHÔNG làm chuyển view hay ẩn đồ họa trên Projector)
 function onSwitchTabRound(index) {
     let roundName = 'HE_THONG';
     if (index === 1) roundName = 'XUAT_PHAT';
@@ -110,27 +110,26 @@ function onSwitchTabRound(index) {
             if (btn) btn.classList.remove('active');
         }
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
-        sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT' });
-        sendToProjector('SWITCH_VIEW', { viewNum: 1, turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT' });
     } else if (index === 2) {
         if (typeof selectRKQuestion === 'function') {
             selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
         }
-        sendToProjector('RA_KHOI_RESET', { round: 'RA_KHOI', activeRound: 'RA_KHOI' });
-        sendToProjector('SWITCH_VIEW', { viewNum: 2, round: 'RA_KHOI', activeRound: 'RA_KHOI' });
     } else if (index === 3) {
         window.vsRoundStartTime = Date.now();
         try { localStorage.setItem('s3_round_start_time', window.vsRoundStartTime); } catch(e) {}
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
-        sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG', roundStartTime: window.vsRoundStartTime });
-        sendToProjector('SWITCH_VIEW', { viewNum: 3, round: 'VUOT_SONG', activeRound: 'VUOT_SONG', roundStartTime: window.vsRoundStartTime });
-    } else if (index === 4) {
-        sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
-        sendToProjector('SWITCH_VIEW', { viewNum: 6, round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
-    } else if (index === 5) {
-        sendToProjector('SWITCH_VIEW', { viewNum: 0, round: 'CAU_HOI_PHU', activeRound: 'CAU_HOI_PHU' });
-    } else if (index === 0) {
-        sendToProjector('SWITCH_ROUND', { round: 'HE_THONG', activeRound: 'HE_THONG', tabIndex: 0 });
+    }
+
+    // Chỉ gửi tín hiệu chuyển vòng cho máy Thí sinh (Player) & Máy MC (Host), không động đến Projector
+    const payload = {
+        type: 'SWITCH_ROUND_PLAYER_MC',
+        round: roundName,
+        activeRound: roundName,
+        tabIndex: index,
+        timestamp: Date.now()
+    };
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
     }
 }
 window.onSwitchTabRound = onSwitchTabRound;
@@ -159,7 +158,7 @@ function switchTab(index) {
 }
 window.switchTab = switchTab;
 
-// Bắt đầu vòng thi: Đồng bộ chuyển cảnh trên máy Thí sinh (Player) đồng thời ẩn sạch toàn bộ Graphic trên Graphic & Projector
+// Bắt đầu vòng thi: Bấm nút tên vòng thi để chuyển cảnh Thí sinh/MC đồng thời ẩn sạch toàn bộ Graphic trên Projector & Graphic
 window.startRoundAndCleanGraphics = function(roundIndex) {
     let roundName = 'XUAT_PHAT';
     let viewNum = 1;
@@ -182,6 +181,10 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
         roundName = 'VINH_QUANG';
         viewNum = 6;
         label = 'Vinh Quang';
+    } else if (roundIndex === 5) {
+        roundName = 'CAU_HOI_PHU';
+        viewNum = 0;
+        label = 'Câu Hỏi Phụ';
     }
 
     window.currentActiveRound = roundName;
@@ -200,7 +203,7 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
         localStorage.removeItem('ddvq_vq_question_text');
     } catch(e) {}
 
-    // Gửi tín hiệu chuyển vòng và dọn sạch graphic
+    // Gửi tín hiệu chuyển vòng và dọn sạch graphic trên Projector
     const payload = {
         type: 'START_ROUND_CLEAN',
         round: roundName,

@@ -731,120 +731,110 @@
                         <button class="btn" onclick="openPlayerDirectLink()" style="background: #ffffff; color: #334155; padding: 5px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">Mở thử</button>
                         <button class="btn" onclick="showPlayerQrModal()" style="background: #ffffff; color: #334155; padding: 5px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">Quét QR</button>
                     </div>
-
-                    <!-- Hàng 4: Link gửi riêng từng thí sinh 1, 2, 3, 4 với mã xác thực riêng biệt -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; padding-top: 4px;">
-                        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                            <div style="display: flex; flex-direction: column; gap: 2px;">
-                                <span id="controller_ts1_link_title" style="font-size: 11px; font-weight: 800; color: #475569;">TS 1: Thí sinh 1</span>
-                                <span id="slot_auth_badge_1" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; display: inline-block;">Auth: 101234</span>
-                            </div>
-                            <div style="display: flex; gap: 4px;">
-                                <button class="btn" onclick="copyPlayerDirectLink(1)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 1">Copy</button>
-                                <button class="btn" onclick="showPlayerQrModal(1)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 1">QR</button>
-                                <button class="btn" onclick="openPlayerDirectLink(1)" style="padding: 3px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 1">Mở</button>
-                            </div>
-                        </div>
-                        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                            <div style="display: flex; flex-direction: column; gap: 2px;">
-                                <span id="controller_ts2_link_title" style="font-size: 11px; font-weight: 800; color: #475569;">TS 2: Thí sinh 2</span>
-                                <span id="slot_auth_badge_2" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; display: inline-block;">Auth: 202345</span>
-                            </div>
-                            <div style="display: flex; gap: 4px;">
-                                <button class="btn" onclick="copyPlayerDirectLink(2)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 2">Copy</button>
-                                <button class="btn" onclick="showPlayerQrModal(2)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 2">QR</button>
-                                <button class="btn" onclick="openPlayerDirectLink(2)" style="padding: 3px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 2">Mở</button>
-                            </div>
-                        </div>
-                        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                            <div style="display: flex; flex-direction: column; gap: 2px;">
-                                <span id="controller_ts3_link_title" style="font-size: 11px; font-weight: 800; color: #475569;">TS 3: Thí sinh 3</span>
-                                <span id="slot_auth_badge_3" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; display: inline-block;">Auth: 303456</span>
-                            </div>
-                            <div style="display: flex; gap: 4px;">
-                                <button class="btn" onclick="copyPlayerDirectLink(3)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 3">Copy</button>
-                                <button class="btn" onclick="showPlayerQrModal(3)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 3">QR</button>
-                                <button class="btn" onclick="openPlayerDirectLink(3)" style="padding: 3px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 3">Mở</button>
-                            </div>
-                        </div>
-                        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                            <div style="display: flex; flex-direction: column; gap: 2px;">
-                                <span id="controller_ts4_link_title" style="font-size: 11px; font-weight: 800; color: #475569;">TS 4: Thí sinh 4</span>
-                                <span id="slot_auth_badge_4" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; display: inline-block;">Auth: 404567</span>
-                            </div>
-                            <div style="display: flex; gap: 4px;">
-                                <button class="btn" onclick="copyPlayerDirectLink(4)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 4">Copy</button>
-                                <button class="btn" onclick="showPlayerQrModal(4)" style="padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 4">QR</button>
-                                <button class="btn" onclick="openPlayerDirectLink(4)" style="padding: 3px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 4">Mở</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <table class="conn-table">
                     <tr>
-                        <td style="width: 215px;">
+                        <td style="width: 210px;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span id="status_badge_ts1" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
                                 <button type="button" class="btn" onclick="reloadClientSlot('ts1')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 4px; cursor: pointer;" title="Tải lại màn hình Thí sinh 1">Reload</button>
                                 <button type="button" class="btn" onclick="kickClientSlot('ts1')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 4px; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 1">Kick</button>
                             </div>
                         </td>
+                        <td style="width: 175px;">
+                            <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                <span id="controller_ts1_link_title" style="display: none;">TS 1: Thí sinh 1</span>
+                                <span id="slot_auth_badge_1" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block;">Auth: 101234</span>
+                                <button type="button" class="btn" onclick="copyPlayerDirectLink(1)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 1">Copy</button>
+                                <button type="button" class="btn" onclick="showPlayerQrModal(1)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 1">QR</button>
+                                <button type="button" class="btn" onclick="openPlayerDirectLink(1)" style="padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 1">Mở</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 1" id="ts_name_1" oninput="updateContestantName(1, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 1 (player.html?slot=1)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 215px;">
+                        <td style="width: 210px;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span id="status_badge_ts2" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
                                 <button type="button" class="btn" onclick="reloadClientSlot('ts2')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại màn hình Thí sinh 2">Reload</button>
                                 <button type="button" class="btn" onclick="kickClientSlot('ts2')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 2">Kick</button>
                             </div>
                         </td>
+                        <td style="width: 175px;">
+                            <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                <span id="controller_ts2_link_title" style="display: none;">TS 2: Thí sinh 2</span>
+                                <span id="slot_auth_badge_2" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block;">Auth: 202345</span>
+                                <button type="button" class="btn" onclick="copyPlayerDirectLink(2)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 2">Copy</button>
+                                <button type="button" class="btn" onclick="showPlayerQrModal(2)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 2">QR</button>
+                                <button type="button" class="btn" onclick="openPlayerDirectLink(2)" style="padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 2">Mở</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 2" id="ts_name_2" oninput="updateContestantName(2, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 2 (player.html?slot=2)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 215px;">
+                        <td style="width: 210px;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span id="status_badge_ts3" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
                                 <button type="button" class="btn" onclick="reloadClientSlot('ts3')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại màn hình Thí sinh 3">Reload</button>
                                 <button type="button" class="btn" onclick="kickClientSlot('ts3')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 3">Kick</button>
                             </div>
                         </td>
+                        <td style="width: 175px;">
+                            <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                <span id="controller_ts3_link_title" style="display: none;">TS 3: Thí sinh 3</span>
+                                <span id="slot_auth_badge_3" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block;">Auth: 303456</span>
+                                <button type="button" class="btn" onclick="copyPlayerDirectLink(3)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 3">Copy</button>
+                                <button type="button" class="btn" onclick="showPlayerQrModal(3)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 3">QR</button>
+                                <button type="button" class="btn" onclick="openPlayerDirectLink(3)" style="padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 3">Mở</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 3" id="ts_name_3" oninput="updateContestantName(3, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 3 (player.html?slot=3)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 215px;">
+                        <td style="width: 210px;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span id="status_badge_ts4" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
                                 <button type="button" class="btn" onclick="reloadClientSlot('ts4')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại màn hình Thí sinh 4">Reload</button>
                                 <button type="button" class="btn" onclick="kickClientSlot('ts4')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Mời ra / Đá khỏi vị trí Thí sinh 4">Kick</button>
                             </div>
                         </td>
+                        <td style="width: 175px;">
+                            <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                <span id="controller_ts4_link_title" style="display: none;">TS 4: Thí sinh 4</span>
+                                <span id="slot_auth_badge_4" style="font-size: 10px; font-weight: 700; color: #475569; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block;">Auth: 404567</span>
+                                <button type="button" class="btn" onclick="copyPlayerDirectLink(4)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Sao chép Link Thí sinh 4">Copy</button>
+                                <button type="button" class="btn" onclick="showPlayerQrModal(4)" style="padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Hiện QR Code Thí sinh 4">QR</button>
+                                <button type="button" class="btn" onclick="openPlayerDirectLink(4)" style="padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 4px;" title="Mở thử Thí sinh 4">Mở</button>
+                            </div>
+                        </td>
                         <td style="width: 120px;"><input type="text" value="Thí sinh 4" id="ts_name_4" oninput="updateContestantName(4, this.value)"></td>
                         <td><input type="text" readonly value="Màn hình Thí sinh 4 (player.html?slot=4)" style="color: #1e3a8a; font-size: 11px; font-weight: bold;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 215px;">
+                        <td style="width: 210px;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span id="status_badge_host" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
                                 <button type="button" class="btn" onclick="reloadClientSlot('host')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại máy MC">Reload</button>
                                 <button type="button" class="btn" onclick="kickClientSlot('host')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Mời ra / Đá khỏi Máy MC">Kick</button>
                             </div>
                         </td>
-                        <td><input type="text" value="Máy MC" readonly style="font-weight: bold; background: #f1f5f9;"></td>
+                        <td style="text-align: center; color: #94a3b8; font-size: 11px;">—</td>
+                        <td style="width: 120px;"><input type="text" value="Máy MC" readonly style="font-weight: bold; background: #f1f5f9;"></td>
                         <td><input type="text" readonly placeholder="Màn hình Người dẫn chương trình (host.html)" style="color: #64748b; font-size: 11px;"></td>
                     </tr>
                     <tr>
-                        <td style="width: 215px;">
+                        <td style="width: 210px;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span id="status_badge_projector" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
                                 <button type="button" class="btn" onclick="reloadClientSlot('projector')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại màn hình Máy Chiếu">Reload</button>
                             </div>
                         </td>
-                        <td><input type="text" value="Máy Chiếu" readonly style="font-weight: bold; background: #f1f5f9;"></td>
+                        <td style="text-align: center; color: #94a3b8; font-size: 11px;">—</td>
+                        <td style="width: 120px;"><input type="text" value="Máy Chiếu" readonly style="font-weight: bold; background: #f1f5f9;"></td>
                         <td><input type="text" readonly placeholder="Màn hình Máy chiếu / Graphic" style="color: #64748b; font-size: 11px;"></td>
                     </tr>
                 </table>
@@ -1494,8 +1484,8 @@
 
                 <!-- NÚT BẮT ĐẦU VÒNG 1: XUẤT PHÁT -->
                 <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(1)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Xuất Phát & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        BẮT ĐẦU VÒNG 1 (XUẤT PHÁT)
+                    <button class="btn" onclick="startRoundAndCleanGraphics(1)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #2563eb; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Xuất Phát & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🚀 Xuất Phát
                     </button>
                 </div>
 
@@ -1534,9 +1524,9 @@
                     </button>
                 </div>
 
-                <!-- BUTTON ACTIONS ROW 2: Khởi động, Hoàn thành, Dừng nhạc, Đặt lại, Reset chọn đề, Tổng kết -->
+                <!-- BUTTON ACTIONS ROW 2: Xuất phát, Hoàn thành, Dừng nhạc, Đặt lại, Reset chọn đề, Tổng kết -->
                 <div style="display: flex; gap: 6px; justify-content: space-between;">
-                    <button class="ctrl-btn-bottom" onclick="onClickKhoidong()">Khởi Động</button>
+                    <button class="ctrl-btn-bottom" onclick="startRoundAndCleanGraphics(1)" style="font-weight: bold; background: #2563eb; color: white;">🚀 Xuất Phát</button>
                     <button class="ctrl-btn-bottom" onclick="onClickHoanThanh()">Hoàn thành</button>
                     <button class="ctrl-btn-bottom" onclick="onClickDungNhac()">Dừng nhạc</button>
                     <button class="ctrl-btn-bottom" onclick="resetS1ContestantDe('ALL')" title="Reset nút bấm chọn đề cho thí sinh">Reset chọn đề</button>
@@ -1757,8 +1747,8 @@
 
                 <!-- NÚT BẮT ĐẦU VÒNG 2: RA KHƠI -->
                 <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(2)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Ra Khơi">
-                        BẮT ĐẦU VÒNG 2 (RA KHƠI)
+                    <button class="btn" onclick="startRoundAndCleanGraphics(2)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #2563eb; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Ra Khơi & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        ⛵ Ra Khơi
                     </button>
                 </div>
 
@@ -2019,8 +2009,8 @@
 
                 <!-- NÚT BẮT ĐẦU VÒNG 3: VƯỢT SÓNG -->
                 <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(3)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Chuyển tab máy thí sinh sang Vòng Vượt Sóng & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        BẮT ĐẦU VÒNG 3 (VƯỢT SÓNG)
+                    <button class="btn" onclick="startRoundAndCleanGraphics(3)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #059669; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vượt Sóng & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🌊 Vượt Sóng
                     </button>
                 </div>
 
@@ -2279,8 +2269,8 @@
 
                 <!-- NÚT BẮT ĐẦU VÒNG 4: VINH QUANG -->
                 <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(4)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        BẮT ĐẦU VÒNG 4 (VINH QUANG)
+                    <button class="btn" onclick="startRoundAndCleanGraphics(4)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #dc2626; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        👑 Vinh Quang
                     </button>
                 </div>
 
@@ -2342,6 +2332,13 @@
         <div class="panel" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
             <h2 style="margin: 0; font-size: 18px; color: #38bdf8;">🎯 ĐIỀU KHIỂN CÂU HỎI PHỤ (TIE-BREAKER)</h2>
             <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 12px;">Dành cho các trường hợp hòa điểm giữa các thí sinh sau 4 vòng thi chính.</p>
+        </div>
+
+        <!-- NÚT BẮT ĐẦU VÒNG 5: CÂU HỎI PHỤ -->
+        <div style="display: flex; gap: 6px; margin: 2px 0;">
+            <button class="btn" onclick="startRoundAndCleanGraphics(5)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #0284c7; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Câu Hỏi Phụ & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                🎯 Câu Hỏi Phụ
+            </button>
         </div>
 
         <!-- BƯỚC 1: CHỌN THÍ SINH THAM GIA PHẦN THI -->
