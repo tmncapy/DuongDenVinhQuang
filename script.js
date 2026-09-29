@@ -6,8 +6,8 @@ globalFavicon.href = 'favicon.ico';
 document.head.appendChild(globalFavicon);
 
 // --- KHỞI TẠO ĐỐI TƯỢNG ĐỒNG BỘ SUPABASE & BROADCAST CHANNEL ---
-var SUPABASE_URL = window.SUPABASE_URL || "https://tukabyhjmcyptuwmwedp.supabase.co";
-var SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1a2FieWhqbWN5cHR1d213ZWRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NDk3NDksImV4cCI6MjA5NjAyNTc0OX0.gNWdvZ_hRdon_w_KL3C3eXFFiV_EoA4eLgikcYb6dpQ";
+var SUPABASE_URL = window.SUPABASE_URL || "https://wmskoyiljrcamrawffoe.supabase.co";
+var SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indtc2tveWlsanJjYW1yYXdmZm9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Nzc0NTgsImV4cCI6MjEwMjI1MzQ1OH0.eswUBkeZ7pfqR6O-8jAWeSJpV_8sjlaQO0XjC4AIXkg";
 
 if (SUPABASE_URL && !SUPABASE_URL.startsWith("http://") && !SUPABASE_URL.startsWith("https://")) {
     SUPABASE_URL = "https://" + SUPABASE_URL;

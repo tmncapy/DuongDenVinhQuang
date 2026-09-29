@@ -620,6 +620,14 @@ class GameSyncChannel {
 window.GameSyncChannel = GameSyncChannel;
 
 // --- SECTION 2: Supabase API Compatibility & Initialization Bridge ---
+const DEFAULT_SUPABASE_URL = 'https://wmskoyiljrcamrawffoe.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indtc2tveWlsanJjYW1yYXdmZm9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Nzc0NTgsImV4cCI6MjEwMjI1MzQ1OH0.eswUBkeZ7pfqR6O-8jAWeSJpV_8sjlaQO0XjC4AIXkg';
+
+if (typeof window !== 'undefined') {
+    if (!window.SUPABASE_URL) window.SUPABASE_URL = DEFAULT_SUPABASE_URL;
+    if (!window.SUPABASE_ANON_KEY) window.SUPABASE_ANON_KEY = DEFAULT_SUPABASE_ANON_KEY;
+}
+
 let supabaseClient = null;
 let supabaseChannel = null;
 let globalSyncChannel = null;
@@ -643,8 +651,8 @@ function getSupabaseConfig() {
     if (!url && typeof localStorage !== 'undefined') url = localStorage.getItem('supabase_url') || '';
     if (!key && typeof localStorage !== 'undefined') key = localStorage.getItem('supabase_anon_key') || '';
 
-    if (!url && typeof window !== 'undefined') url = window.SUPABASE_URL || '';
-    if (!key && typeof window !== 'undefined') key = window.SUPABASE_ANON_KEY || '';
+    if (!url && typeof window !== 'undefined') url = window.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+    if (!key && typeof window !== 'undefined') key = window.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
     return { url, key };
 }
