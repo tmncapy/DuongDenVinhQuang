@@ -454,5 +454,9 @@ function onClickHoanThanh() {
 }
 
 function onClickPhatAmThanh() {
-    showToast('Đã phát âm thanh hiệu ứng');
+    if (typeof playSelectedSoundController === 'function') {
+        playSelectedSoundController();
+    } else if (typeof showToast === 'function') {
+        showToast('Đã phát âm thanh hiệu ứng');
+    }
 }

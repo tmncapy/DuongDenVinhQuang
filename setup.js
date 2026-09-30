@@ -240,6 +240,9 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
     } else if (roundIndex === 4) {
         sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG', vqQuestionShown: false });
         sendToProjector('VINH_QUANG_HIDE_PACK', { round: 'VINH_QUANG', vqQuestionShown: false });
+    } else if (roundIndex === 5) {
+        if (typeof onClickCHPReset === 'function') onClickCHPReset();
+        sendToProjector('CAU_HOI_PHU_RESET', { round: 'CHP', activeRound: 'CHP' });
     }
 
     showToast(`🚀 Đã Bắt đầu Vòng ${roundIndex}: ${label}! Đã chuyển tab Player & ẩn toàn bộ Graphic.`);
@@ -1926,17 +1929,15 @@ function playSelectedSoundController() {
     if (!soundFile) return;
 
     if (currentControllerAudio) {
-        currentControllerAudio.pause();
-        currentControllerAudio.currentTime = 0;
+        try { currentControllerAudio.pause(); } catch(e) {}
+        currentControllerAudio = null;
     }
 
-    try {
-        currentControllerAudio = new Audio(`sounds/${soundFile}`);
-        currentControllerAudio.play().catch(e => console.warn("Audio play blocked locally:", e));
-    } catch(e) {}
-
     sendToProjector('PLAY_SOUND', { sound: soundFile });
-    if (typeof showToast === 'function') showToast(`Đang phát âm thanh: ${soundFile}`);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({ type: 'PLAY_SOUND', sound: soundFile, timestamp: Date.now() });
+    }
+    if (typeof showToast === 'function') showToast(`Đã phát âm thanh trên Máy chiếu: ${soundFile}`);
 }
 
 function playCustomSoundController() {
@@ -1948,31 +1949,27 @@ function playCustomSoundController() {
     const soundFile = inputEl.value.trim();
 
     if (currentControllerAudio) {
-        currentControllerAudio.pause();
-        currentControllerAudio.currentTime = 0;
+        try { currentControllerAudio.pause(); } catch(e) {}
+        currentControllerAudio = null;
     }
 
-    try {
-        let src = soundFile;
-        if (typeof getApiUrl === 'function') {
-            src = getApiUrl(src);
-        }
-        currentControllerAudio = new Audio(src);
-        currentControllerAudio.play().catch(e => console.warn("Audio play blocked locally:", e));
-    } catch(e) {}
-
     sendToProjector('PLAY_SOUND', { sound: soundFile });
-    if (typeof showToast === 'function') showToast(`Đang phát âm thanh tự chọn: ${soundFile}`);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({ type: 'PLAY_SOUND', sound: soundFile, timestamp: Date.now() });
+    }
+    if (typeof showToast === 'function') showToast(`Đã phát âm thanh tải lên trên Máy chiếu`);
 }
 
 function stopSoundController() {
     if (currentControllerAudio) {
-        currentControllerAudio.pause();
-        currentControllerAudio.currentTime = 0;
+        try { currentControllerAudio.pause(); } catch(e) {}
         currentControllerAudio = null;
     }
     sendToProjector('STOP_SOUND');
-    if (typeof showToast === 'function') showToast('Đã dừng âm thanh!');
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction({ type: 'STOP_SOUND', timestamp: Date.now() });
+    }
+    if (typeof showToast === 'function') showToast('Đã dừng âm thanh trên Máy chiếu');
 }
 
 function respondToStateRequest() {
@@ -2764,14 +2761,50 @@ window.vqIncorrectAnswer = function(idx) {
     }
 }
 
+window.isSummaryShown = false;
+
+function updateTongKetButtonsUI(isShown) {
+    const btns = document.querySelectorAll('.btn-tong-ket');
+    btns.forEach(btn => {
+        if (isShown) {
+            btn.innerHTML = 'Ẩn tổng kết';
+            btn.style.backgroundColor = '#dc2626';
+            btn.style.color = '#ffffff';
+            btn.style.borderColor = '#b91c1c';
+        } else {
+            btn.innerHTML = 'Tổng kết';
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }
+    });
+}
+
 function onClickTongKet() {
-    let summary = "TỔNG KẾT ĐIỂM SỐ CÁC THÍ SINH:\n";
-    if (gameData.contestants) {
-        gameData.contestants.forEach((ts, idx) => {
-            summary += `${ts.name || 'Thí sinh ' + (idx+1)}: ${ts.score || 0} điểm\n`;
-        });
+    if (typeof saveAllData === 'function') saveAllData();
+    window.isSummaryShown = !window.isSummaryShown;
+
+    const contestants = [];
+    for (let i = 1; i <= 4; i++) {
+        const nameInput = document.getElementById(`ts${i}_name`);
+        const name = (nameInput && nameInput.value.trim()) || (gameData.contestants && gameData.contestants[i - 1] && gameData.contestants[i - 1].name) || `Thí sinh ${i}`;
+        const score = (gameData.contestants && gameData.contestants[i - 1] && typeof gameData.contestants[i - 1].score !== 'undefined') ? gameData.contestants[i - 1].score : 0;
+        contestants.push({ id: i, name, score });
     }
-    alert(summary);
+
+    const payload = {
+        type: 'TOGGLE_SUMMARY',
+        show: window.isSummaryShown,
+        contestants: contestants,
+        timestamp: Date.now()
+    };
+
+    sendToProjector('TOGGLE_SUMMARY', payload);
+    if (typeof sendSupabaseAction === 'function') {
+        sendSupabaseAction(payload);
+    }
+
+    updateTongKetButtonsUI(window.isSummaryShown);
 }
 
 function onClickPlayIntroVideo(src) {

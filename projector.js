@@ -790,7 +790,9 @@ setInterval(() => {
 function handleProjectorMessage(data) {
     if (isDuplicateProjectorMessage(data)) return;
 
-    if (data.type === 'SWITCH_VIEW') {
+    if (data.type === 'TOGGLE_SUMMARY' || data.type === 'SHOW_SUMMARY' || data.type === 'HIDE_SUMMARY') {
+        handleToggleSummary(data);
+    } else if (data.type === 'SWITCH_VIEW') {
         if (data.viewNum) switchView(data.viewNum);
     } else if (data.type === 'XUAT_PHAT_INTRO') {
         switchView(1);
@@ -1020,6 +1022,7 @@ function handleProjectorMessage(data) {
         switchView(9);
         handleCHPShowAnswer(data);
     } else if (data.type === 'CAU_HOI_PHU_RESET') {
+        switchView(0);
         handleCHPReset();
     } else if (data.type === 'RA_KHOI_PLAY_CLIP' || data.type === 'RA_KHOI_SHOW_VIDEO' || data.type === 'RA_KHOI_INTRO' || data.type === 'RA_KHOI_SHOW_QUESTION') {
         handleRKPlayClip(data);
@@ -2275,6 +2278,7 @@ function handleCHPShowAnswer(data) {
 }
 
 function handleCHPReset() {
+    switchView(0);
     if (chpTimerIntervalProj) clearInterval(chpTimerIntervalProj);
     const clockEl = document.getElementById('chp_clock_box');
     if (clockEl) clockEl.innerText = "15";
@@ -2285,8 +2289,31 @@ function handleCHPReset() {
         ansBox.style.display = 'none';
         ansBox.innerText = "";
     }
+    for (let i = 1; i <= 4; i++) {
+        const row = document.getElementById(`chp_ans_row_${i}`);
+        if (row) row.style.display = 'none';
+    }
     const audio = document.getElementById('chpAudio15s');
     if (audio) {
         try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+    }
+}
+
+function handleToggleSummary(data) {
+    const overlay = document.getElementById('summary_overlay');
+    if (!overlay) return;
+
+    if (data.show) {
+        const contestants = data.contestants || (typeof gameData !== 'undefined' ? gameData.contestants : []);
+        for (let i = 1; i <= 4; i++) {
+            const dEl = document.getElementById(`summary_d${i}`);
+            const tsEl = document.getElementById(`summary_ts${i}`);
+            const ts = (contestants && contestants.find ? contestants.find(c => Number(c.id) === i) : null) || (contestants ? contestants[i - 1] : null);
+            if (dEl) dEl.innerText = ts ? (typeof ts.score !== 'undefined' ? ts.score : 0) : 0;
+            if (tsEl) tsEl.innerText = ts ? (ts.name || `Thí sinh ${i}`) : `Thí sinh ${i}`;
+        }
+        overlay.style.display = 'block';
+    } else {
+        overlay.style.display = 'none';
     }
 }
