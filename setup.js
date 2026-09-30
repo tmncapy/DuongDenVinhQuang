@@ -55,8 +55,8 @@ window.addEventListener('DOMContentLoaded', () => {
     renderVinhQuangPackUI(10);
     loadSavedData();
     updateVuotSongState();
-    if (typeof selectRKQuestion === 'function') {
-        selectRKQuestion(1);
+    if (typeof setRKQuestionUI === 'function') {
+        setRKQuestionUI(1);
     }
     // Restore Scoreboard Thumbnail States
     try {
@@ -111,8 +111,8 @@ function onSwitchTabRound(index) {
         }
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
     } else if (index === 2) {
-        if (typeof selectRKQuestion === 'function') {
-            selectRKQuestion(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
+        if (typeof setRKQuestionUI === 'function') {
+            setRKQuestionUI(typeof currentRKQuestion !== 'undefined' ? currentRKQuestion : 1);
         }
     } else if (index === 3) {
         window.vsRoundStartTime = Date.now();
@@ -232,7 +232,7 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
         sendToProjector('XUAT_PHAT_RESET', { turnIndex: 0, round: 'XUAT_PHAT', activeRound: 'XUAT_PHAT', xpQuestionShown: false, vqQuestionShown: false });
     } else if (roundIndex === 2) {
-        if (typeof selectRKQuestion === 'function') selectRKQuestion(1);
+        if (typeof setRKQuestionUI === 'function') setRKQuestionUI(1);
         sendToProjector('RA_KHOI_RESET', { round: 'RA_KHOI', activeRound: 'RA_KHOI' });
     } else if (roundIndex === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();

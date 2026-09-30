@@ -636,9 +636,6 @@ function startCountdown7(duration = 25, forceRestart = false) {
             clearInterval(countdown7); 
             if (clockElement) clockElement.textContent = "00"; 
             isRunning7 = false; 
-            try {
-                safePlay(soundTimeUp1);
-            } catch(e) {}
         }
     }, 1000);
 }

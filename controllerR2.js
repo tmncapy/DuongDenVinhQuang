@@ -3,7 +3,7 @@ let currentRKQuestion = 1;
 let rkTimerInterval = null;
 let rkTimeLeft = 30;
 
-function selectRKQuestion(num) {
+function setRKQuestionUI(num) {
     currentRKQuestion = num;
     for (let i = 1; i <= 4; i++) {
         const btn = document.getElementById(`btn_rk_q${i}`);
@@ -25,10 +25,15 @@ function selectRKQuestion(num) {
         if (extraEl) extraEl.value = '';
     }
 
-    sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'RK' });
-
     rkTimeLeft = (num === 1 || num === 2) ? 30 : 20;
-    updateTab2Preview();
+    if (typeof updateTab2Preview === 'function') updateTab2Preview();
+}
+window.setRKQuestionUI = setRKQuestionUI;
+
+function selectRKQuestion(num) {
+    setRKQuestionUI(num);
+
+    sendToProjector('CLEAR_PLAYER_ANSWERS', { round: 'RK' });
 
     const mInput = document.getElementById(`rk_m_${num}`);
     const qInput = document.getElementById(`rk_q_${num}`);
