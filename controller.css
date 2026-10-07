@@ -1,0 +1,603 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+}
+body {
+    background-color: #f0f0f0;
+    color: #333;
+}
+/* Top Navigation */
+.navbar {
+    display: flex;
+    background-color: #e6e6e6;
+    border-bottom: 1px solid #ccc;
+}
+.nav-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    border-right: 1px solid #ccc;
+    cursor: pointer;
+    font-weight: bold;
+    color: #444;
+    transition: all 0.2s;
+}
+.nav-item:hover {
+    background-color: #f5f5f5;
+}
+.nav-item.active {
+    background-color: #fff;
+    border-bottom: 2px solid #0056b3;
+    color: #0056b3;
+}
+
+/* Main Container */
+.main-container {
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    height: calc(100vh - 41px);
+    overflow: auto;
+    box-sizing: border-box;
+}
+
+/* Left Column */
+.left-col {
+    flex: 1.1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 280px;
+    overflow-y: auto;
+}
+
+/* Connection Box */
+.panel {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+}
+.conn-top {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.conn-top input[type="text"] {
+    padding: 3px 5px;
+    border: 1px solid #ccc;
+    width: 100px;
+}
+.conn-top select {
+    padding: 3px;
+    border: 1px solid #ccc;
+}
+.btn {
+    padding: 4px 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.btn:hover {
+    background-color: #e2e6ea;
+}
+.btn-primary {
+    background-color: #0056b3;
+    color: #fff;
+    border-color: #004085;
+}
+.btn-primary:hover {
+    background-color: #004085;
+}
+
+/* Table of connections */
+.conn-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+.conn-table td {
+    padding: 4px;
+    border-bottom: 1px solid #eee;
+}
+.conn-table input[type="text"] {
+    width: 100%;
+    padding: 3px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+}
+
+.conn-bottom {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+.conn-bottom input[type="text"] {
+    flex: 1;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+
+/* Section Control (Phần thi) */
+.section-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.btn-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+.checkbox-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 5px;
+}
+
+/* Process (Quy trình) */
+.process-box {
+    font-size: 12px;
+    line-height: 1.5;
+}
+.process-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 15px;
+    margin-top: 5px;
+}
+.status-check {
+    font-weight: bold;
+}
+.red-x {
+    color: red;
+}
+.green-check {
+    color: green;
+}
+
+/* Right Column (Scrollable) */
+.right-col {
+    flex: 1.2;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    min-width: 300px;
+}
+
+@media (max-width: 1024px) {
+    .main-container {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 41px);
+    }
+    .left-col, .right-col {
+        width: 100%;
+        max-height: none;
+    }
+}
+
+.question-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+.question-header input[type="text"] {
+    flex: 1;
+    padding: 4px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+}
+
+.sub-section-title {
+    font-style: italic;
+    margin: 15px 0 5px 0;
+    color: #0056b3;
+    font-weight: bold;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 3px;
+}
+
+/* Xuất Phát Tabs & Table Styling */
+.kd-tabs {
+    display: flex;
+    background-color: #e6e6e6;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    overflow-x: auto;
+    margin-top: 5px;
+}
+.kd-tab {
+    padding: 6px 14px;
+    text-align: center;
+    border-right: 1px solid #ccc;
+    cursor: pointer;
+    color: #444;
+    white-space: nowrap;
+    user-select: none;
+}
+.kd-tab.active {
+    background-color: #fff;
+    font-weight: bold;
+    color: #0056b3;
+    border-top: 2px solid #0056b3;
+}
+.kd-tab-controls {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    background: #f0f0f0;
+    border-right: 1px solid #ccc;
+    cursor: pointer;
+    user-select: none;
+}
+.kd-tab-controls:hover {
+    background: #e2e6ea;
+}
+.kd-container {
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.kd-header-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 200px;
+    gap: 10px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 8px;
+}
+.kd-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 200px;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+.kd-row input[type="text"] {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+
+.packages {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+.packages label {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.q-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+.vq-q-row {
+    display: grid;
+    grid-template-columns: 130px 1.5fr 3fr 1.5fr;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+.q-row input[type="text"], .vq-q-row input[type="text"] {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+.media-btn-group {
+    display: flex;
+    gap: 5px;
+    margin-top: 3px;
+}
+.media-btn-group input[type="text"] {
+    flex: 1;
+}
+
+/* Ra Khơi Styling */
+.vcnv-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+.vcnv-row input[type="text"] {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+.vcnv-center-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+.vcnv-center-row input[type="text"] {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+
+.grid-boxes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0;
+}
+.grid-row-boxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+    min-height: 26px;
+}
+.box-cell {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #0056b3;
+    background: #eef6ff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 11px;
+    color: #0056b3;
+    border-radius: 2px;
+    text-transform: uppercase;
+}
+.box-cell.space {
+    border: 1px dashed #ccc;
+    background: #fff;
+}
+.char-count {
+    margin-left: 10px;
+    color: #555;
+    font-size: 12px;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+.footer-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* Tab content visibility */
+.tab-content {
+    display: none !important;
+    height: calc(100vh - 41px);
+}
+.tab-content.active {
+    display: flex !important;
+}
+
+.round-header-tag {
+    background: #0056b3;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    display: inline-block;
+    margin-bottom: 5px;
+}
+
+/* Tab 1 (Xuất Phát) Custom UI Styling */
+.luot-thi-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #93c5fd;
+    color: #1e3a8a;
+    font-weight: bold;
+    padding: 9px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #60a5fa;
+    transition: all 0.2s;
+    user-select: none;
+    font-size: 13px;
+}
+.luot-thi-btn:hover {
+    background: #60a5fa;
+    color: #fff;
+}
+.luot-thi-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+.luot-thi-btn .badge {
+    background: #cbd5e1;
+    color: #334155;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.luot-thi-btn.active .badge {
+    background: #ffffff;
+    color: #2563eb;
+}
+
+.ctrl-btn-sm {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #334155;
+    cursor: pointer;
+    text-align: center;
+}
+.ctrl-btn-sm:hover {
+    background: #f1f5f9;
+}
+
+.ctrl-btn-action {
+    height: 38px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+}
+.ctrl-btn-action:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.ctrl-btn-bottom {
+    flex: 1;
+    height: 32px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+.ctrl-btn-bottom:hover {
+    background: #f1f5f9;
+}
+
+/* Toast notification */
+#toast-msg {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #28a745;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-weight: bold;
+    display: none;
+    z-index: 9999;
+}
+
+/* Redesign layout backgrounds & buttons to white/white-gray theme with high contrast */
+body {
+    background-color: #f8fafc !important;
+}
+.main-container {
+    background-color: #f8fafc !important;
+}
+.tab-content {
+    background-color: #f8fafc !important;
+}
+.panel {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+/* Style all functional buttons, keeping score adjustment elements excluded */
+.btn, .ctrl-btn-sm, .ctrl-btn-action, .ctrl-btn-bottom, .navbar button {
+    text-shadow: none !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+}
+/* Functional buttons to white/white-gray */
+.btn, .ctrl-btn-sm, .ctrl-btn-action, .ctrl-btn-bottom {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+}
+.btn:hover, .ctrl-btn-sm:hover, .ctrl-btn-action:hover, .ctrl-btn-bottom:hover {
+    background: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+    transform: none !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
+}
+.btn:active, .ctrl-btn-sm:active, .ctrl-btn-action:active, .ctrl-btn-bottom:active {
+    background: #e2e8f0 !important;
+}
+/* Top Navigation styling */
+.navbar {
+    background-color: #ffffff !important;
+    border-bottom: 1.5px solid #cbd5e1 !important;
+}
+.nav-item {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    border-right: 1px solid #e2e8f0 !important;
+    border-bottom: 2.5px solid transparent !important;
+    font-weight: 700 !important;
+    padding: 12px 0 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+.nav-item:hover {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+.nav-item.active {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-bottom: 2.5px solid #64748b !important;
+}
+/* Customize active tab buttons on Xuat Phat & Ra Khoi (not part of the exceptions) */
+.luot-thi-btn, .rk-q-btn {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+.luot-thi-btn:hover, .rk-q-btn:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+.luot-thi-btn.active, .rk-q-btn.active {
+    background: #f1f5f9 !important;
+    border-color: #475569 !important;
+    color: #0f172a !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06) !important;
+}
+/* Exclude Scoreboard adjusters from override to preserve their design */
+button[onclick*="adjustScore"], button[onclick*="vqCorrectAnswer"], button[onclick*="vqIncorrectAnswer"], button[onclick*="onClickVQChonGoiDiem"], .packages label, .box-cell {
+    background-image: none !important;
+}
+
+/* Force uppercase and proper font rendering for contestant name inputs */
+input[id^="ts_name_"],
+input[id$="_name"],
+input[id$="_name_rk"],
+input[id$="_name_vs"],
+input[id$="_name_vq"],
+.ts-name-input {
+    text-transform: uppercase !important;
+}

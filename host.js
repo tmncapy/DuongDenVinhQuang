@@ -15,10 +15,10 @@ function getApiUrl(path) {
         return path;
     }
 
-    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
-        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+    const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
+    const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
 
-    if (customHost) {
+    if (customHost && (queryServer || customHost.includes(window.location.host))) {
         const cleanCustom = customHost.replace(/\/$/, '');
         const cleanP = path.startsWith('/') ? path : '/' + path;
         return cleanCustom + cleanP;

@@ -156,6 +156,11 @@ function onClickVSOpenKeywordLetters() {
         newlyOpened: newlyOpened
     });
 
+    try {
+        const audio = new Audio('sounds/OpenLetter.mp3');
+        audio.play().catch(e => console.log('[Audio] Controller local play:', e));
+    } catch(e) {}
+
     showToast(`Đã mở thêm ${numToOpen} chữ cái đáp án (${vsRevealedKeyIndices.length}/${totalLen} ô)`);
 }
 

@@ -5,611 +5,7 @@
     <title>Giao diện Điều khiển Trò chơi - Đường Đến Vinh Quang</title>
     <!-- SheetJS for Excel Import/Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            font-size: 13px;
-        }
-        body {
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        /* Top Navigation */
-        .navbar {
-            display: flex;
-            background-color: #e6e6e6;
-            border-bottom: 1px solid #ccc;
-        }
-        .nav-item {
-            flex: 1;
-            text-align: center;
-            padding: 10px 0;
-            border-right: 1px solid #ccc;
-            cursor: pointer;
-            font-weight: bold;
-            color: #444;
-            transition: all 0.2s;
-        }
-        .nav-item:hover {
-            background-color: #f5f5f5;
-        }
-        .nav-item.active {
-            background-color: #fff;
-            border-bottom: 2px solid #0056b3;
-            color: #0056b3;
-        }
-        
-        /* Main Container */
-        .main-container {
-            display: flex;
-            padding: 10px;
-            gap: 10px;
-            height: calc(100vh - 41px);
-            overflow: auto;
-            box-sizing: border-box;
-        }
-
-        /* Left Column */
-        .left-col {
-            flex: 1.1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-width: 280px;
-            overflow-y: auto;
-        }
-
-        /* Connection Box */
-        .panel {
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        .conn-top {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-        .conn-top input[type="text"] {
-            padding: 3px 5px;
-            border: 1px solid #ccc;
-            width: 100px;
-        }
-        .conn-top select {
-            padding: 3px;
-            border: 1px solid #ccc;
-        }
-        .btn {
-            padding: 4px 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: background-color 0.15s;
-        }
-        .btn:hover {
-            background-color: #e2e6ea;
-        }
-        .btn-primary {
-            background-color: #0056b3;
-            color: #fff;
-            border-color: #004085;
-        }
-        .btn-primary:hover {
-            background-color: #004085;
-        }
-
-        /* Table of connections */
-        .conn-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-        .conn-table td {
-            padding: 4px;
-            border-bottom: 1px solid #eee;
-        }
-        .conn-table input[type="text"] {
-            width: 100%;
-            padding: 3px;
-            border: 1px solid #ccc;
-            background: #fafafa;
-        }
-
-        .conn-bottom {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-        .conn-bottom input[type="text"] {
-            flex: 1;
-            padding: 4px;
-            border: 1px solid #ccc;
-        }
-
-        /* Section Control (Phần thi) */
-        .section-control {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .btn-row {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        .checkbox-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-top: 5px;
-        }
-
-        /* Process (Quy trình) */
-        .process-box {
-            font-size: 12px;
-            line-height: 1.5;
-        }
-        .process-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px 15px;
-            margin-top: 5px;
-        }
-        .status-check {
-            font-weight: bold;
-        }
-        .red-x {
-            color: red;
-        }
-        .green-check {
-            color: green;
-        }
-
-        /* Right Column (Scrollable) */
-        .right-col {
-            flex: 1.2;
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-y: auto;
-            max-height: calc(100vh - 60px);
-            min-width: 300px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-container {
-                flex-direction: column;
-                height: auto;
-                min-height: calc(100vh - 41px);
-            }
-            .left-col, .right-col {
-                width: 100%;
-                max-height: none;
-            }
-        }
-
-        .question-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-        .question-header input[type="text"] {
-            flex: 1;
-            padding: 4px;
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
-        }
-
-        .sub-section-title {
-            font-style: italic;
-            margin: 15px 0 5px 0;
-            color: #0056b3;
-            font-weight: bold;
-            border-bottom: 1px dashed #ccc;
-            padding-bottom: 3px;
-        }
-
-        /* Xuất Phát Tabs & Table Styling */
-        .kd-tabs {
-            display: flex;
-            background-color: #e6e6e6;
-            border: 1px solid #ccc;
-            border-bottom: none;
-            overflow-x: auto;
-            margin-top: 5px;
-        }
-        .kd-tab {
-            padding: 6px 14px;
-            text-align: center;
-            border-right: 1px solid #ccc;
-            cursor: pointer;
-            color: #444;
-            white-space: nowrap;
-            user-select: none;
-        }
-        .kd-tab.active {
-            background-color: #fff;
-            font-weight: bold;
-            color: #0056b3;
-            border-top: 2px solid #0056b3;
-        }
-        .kd-tab-controls {
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            background: #f0f0f0;
-            border-right: 1px solid #ccc;
-            cursor: pointer;
-            user-select: none;
-        }
-        .kd-tab-controls:hover {
-            background: #e2e6ea;
-        }
-        .kd-container {
-            border: 1px solid #ccc;
-            background: #fff;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .kd-header-row {
-            display: grid;
-            grid-template-columns: 70px 1fr 200px;
-            gap: 10px;
-            font-weight: bold;
-            color: #555;
-            margin-bottom: 8px;
-        }
-        .kd-row {
-            display: grid;
-            grid-template-columns: 70px 1fr 200px;
-            gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-        .kd-row input[type="text"] {
-            width: 100%;
-            padding: 4px;
-            border: 1px solid #ccc;
-        }
-
-        .packages {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            align-items: center;
-        }
-        .packages label {
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .q-row {
-            display: grid;
-            grid-template-columns: 100px 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        .vq-q-row {
-            display: grid;
-            grid-template-columns: 130px 1.5fr 3fr 1.5fr;
-            gap: 10px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        .q-row input[type="text"], .vq-q-row input[type="text"] {
-            width: 100%;
-            padding: 4px;
-            border: 1px solid #ccc;
-        }
-        .media-btn-group {
-            display: flex;
-            gap: 5px;
-            margin-top: 3px;
-        }
-        .media-btn-group input[type="text"] {
-            flex: 1;
-        }
-
-        /* Ra Khơi Styling */
-        .vcnv-row {
-            display: grid;
-            grid-template-columns: 80px 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-        .vcnv-row input[type="text"] {
-            width: 100%;
-            padding: 4px;
-            border: 1px solid #ccc;
-        }
-        .vcnv-center-row {
-            display: grid;
-            grid-template-columns: 80px 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        .vcnv-center-row input[type="text"] {
-            width: 100%;
-            padding: 4px;
-            border: 1px solid #ccc;
-        }
-
-        .grid-boxes {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin: 8px 0;
-        }
-        .grid-row-boxes {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px;
-            align-items: center;
-            min-height: 26px;
-        }
-        .box-cell {
-            width: 24px;
-            height: 24px;
-            border: 1px solid #0056b3;
-            background: #eef6ff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 11px;
-            color: #0056b3;
-            border-radius: 2px;
-            text-transform: uppercase;
-        }
-        .box-cell.space {
-            border: 1px dashed #ccc;
-            background: #fff;
-        }
-        .char-count {
-            margin-left: 10px;
-            color: #555;
-            font-size: 12px;
-            white-space: nowrap;
-            font-weight: bold;
-        }
-
-        .footer-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-
-        /* Tab content visibility */
-        .tab-content {
-            display: none !important;
-            height: calc(100vh - 41px);
-        }
-        .tab-content.active {
-            display: flex !important;
-        }
-
-        .round-header-tag {
-            background: #0056b3;
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-
-        /* Tab 1 (Xuất Phát) Custom UI Styling */
-        .luot-thi-btn {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #93c5fd;
-            color: #1e3a8a;
-            font-weight: bold;
-            padding: 9px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            border: 1px solid #60a5fa;
-            transition: all 0.2s;
-            user-select: none;
-            font-size: 13px;
-        }
-        .luot-thi-btn:hover {
-            background: #60a5fa;
-            color: #fff;
-        }
-        .luot-thi-btn.active {
-            background: #2563eb;
-            color: #ffffff;
-            border-color: #1d4ed8;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
-        }
-        .luot-thi-btn .badge {
-            background: #cbd5e1;
-            color: #334155;
-            padding: 2px 10px;
-            border-radius: 3px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-        .luot-thi-btn.active .badge {
-            background: #ffffff;
-            color: #2563eb;
-        }
-
-        .ctrl-btn-sm {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            padding: 5px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: bold;
-            color: #334155;
-            cursor: pointer;
-            text-align: center;
-        }
-        .ctrl-btn-sm:hover {
-            background: #f1f5f9;
-        }
-
-        .ctrl-btn-action {
-            height: 38px;
-            border-radius: 4px;
-            border: 1px solid #cbd5e1;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-size: 13px;
-        }
-        .ctrl-btn-action:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        .ctrl-btn-bottom {
-            flex: 1;
-            height: 32px;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-weight: bold;
-            color: #334155;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-align: center;
-        }
-        .ctrl-btn-bottom:hover {
-            background: #f1f5f9;
-        }
-
-        /* Toast notification */
-        #toast-msg {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #28a745;
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            font-weight: bold;
-            display: none;
-            z-index: 9999;
-        }
-
-        /* Redesign layout backgrounds & buttons to white/white-gray theme with high contrast */
-        body {
-            background-color: #f8fafc !important;
-        }
-        .main-container {
-            background-color: #f8fafc !important;
-        }
-        .tab-content {
-            background-color: #f8fafc !important;
-        }
-        .panel {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
-        }
-        /* Style all functional buttons, keeping score adjustment elements excluded */
-        .btn, .ctrl-btn-sm, .ctrl-btn-action, .ctrl-btn-bottom, .navbar button {
-            text-shadow: none !important;
-            transition: all 0.15s ease !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
-        }
-        /* Functional buttons to white/white-gray */
-        .btn, .ctrl-btn-sm, .ctrl-btn-action, .ctrl-btn-bottom {
-            background: #ffffff !important;
-            color: #334155 !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 6px !important;
-            font-weight: bold !important;
-        }
-        .btn:hover, .ctrl-btn-sm:hover, .ctrl-btn-action:hover, .ctrl-btn-bottom:hover {
-            background: #f1f5f9 !important;
-            border-color: #94a3b8 !important;
-            color: #0f172a !important;
-            transform: none !important;
-            opacity: 1 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
-        }
-        .btn:active, .ctrl-btn-sm:active, .ctrl-btn-action:active, .ctrl-btn-bottom:active {
-            background: #e2e8f0 !important;
-        }
-        /* Top Navigation styling */
-        .navbar {
-            background-color: #ffffff !important;
-            border-bottom: 1.5px solid #cbd5e1 !important;
-        }
-        .nav-item {
-            background-color: #f8fafc !important;
-            color: #475569 !important;
-            border-right: 1px solid #e2e8f0 !important;
-            border-bottom: 2.5px solid transparent !important;
-            font-weight: 700 !important;
-            padding: 12px 0 !important;
-            text-shadow: none !important;
-            box-shadow: none !important;
-        }
-        .nav-item:hover {
-            background-color: #f1f5f9 !important;
-            color: #0f172a !important;
-        }
-        .nav-item.active {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border-bottom: 2.5px solid #64748b !important;
-        }
-        /* Customize active tab buttons on Xuat Phat & Ra Khoi (not part of the exceptions) */
-        .luot-thi-btn, .rk-q-btn {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            color: #475569 !important;
-        }
-        .luot-thi-btn:hover, .rk-q-btn:hover {
-            background: #f1f5f9 !important;
-            color: #0f172a !important;
-        }
-        .luot-thi-btn.active, .rk-q-btn.active {
-            background: #f1f5f9 !important;
-            border-color: #475569 !important;
-            color: #0f172a !important;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06) !important;
-        }
-        /* Exclude Scoreboard adjusters from override to preserve their design */
-        button[onclick*="adjustScore"], button[onclick*="vqCorrectAnswer"], button[onclick*="vqIncorrectAnswer"], button[onclick*="onClickVQChonGoiDiem"], .packages label, .box-cell {
-            background-image: none !important;
-        }
-
-        /* Force uppercase and proper font rendering for contestant name inputs */
-        input[id^="ts_name_"],
-        input[id$="_name"],
-        input[id$="_name_rk"],
-        input[id$="_name_vs"],
-        input[id$="_name_vq"],
-        .ts-name-input {
-            text-transform: uppercase !important;
-        }
-    </style>
+    <link rel="stylesheet" href="controller.css">
     <script>
         function switchTab(index) {
             const navItems = document.querySelectorAll('.nav-item');
@@ -695,9 +91,9 @@
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="font-size: 12px; color: #475569; font-weight: 600;">Địa chỉ máy chủ (Domain):</span>
                             <select id="link_domain_select" onchange="onLinkDomainSelectChange()" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: bold; background: white; color: #334155; outline: none; cursor: pointer;">
+                                <option value="current" selected>Máy chủ hiện tại (Current Host)</option>
                                 <option value="acestudio">https://acestudio.mooo.com/DuongDenVinhQuang-main/ (AceStudio Server)</option>
-                                <option value="render" selected>https://duongdenvinhquang.onrender.com (Render Cloud)</option>
-                                <option value="current">Máy chủ hiện tại (Current Host)</option>
+                                <option value="render">https://duongdenvinhquang.onrender.com (Render Cloud)</option>
                                 <option value="custom">Tùy chỉnh IP / Domain...</option>
                             </select>
                             <input type="text" id="custom_domain_input" placeholder="https://..." style="display: none; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 170px;" oninput="updateRoomCodeFromController()">
@@ -835,7 +231,18 @@
                         </td>
                         <td style="text-align: center; color: #94a3b8; font-size: 11px;">—</td>
                         <td style="width: 120px;"><input type="text" value="Máy Chiếu" readonly style="font-weight: bold; background: #f1f5f9;"></td>
-                        <td><input type="text" readonly placeholder="Màn hình Máy chiếu / Graphic" style="color: #64748b; font-size: 11px;"></td>
+                        <td><input type="text" readonly placeholder="Màn hình Máy chiếu (projector.html)" style="color: #64748b; font-size: 11px;"></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 210px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span id="status_badge_graphic" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
+                                <button type="button" class="btn" onclick="reloadClientSlot('graphic')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại màn hình Graphic OBS">Reload</button>
+                            </div>
+                        </td>
+                        <td style="text-align: center; color: #94a3b8; font-size: 11px;">—</td>
+                        <td style="width: 120px;"><input type="text" value="Graphic OBS" readonly style="font-weight: bold; background: #f1f5f9;"></td>
+                        <td><input type="text" readonly placeholder="Màn hình Graphic OBS trong suốt (graphic.html)" style="color: #64748b; font-size: 11px;"></td>
                     </tr>
                 </table>
 
@@ -867,21 +274,27 @@
                 <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 8px; flex-wrap: wrap;">
                     <span style="font-weight: bold; color: #1e293b; font-size: 13px;">🔊 PHÁT ÂM THANH:</span>
                     <select id="controller_sound_select" style="padding: 5px 10px; border: 1px solid #94a3b8; border-radius: 4px; font-weight: bold; font-size: 13px; background: #ffffff; flex: 1; min-width: 180px;">
+                        <option value="15s.mp3">15s Câu Hỏi Phụ (15s.mp3)</option>
                         <option value="20sV1.mp3">20s Vượt sóng 1 (20sV1.mp3)</option>
                         <option value="20sV2.mp3">20s Vượt sóng 2 (20sV2.mp3)</option>
                         <option value="25sV1.mp3">25s Vinh quang 1 (25sV1.mp3)</option>
                         <option value="25sV2.mp3">25s Vinh quang 2 (25sV2.mp3)</option>
-                        <option value="Activate.mp3">Kích hoạt (Activate.mp3)</option>
-                        <option value="Answer.mp3">Nhận đáp án (Answer.mp3)</option>
+                        <option value="60s.mp3">60s Xuất phát (60s.mp3)</option>
+                        <option value="Activate.mp3">Kích hoạt / Chuông (Activate.mp3)</option>
+                        <option value="Answer.mp3">Hiện đáp án (Answer.mp3)</option>
+                        <option value="bed_question.mp3">Nhạc nền câu hỏi (bed_question.mp3)</option>
                         <option value="BeginQues.mp3">Bắt đầu câu hỏi (BeginQues.mp3)</option>
-                        <option value="ChooseQues.mp3">Chọn câu hỏi (ChooseQues.mp3)</option>
+                        <option value="ChooseQues.mp3">Chọn gói câu hỏi (ChooseQues.mp3)</option>
                         <option value="ClosePack.mp3">Đóng gói câu hỏi (ClosePack.mp3)</option>
+                        <option value="Main_theme.mp3">Nhạc chủ đề chính (Main_theme.mp3)</option>
                         <option value="RandomSet.mp3">Xóc đĩa / Bốc thăm đề (RandomSet.mp3)</option>
+                        <option value="right.mp3">Trả lời Đúng (right.mp3)</option>
                         <option value="RightV3.mp3">Đúng Vượt sóng (RightV3.mp3)</option>
                         <option value="ShowTitle.mp3">Hiển thị tiêu đề (ShowTitle.mp3)</option>
+                        <option value="Suspense1.mp3">Nhạc kịch tính 1 (Suspense1.mp3)</option>
+                        <option value="Suspense2.mp3">Nhạc kịch tính 2 (Suspense2.mp3)</option>
+                        <option value="Tick.mp3">Đếm ngược tích tắc (Tick.mp3)</option>
                         <option value="TImeUp.mp3">Hết giờ (TImeUp.mp3)</option>
-                        <option value="Tick.mp3">Đếm ngược (Tick.mp3)</option>
-                        <option value="right.mp3">Trả lời Đúng (right.mp3)</option>
                         <option value="wrong.mp3">Trả lời Sai (wrong.mp3)</option>
                     </select>
                     <button class="btn" onclick="playSelectedSoundController()" style="font-weight: bold; padding: 5px 12px;">Phát âm thanh</button>
@@ -1482,14 +895,7 @@
                     </div>
                 </div>
 
-                <!-- NÚT BẮT ĐẦU VÒNG 1: XUẤT PHÁT -->
-                <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(1)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #2563eb; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Xuất Phát & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        🚀 Xuất Phát
-                    </button>
-                </div>
-
-                <!-- BUTTON ACTIONS ROW 1: Graphic chọn đề, Graphic câu hỏi, Random, Bắt đầu, Đúng, Sai, Chuyển câu, Âm thanh -->
+                    <!-- BUTTON ACTIONS ROW 1: Graphic chọn đề, Graphic câu hỏi, Random, Bắt đầu, Đúng, Sai, Chuyển câu, Âm thanh -->
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <button class="ctrl-btn-action" onclick="onClickHienGraphicChonDe()" style="flex: 1;">
                         Graphic chọn đề
@@ -1770,7 +1176,7 @@
 
                 <!-- ROW 2 CONTROLS: ACTION BUTTONS ROW -->
                 <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
-                    <button class="ctrl-btn-bottom" onclick="onClickRKTangToc()">Tăng Tốc</button>
+                    <button class="ctrl-btn-bottom" onclick="onClickRKTangToc()">Ra khơi</button>
                     <button class="ctrl-btn-bottom" onclick="onClickBatDauDoanBang()">Đoạn băng</button>
                     <button class="ctrl-btn-bottom" onclick="onClickRKTinhThoiGian()">30s</button>
                     <button class="ctrl-btn-bottom" onclick="onClickRKDapAnTS()">Đáp án TS</button>
@@ -2007,13 +1413,6 @@
                     </div>
                 </div>
 
-                <!-- NÚT BẮT ĐẦU VÒNG 3: VƯỢT SÓNG -->
-                <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(3)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #059669; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vượt Sóng & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        🌊 Vượt Sóng
-                    </button>
-                </div>
-
                 <!-- ACTION BUTTONS ROW 1 -->
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <button class="ctrl-btn-action" onclick="onClickVSFlipRow()">
@@ -2038,6 +1437,9 @@
 
                 <!-- ACTION BUTTONS ROW 2 -->
                 <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(3)" style="font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 4px; cursor: pointer; background: #059669; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vượt Sóng & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        🌊 Vượt Sóng
+                    </button>
                     <button class="btn" onclick="onClickVSStartTimer()" style="font-weight: bold; padding: 6px 16px;">
                         Bắt đầu 20s
                     </button>
@@ -2267,13 +1669,6 @@
                     </div>
                 </div>
 
-                <!-- NÚT BẮT ĐẦU VÒNG 4: VINH QUANG -->
-                <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(4)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #dc2626; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        👑 Vinh Quang
-                    </button>
-                </div>
-
                 <!-- ROW 1 CONTROLS: BLUE BAR + CHECKBOX + WRONG/RIGHT SOUND -->
                 <div style="display: flex; gap: 8px; align-items: flex-end;">
                     <div style="flex: 1; background: #5b9bd5; height: 36px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: bold;">
@@ -2301,6 +1696,9 @@
 
                 <!-- ROW 2 CONTROLS: ACTION BUTTONS -->
                 <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(4)" style="font-weight: 800; font-size: 12px; padding: 6px 10px; border-radius: 3px; cursor: pointer; background: #dc2626; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                        👑 Vinh Quang
+                    </button>
                     <button class="btn" onclick="onClickVQHienChonGoiDiem()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
                         Hiện chọn số điểm
                     </button>
@@ -2522,6 +1920,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-sync.js"></script>
     <script src="setup.js"></script>
+    <script src="setup_extra.js"></script>
     <script src="controllerR1.js"></script>
     <script src="controllerR2.js"></script>
     <script src="controllerR3.js"></script>
