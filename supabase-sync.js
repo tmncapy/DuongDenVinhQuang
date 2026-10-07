@@ -5,9 +5,8 @@ function hasLocalServerBackend() {
     if (typeof window === 'undefined') return false;
     
     // 1. If user or query parameter explicitly provided a backend server
-    const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
-    const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
-    if (customHost && (queryServer || customHost.includes(window.location.host))) return true;
+    const customHost = localStorage.getItem('ddvq_server_host') || (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) return true;
 
     const protocol = window.location.protocol;
     const hostname = (window.location.hostname || '').toLowerCase();
@@ -43,10 +42,10 @@ function getApiUrl(path) {
         return path;
     }
 
-    const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
-    const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
 
-    if (customHost && (queryServer || customHost.includes(window.location.host))) {
+    if (customHost) {
         const cleanCustom = customHost.replace(/\/$/, '');
         const cleanP = path.startsWith('/') ? path : '/' + path;
         return cleanCustom + cleanP;
@@ -87,9 +86,9 @@ function getWsUrl() {
         return window.getWsUrl();
     }
     if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
-    const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
-    const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
-    if (customHost && (queryServer || customHost.includes(window.location.host))) {
+    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+        (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+    if (customHost) {
         return customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
     }
     if (window.location.protocol === 'file:' || !window.location.host) {
@@ -218,14 +217,13 @@ class GameSyncChannel {
         this.handleRemoteReload = (payload) => {
             if (!payload) return;
             const action = payload.action || payload.type;
-            if (action === 'reload_role' || action === 'RELOAD_CLIENT') {
-                const targetRole = (payload.data && payload.data.targetRole) || payload.targetRole || payload.target || payload.role || 'all';
+            if (action === 'reload_role') {
+                const targetRole = (payload.data && payload.data.targetRole) || payload.targetRole || 'all';
                 let currentRole = window.CURRENT_ROLE;
                 if (!currentRole) {
                     const path = (window.location.pathname || '').toLowerCase();
                     const file = path.split('/').pop() || '';
                     if (file.includes('projector')) currentRole = 'projector';
-                    else if (file.includes('graphic')) currentRole = 'graphic';
                     else if (file.includes('answer')) currentRole = 'answer';
                     else if (file.includes('player')) currentRole = 'player';
                     else if (file.includes('host')) currentRole = 'host';
@@ -234,7 +232,7 @@ class GameSyncChannel {
                     else currentRole = 'unknown';
                 }
 
-                if (targetRole === 'all' || targetRole === currentRole || (targetRole === 'players' && currentRole && currentRole.startsWith('ts'))) {
+                if (targetRole === 'all' || targetRole === currentRole) {
                     console.warn(`🔄 Receiving remote reload signal for targetRole=${targetRole} (Current: ${currentRole}). Reloading...`);
                     setTimeout(() => {
                         window.location.reload();
@@ -279,7 +277,6 @@ class GameSyncChannel {
 
             this.ws.onopen = () => {
                 this.isWsConnected = true;
-                this.wsFailCount = 0;
                 this.notifyConnectionStatus(true);
                 
                 // Flush any pending WS messages
@@ -321,13 +318,10 @@ class GameSyncChannel {
             this.ws.onclose = () => {
                 this.isWsConnected = false;
                 this.notifyConnectionStatus(false);
-                this.wsFailCount = (this.wsFailCount || 0) + 1;
-                // Backoff delay: 3s, 6s, 12s... up to 30s to avoid console error loops
-                const delay = Math.min(30000, 2500 * Math.pow(1.5, Math.min(this.wsFailCount, 6)));
                 if (!this.wsReconnectTimer && hasLocalServerBackend()) {
                     this.wsReconnectTimer = setTimeout(() => {
                         this.initWebSocket();
-                    }, delay);
+                    }, 2500);
                 }
             };
         } catch (e) {

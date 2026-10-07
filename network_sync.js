@@ -4,9 +4,9 @@
     // --- Global Network Utilities for LAN & WAN Support ---
     function hasLocalServerBackend() {
         if (typeof window === 'undefined') return false;
-        const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
-        const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
-        if (customHost && (queryServer || customHost.includes(window.location.host))) return true;
+        const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+            (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+        if (customHost) return true;
 
         const protocol = window.location.protocol;
         const hostname = (window.location.hostname || '').toLowerCase();
@@ -44,10 +44,10 @@
             return path;
         }
 
-        const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
-        const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
+        const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+            (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
 
-        if (customHost && (queryServer || customHost.includes(window.location.host))) {
+        if (customHost) {
             const cleanCustom = customHost.replace(/\/$/, '');
             const cleanP = path.startsWith('/') ? path : '/' + path;
             return cleanCustom + cleanP;
@@ -85,9 +85,9 @@
 
     function getWsUrl() {
         if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
-        const queryServer = typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null;
-        const customHost = queryServer || (typeof localStorage !== 'undefined' ? localStorage.getItem('ddvq_server_host') : null);
-        if (customHost && (queryServer || customHost.includes(window.location.host))) {
+        const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+            (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
+        if (customHost) {
             return customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
         }
         if (window.location.protocol === 'file:' || !window.location.host) {
@@ -207,14 +207,13 @@
             this.handleRemoteReload = (payload) => {
                 if (!payload) return;
                 const action = payload.action || payload.type;
-                if (action === 'reload_role' || action === 'RELOAD_CLIENT') {
-                    const targetRole = (payload.data && payload.data.targetRole) || payload.targetRole || payload.target || payload.role || 'all';
+                if (action === 'reload_role') {
+                    const targetRole = (payload.data && payload.data.targetRole) || payload.targetRole || 'all';
                     let currentRole = window.CURRENT_ROLE;
                     if (!currentRole) {
                         const path = (window.location.pathname || '').toLowerCase();
                         const file = path.split('/').pop() || '';
                         if (file.includes('projector')) currentRole = 'projector';
-                        else if (file.includes('graphic')) currentRole = 'graphic';
                         else if (file.includes('answer')) currentRole = 'answer';
                         else if (file.includes('player')) currentRole = 'player';
                         else if (file.includes('host')) currentRole = 'host';
@@ -223,7 +222,7 @@
                         else currentRole = 'unknown';
                     }
 
-                    if (targetRole === 'all' || targetRole === currentRole || (targetRole === 'players' && currentRole && currentRole.startsWith('ts'))) {
+                    if (targetRole === 'all' || targetRole === currentRole) {
                         console.warn(`🔄 Receiving remote reload signal for targetRole=${targetRole} (Current: ${currentRole}). Reloading...`);
                         setTimeout(() => {
                             window.location.reload();

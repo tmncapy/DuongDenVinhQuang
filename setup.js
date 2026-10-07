@@ -1100,18 +1100,17 @@ window.markVSContestantSubmitted = markVSContestantSubmitted;
 
 function syncContestantsUI() {
     if (gameData.contestants && Array.isArray(gameData.contestants)) {
-        const activeEl = typeof document !== 'undefined' ? document.activeElement : null;
         gameData.contestants.forEach((c, i) => {
             const idx = i + 1;
             const tab0Input = document.getElementById(`ts_name_${idx}`);
-            if (tab0Input && tab0Input !== activeEl) tab0Input.value = c.name || `Thí sinh ${idx}`;
+            if (tab0Input) tab0Input.value = c.name || `Thí sinh ${idx}`;
             const tab1Input = document.getElementById(`ts${idx}_name`);
-            if (tab1Input && tab1Input !== activeEl) tab1Input.value = c.name || `Thí sinh ${idx}`;
+            if (tab1Input) tab1Input.value = c.name || `Thí sinh ${idx}`;
             const tab2Input = document.getElementById(`ts${idx}_name_rk`);
-            if (tab2Input && tab2Input !== activeEl) tab2Input.value = c.name || `Thí sinh ${idx}`;
+            if (tab2Input) tab2Input.value = c.name || `Thí sinh ${idx}`;
             
             const tab3Input = document.getElementById(`ts${idx}_name_vs`);
-            if (tab3Input && tab3Input !== activeEl) {
+            if (tab3Input) {
                 const baseName = (c.name || `Thí sinh ${idx}`).replace(/\s*\(\d+\)/g, '').replace(/\s*\([\d\.]+(?:s|giây|S)?\)/gi, '').trim();
                 if (!window.vsSubmissions || !window.vsSubmissions[idx]) {
                     tab3Input.value = baseName;
@@ -1121,7 +1120,7 @@ function syncContestantsUI() {
             }
 
             const tab4Input = document.getElementById(`ts${idx}_name_vq`);
-            if (tab4Input && tab4Input !== activeEl) tab4Input.value = c.name || `Thí sinh ${idx}`;
+            if (tab4Input) tab4Input.value = c.name || `Thí sinh ${idx}`;
             
             const scoreVal = c.score !== undefined ? c.score : 0;
             const disp = document.getElementById(`ts${idx}_score_disp`);
@@ -1137,16 +1136,9 @@ function syncContestantsUI() {
         if (typeof updateTab1Preview === 'function') updateTab1Preview();
         try {
             localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
-            localStorage.setItem('duong_den_vinh_quang_data', JSON.stringify(gameData));
         } catch(e) {}
-        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants, gameData: gameData });
-        sendToProjector('UPDATE_CONTESTANTS', { contestants: gameData.contestants, gameData: gameData });
-        if (typeof debouncePostServerState === 'function') {
-            debouncePostServerState({
-                contestants: gameData.contestants,
-                gameData: gameData
-            });
-        }
+        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
+        sendToProjector('UPDATE_CONTESTANTS', { contestants: gameData.contestants });
     }
 }
 
@@ -1165,6 +1157,7 @@ function loadSavedData() {
             updateVuotSongState();
             syncContestantsUI();
             if (typeof updateTab1Preview === 'function') updateTab1Preview();
+            if (typeof loadAudioSettings === 'function') loadAudioSettings();
 
             const step4 = document.getElementById('step4-check');
             if (step4) {

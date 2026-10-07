@@ -130,8 +130,7 @@ let serverState = {
     ts3: { connected: false, sessionId: null, name: 'Thí sinh 3', lastSeen: 0 },
     ts4: { connected: false, sessionId: null, name: 'Thí sinh 4', lastSeen: 0 },
     host: { connected: false, sessionId: null, name: 'Máy MC', lastSeen: 0 },
-    projector: { connected: false, sessionId: null, name: 'Máy Chiếu', lastSeen: 0 },
-    graphic: { connected: false, sessionId: null, name: 'Màn hình Graphic', lastSeen: 0 }
+    projector: { connected: false, sessionId: null, name: 'Máy Chiếu', lastSeen: 0 }
   },
   buzzerState: {
     buzzerUnlocked: false,
@@ -271,8 +270,8 @@ function handleIncomingAction(action, senderWs = null) {
   }
 
   // Handle Client Join / Heartbeats
-  if (type === 'CLIENT_JOIN' || type === 'CLIENT_HEARTBEAT' || type === 'PROJECTOR_READY' || type === 'GRAPHIC_READY') {
-    const role = action.role || (type === 'PROJECTOR_READY' ? 'projector' : (type === 'GRAPHIC_READY' ? 'graphic' : (action.contestantId ? `ts${action.contestantId}` : null)));
+  if (type === 'CLIENT_JOIN' || type === 'CLIENT_HEARTBEAT') {
+    const role = action.role || (action.contestantId ? `ts${action.contestantId}` : null);
     if (role && serverState.connectedClients[role]) {
       serverState.connectedClients[role].connected = true;
       serverState.connectedClients[role].lastSeen = now;
@@ -323,17 +322,15 @@ function handleIncomingAction(action, senderWs = null) {
     });
   }
 
-  // Handle Contestant & GameData updates for any action type
-  if (action.contestants && Array.isArray(action.contestants)) {
+  // Handle Contestant updates
+  if (type === 'UPDATE_CONTESTANTS' && action.contestants) {
     serverState.contestants = action.contestants;
-    if (!serverState.gameData) serverState.gameData = {};
-    serverState.gameData.contestants = action.contestants;
+    if (serverState.gameData) serverState.gameData.contestants = action.contestants;
   }
-  if (action.gameData) {
-    serverState.gameData = Object.assign(serverState.gameData || {}, action.gameData);
-    if (action.gameData.contestants && Array.isArray(action.gameData.contestants)) {
-      serverState.contestants = action.gameData.contestants;
-    }
+
+  if (type === 'UPDATE_SCORES' && action.contestants) {
+    serverState.contestants = action.contestants;
+    if (serverState.gameData) serverState.gameData.contestants = action.contestants;
   }
 
   // Handle Player Answer Submissions
@@ -1016,16 +1013,12 @@ app.get('/state', handleGetState);
 // POST /api/state & /state - Update game state
 const handlePostState = (req, res) => {
   const body = req.body || {};
-  if (body.contestants && Array.isArray(body.contestants)) {
+  if (body.contestants) {
     serverState.contestants = body.contestants;
-    if (!serverState.gameData) serverState.gameData = {};
-    serverState.gameData.contestants = body.contestants;
+    if (serverState.gameData) serverState.gameData.contestants = body.contestants;
   }
   if (body.gameData) {
-    serverState.gameData = Object.assign(serverState.gameData || {}, body.gameData);
-    if (body.gameData.contestants && Array.isArray(body.gameData.contestants)) {
-      serverState.contestants = body.gameData.contestants;
-    }
+    serverState.gameData = Object.assign(serverState.gameData, body.gameData);
   }
   if (body.roomCode) {
     serverState.roomCode = body.roomCode.trim().toUpperCase();

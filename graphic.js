@@ -75,7 +75,55 @@ let soundRKTimer = new Audio('sounds/25sV1.mp3');
 let soundChooseQues = new Audio('sounds/ChooseQues.mp3');
 let soundRightV3 = new Audio('sounds/RightV3.mp3');
 let soundActivate = new Audio('sounds/Activate.mp3');
-let soundOpenLetter = new Audio('sounds/OpenLetter.mp3');
+
+let screenAudioSettings = {
+    enabled: true,
+    volume: 1.0,
+    round3Audio: 'sounds/20sV1.mp3',
+    round4Audio: 'sounds/25sV1.mp3'
+};
+
+function applyAudioSettingsGraphic(settings) {
+    if (!settings) return;
+    screenAudioSettings.enabled = settings.graphicEnabled !== false;
+    screenAudioSettings.volume = typeof settings.graphicVolume === 'number' ? settings.graphicVolume / 100 : 1.0;
+    if (settings.round3Audio) screenAudioSettings.round3Audio = settings.round3Audio;
+    if (settings.round4Audio) screenAudioSettings.round4Audio = settings.round4Audio;
+
+    const vq4 = document.getElementById('vongThiAudio4');
+    if (vq4) {
+        vq4.src = screenAudioSettings.round3Audio;
+        vq4.volume = screenAudioSettings.volume;
+        vq4.muted = !screenAudioSettings.enabled;
+    }
+    const vq7 = document.getElementById('vongThiAudio7');
+    if (vq7) {
+        vq7.src = screenAudioSettings.round4Audio;
+        vq7.volume = screenAudioSettings.volume;
+        vq7.muted = !screenAudioSettings.enabled;
+    }
+    if (typeof soundRKTimer !== 'undefined' && soundRKTimer) {
+        soundRKTimer.src = screenAudioSettings.round4Audio;
+        soundRKTimer.volume = screenAudioSettings.volume;
+        soundRKTimer.muted = !screenAudioSettings.enabled;
+    }
+
+    const allAudios = [soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3, soundActivate];
+    allAudios.forEach(a => {
+        if (a) {
+            a.volume = screenAudioSettings.volume;
+            a.muted = !screenAudioSettings.enabled;
+        }
+    });
+
+    if (typeof document !== 'undefined') {
+        document.querySelectorAll('audio, video').forEach(m => {
+            m.volume = screenAudioSettings.volume;
+            m.muted = !screenAudioSettings.enabled;
+        });
+    }
+}
+window.applyAudioSettingsGraphic = applyAudioSettingsGraphic;
 
 let isAudioUnlocked = false;
 
@@ -86,7 +134,7 @@ function unlockAudio() {
     const allAudios = [
         soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, 
         soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundRKTimer, soundChooseQues, soundRightV3,
-        soundActivate, soundOpenLetter,
+        soundActivate,
         document.getElementById('vongThiAudio2'),
         document.getElementById('soundRKAnswer2'),
         document.getElementById('vongThiAudio4'),
@@ -118,7 +166,13 @@ window.addEventListener('DOMContentLoaded', unlockAudio);
 
 function safePlay(audio) {
     if (!audio) return;
+    if (!screenAudioSettings.enabled) {
+        try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+        return;
+    }
     try {
+        audio.volume = screenAudioSettings.volume;
+        audio.muted = false;
         audio.currentTime = 0;
         let p = audio.play();
         if (p && typeof p.then === 'function') {
@@ -719,6 +773,12 @@ function loadInitialProjectorState() {
             updateProjectorContestants(JSON.parse(savedContestants));
         }
     } catch(e) {}
+    try {
+        const savedAudio = localStorage.getItem('ddvq_audio_settings');
+        if (savedAudio) {
+            applyAudioSettingsGraphic(JSON.parse(savedAudio));
+        }
+    } catch(e) {}
 
     const apiPath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
     fetch(apiPath)
@@ -734,42 +794,22 @@ window.addEventListener('DOMContentLoaded', loadInitialProjectorState);
 loadInitialProjectorState();
 
 function notifyControllerReady() {
-    const roomCode = localStorage.getItem('ddvq_room_code') || 'DDVQ2026';
-    const msg = { type: 'GRAPHIC_READY', role: 'graphic', roomCode: roomCode, name: 'Màn hình Graphic', timestamp: Date.now() };
-    const hbData = { type: 'CLIENT_HEARTBEAT', role: 'graphic', roomCode: roomCode, name: 'Màn hình Graphic', timestamp: Date.now() };
-
+    const msg = { type: 'PROJECTOR_READY', timestamp: Date.now() };
     if (typeof sendSupabaseAction === 'function') {
         sendSupabaseAction(msg);
-        sendSupabaseAction(hbData);
     } else if (projectorChannel) {
-        try {
-            projectorChannel.postMessage(msg);
-            projectorChannel.postMessage(hbData);
-        } catch(e) {}
+        try { projectorChannel.postMessage(msg); } catch(e) {}
     }
-
     try {
-        localStorage.setItem('ddvq_graphic_status', Date.now().toString());
-        localStorage.setItem('ddvq_latest_action', JSON.stringify(hbData));
+        localStorage.setItem('ddvq_projector_status', Date.now().toString());
     } catch(e) {}
-
-    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        fetch(getApiUrl('/api/action'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(hbData)
-        }).catch(() => {});
-    }
-
     try {
         if (window.opener && !window.opener.closed) {
             window.opener.postMessage(msg, '*');
         }
     } catch(e) {}
 }
-
 notifyControllerReady();
-setInterval(notifyControllerReady, 5000);
 
 window.addEventListener('storage', function(event) {
     if (event.key === 'ddvq_latest_action' && event.newValue) {
@@ -831,7 +871,9 @@ setInterval(() => {
 
 function handleProjectorMessage(data) {
     if (isDuplicateGraphicMessage(data)) return;
-    if (data.type === 'TOGGLE_SUMMARY' || data.type === 'SHOW_SUMMARY' || data.type === 'HIDE_SUMMARY') {
+    if (data.type === 'UPDATE_AUDIO_SETTINGS') {
+        applyAudioSettingsGraphic(data.audioSettings);
+    } else if (data.type === 'TOGGLE_SUMMARY' || data.type === 'SHOW_SUMMARY' || data.type === 'HIDE_SUMMARY') {
         handleToggleSummary(data);
     } else if (data.type === 'SWITCH_VIEW') {
         if (data.viewNum) switchView(data.viewNum);
@@ -1219,3 +1261,265 @@ function handleProjectorMessage(data) {
         handleVSOpenKeywordLetters(data);
     } else if (data.type === 'VUOT_SONG_OPEN_ALL_ANSWERS') {
         handleVSOpenAllAnswers(data);
+    } else if (data.type === 'VUOT_SONG_RETURN_GRID') {
+        handleVSReturnGrid(data);
+    } else if (data.type === 'VINH_QUANG_SHOW_PACKS' || data.type === 'VINH_QUANG_SHOW_PACK_SELECTION') {
+        showPack6();
+    } else if (data.type === 'VINH_QUANG_SELECT_PACK') {
+        switchView(6);
+        const pack = data.pack || 10;
+        const elem = document.getElementById(`vq_pack_item_${pack}`);
+        selectPack6(elem, pack.toString(), data.subject || `Gói ${pack} Điểm`);
+    } else if (data.type === 'VINH_QUANG_HIDE_PACK' || data.type === 'VINH_QUANG_FLY_OUT') {
+        switchView(6);
+        hidePack6();
+    } else if (data.type === 'VINH_QUANG_RESET') {
+        resetVQProjector();
+    } else if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
+        switchView(7);
+        if (countdown7) clearInterval(countdown7);
+        isRunning7 = false;
+        const vqAudio = document.getElementById('vongThiAudio7');
+        if (vqAudio) { try { vqAudio.pause(); vqAudio.currentTime = 0; } catch(e) {} }
+        safePlay(soundBeginQues1);
+        const qEl = document.getElementById('vq_question_text');
+        const rEl = document.getElementById('vq_round_title');
+        const pEl = document.getElementById('vq_selected_pack_title');
+        const starIcon = document.getElementById('vq_star_icon');
+        if (qEl) qEl.innerText = data.questionText || "Nội dung câu hỏi Vinh Quang...";
+        if (rEl) rEl.innerText = "VINH QUANG";
+        if (pEl) {
+            const packTxt = data.pack ? `GÓI ${data.pack} ĐIỂM` : (data.subject ? data.subject.toUpperCase() : "");
+            pEl.innerText = packTxt;
+        }
+        if (data.hasStar !== undefined) {
+            isVQStarActive = !!data.hasStar;
+        } else if (data.starActive !== undefined) {
+            isVQStarActive = !!data.starActive;
+        }
+        if (starIcon) {
+            starIcon.style.display = isVQStarActive ? "block" : "none";
+        }
+        const clockEl = document.getElementById('clock7');
+        if (clockEl) clockEl.innerText = "25";
+        for (let i = 1; i <= 4; i++) {
+            const ansEl = document.getElementById(`vq_ans_ts${i}`);
+            if (ansEl) ansEl.innerText = "";
+        }
+    } else if (data.type === 'VINH_QUANG_START_TIMER' || data.type === 'VINH_QUANG_25S') {
+        switchView(7);
+        startCountdown7(data.duration || 25);
+    } else if (data.type === 'VINH_QUANG_STAR_OF_HOPE') {
+        if (data.active !== undefined) {
+            isVQStarActive = !!data.active;
+        } else if (data.hasStar !== undefined) {
+            isVQStarActive = !!data.hasStar;
+        } else {
+            isVQStarActive = !isVQStarActive;
+        }
+        if (isVQStarActive) {
+            safePlay(soundChooseQues);
+        }
+        const starIcon = document.getElementById('vq_star_icon');
+        if (starIcon) {
+            starIcon.style.display = isVQStarActive ? "block" : "none";
+        }
+    } else if (data.type === 'VINH_QUANG_SHOW_ANSWERS') {
+        switchView(8);
+        const ansAudio = document.getElementById('audioVQAnswer') || document.getElementById('soundRKAnswer');
+        if (ansAudio) {
+            ansAudio.currentTime = 0;
+            ansAudio.play().catch(e => console.log(e));
+        } else {
+            safePlay(soundRKAnswer);
+        }
+        const contestants = data.contestants || [];
+        for (let i = 1; i <= 4; i++) {
+            const ts = contestants[i - 1] || {};
+            const scoreEl = document.getElementById(`vq_score_ts${i}`);
+            const nameEl = document.getElementById(`vq_name_ts${i}`);
+            const ansEl = document.getElementById(`vq_ans_ts${i}`);
+            if (scoreEl) scoreEl.innerText = ts.score !== undefined ? ts.score : '0';
+            if (nameEl) nameEl.innerText = ts.name || `THÍ SINH ${i}`;
+            if (ansEl) {
+                fitAnswerText(ansEl, ts.answer || '');
+            }
+        }
+    } else if (data.type === 'UPDATE_CONTESTANTS' || data.type === 'UPDATE_SCORES' || data.type === 'FULL_STATE_SYNC' || data.type === 'UPDATE_STATE') {
+        if (data.contestants && Array.isArray(data.contestants)) {
+            updateProjectorContestants(data.contestants);
+        }
+    } else if (data.type === 'RESET_ALL_DATA') {
+        clearInterval(timerInterval1);
+        stopAllAudio1();
+        timeLeft1 = 60;
+        score1 = 0;
+        const s1 = document.getElementById('score1');
+        if (s1) s1.innerText = "0";
+        const q1 = document.getElementById('questionText1');
+        if (q1) q1.innerText = "";
+        const ab1 = document.getElementById('answerBox1');
+        if (ab1) ab1.style.display = 'none';
+
+        if (rkTimerIntervalProj) clearInterval(rkTimerIntervalProj);
+        if (rkAutoTimerTimeout) clearTimeout(rkAutoTimerTimeout);
+        const clockEl2 = document.getElementById('rk_clock_box');
+        if (clockEl2) clockEl2.innerText = "30";
+        const video2 = document.getElementById('rk_video_player');
+        if (video2) { video2.pause(); video2.currentTime = 0; }
+        const qTitle2 = document.getElementById('rk_question_title');
+        if (qTitle2) qTitle2.innerText = "";
+        const qText2 = document.getElementById('rk_question_text');
+        if (qText2) qText2.innerText = "";
+        for (let i = 1; i <= 4; i++) {
+            const t = document.getElementById('thoi_gian_ts' + i);
+            const n = document.getElementById('ten_ts' + i);
+            const a = document.getElementById('dap_an_ts' + i);
+            if (t) t.innerText = "";
+            if (n) n.innerText = "";
+            if (a) a.innerText = "";
+        }
+
+        handleVSReset();
+        resetVQProjector();
+        switchView(1);
+    } else if (data.type === 'START_ROUND_CLEAN') {
+        const roundIdx = data.roundIndex || 1;
+        // 1. Dừng toàn bộ video và âm thanh đang chạy
+        const overlay = document.getElementById('intro_video_overlay');
+        const vplayer = document.getElementById('intro_video_player');
+        if (overlay && vplayer) {
+            overlay.style.display = 'none';
+            vplayer.pause();
+            vplayer.src = '';
+        }
+        if (typeof stopAllAudio1 === 'function') stopAllAudio1();
+        if (typeof stopAllAudioRK === 'function') stopAllAudioRK();
+        if (typeof stopAllAudioVS === 'function') stopAllAudioVS();
+        if (typeof stopAllAudioVQ === 'function') stopAllAudioVQ();
+
+        // 2. Chuyển sang view tương ứng và ẩn sạch toàn bộ graphic/overlay
+        if (roundIdx === 1) {
+            switchView(1);
+            const scd = document.getElementById('scene-chon-de');
+            const scq = document.getElementById('scene-cau-hoi1');
+            if (scd) scd.classList.remove('active');
+            if (scq) scq.classList.remove('active');
+            const xp = document.getElementById('xuatPhatContainer');
+            if (xp) xp.style.display = 'none';
+            const ri = document.getElementById('randomImg1');
+            const nb = document.getElementById('numberBox1');
+            const bd = document.getElementById('btnBamDe1');
+            const cl = document.getElementById('contestantList1');
+            const dn = document.getElementById('displayContestantName1');
+            if (ri) ri.style.display = 'none';
+            if (nb) nb.style.display = 'none';
+            if (bd) bd.style.display = 'none';
+            if (cl) cl.style.display = 'none';
+            if (dn) dn.style.display = 'none';
+            const ansBox = document.querySelector('#view-file-1 .answer-box');
+            if (ansBox) ansBox.style.display = 'none';
+        } else if (roundIdx === 2) {
+            switchView(2);
+            const ansScene = document.getElementById('rk-scene-answers');
+            if (ansScene) ansScene.style.display = 'none';
+            const mediaOverlay = document.getElementById('rk-media-overlay');
+            if (mediaOverlay) mediaOverlay.style.display = 'none';
+            const videoEl = document.getElementById('rk-media-video');
+            if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+        } else if (roundIdx === 3) {
+            switchView(3);
+            const vsAnsScene = document.getElementById('vs-scene-answers');
+            if (vsAnsScene) vsAnsScene.style.display = 'none';
+            const vsQuesScene = document.getElementById('scene-cau-hoi-vs');
+            if (vsQuesScene) vsQuesScene.classList.remove('active');
+        } else if (roundIdx === 4) {
+            switchView(6);
+            resetVQProjector();
+            const pageWrapper = document.getElementById('pageWrapper');
+            if (pageWrapper) {
+                pageWrapper.classList.remove('show');
+                pageWrapper.classList.add('fly-down');
+            }
+            const subjContainer = document.querySelector('.subject-container');
+            if (subjContainer) subjContainer.classList.remove('show');
+            const vqQuesBox = document.querySelector('#view-file-7 .question-box');
+            if (vqQuesBox) vqQuesBox.innerText = '';
+        }
+    } else if (data.type === 'RELOAD_CLIENT') {
+        if (data.target === 'projector' || data.target === 'graphic' || data.target === 'all' || data.role === 'projector' || data.role === 'graphic') {
+            setTimeout(() => { window.location.reload(); }, 300);
+        }
+    } else if (data.type === 'PLAY_INTRO_VIDEO') {
+        const overlay = document.getElementById('intro_video_overlay');
+        const player = document.getElementById('intro_video_player');
+        let imgPlayer = document.getElementById('intro_image_player');
+        if (!imgPlayer && overlay) {
+            imgPlayer = document.createElement('img');
+            imgPlayer.id = 'intro_image_player';
+            imgPlayer.style.cssText = 'width: 100%; height: 100%; object-fit: contain; display: none;';
+            overlay.appendChild(imgPlayer);
+        }
+
+        if (overlay) {
+            overlay.style.display = 'flex';
+            const rawSrc = data.src || '';
+            const fullSrc = (typeof getApiUrl === 'function') ? getApiUrl(rawSrc) : rawSrc;
+            const srcLower = fullSrc.toLowerCase();
+            const isVideo = (data.mediaType === 'video') || srcLower.match(/\.(mp4|webm|ogg|mov|m4v)($|\?)/i);
+            const isImage = (data.mediaType === 'image') || !isVideo;
+
+            if (isImage) {
+                if (player) {
+                    player.pause();
+                    player.style.display = 'none';
+                    player.src = '';
+                }
+                if (imgPlayer) {
+                    imgPlayer.src = fullSrc;
+                    imgPlayer.style.display = 'block';
+                }
+            } else {
+                if (imgPlayer) {
+                    imgPlayer.style.display = 'none';
+                    imgPlayer.src = '';
+                }
+                if (player) {
+                    player.style.display = 'block';
+                    player.src = fullSrc;
+                    player.load();
+                    player.play().catch(err => {
+                        console.warn("Intro media play error on graphic:", err);
+                    });
+                    player.onended = () => {
+                        overlay.style.display = 'none';
+                        player.src = '';
+                    };
+                }
+            }
+        }
+    } else if (data.type === 'STOP_INTRO_VIDEO') {
+        const overlay = document.getElementById('intro_video_overlay');
+        const player = document.getElementById('intro_video_player');
+        const imgPlayer = document.getElementById('intro_image_player');
+        if (player) {
+            player.pause();
+            player.src = '';
+            player.style.display = 'none';
+        }
+        if (imgPlayer) {
+            imgPlayer.src = '';
+            imgPlayer.style.display = 'none';
+        }
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    } else if (data.type === 'PLAY_SOUND') {
+        const soundFile = data.sound || '';
+        if (soundFile) {
+            playCustomSound(soundFile);
+        }
+    } else if (data.type === 'STOP_SOUND') {
+        stopCustomSound();
+    }
+}

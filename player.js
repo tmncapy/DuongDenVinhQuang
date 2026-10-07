@@ -1167,34 +1167,3 @@ function autoSwitchScene(sceneNum) {
     if (!autoSync) return;
     displaySceneView(sceneNum);
 }
-
-// Submissions
-function submitScene2Answer() {
-    const s2Input = document.getElementById('s2_answer_input');
-    if ((s2Input && s2Input.disabled) || !s2TimerStartTime || s2TimeLeft <= 0) {
-        showToast("Ngoài thời gian quy định - Ô trả lời đang khóa!");
-        return;
-    }
-    const ans = s2Input ? s2Input.value.trim() : "";
-    if (!ans) return;
-
-    let timeStr = "00.00";
-    if (s2TimerStartTime) {
-        let elapsed = (Date.now() - s2TimerStartTime) / 1000;
-        let formattedSec = elapsed < 10 ? '0' + elapsed.toFixed(2) : elapsed.toFixed(2);
-        timeStr = formattedSec;
-    }
-
-    // Immediate Client-Side Optimistic Feedback
-    const badge = document.getElementById('s2_status_badge');
-    if (badge) {
-        badge.innerText = '🟢 ĐÃ GỬI THÀNH CÔNG';
-        badge.style.background = '#16a34a';
-    }
-    const txt = document.getElementById('s2_submitted_text');
-    if (txt) txt.innerText = `"${ans}"`;
-    const tm = document.getElementById('s2_submitted_time');
-    if (tm) tm.innerText = `Thời gian: ${timeStr} lúc ${new Date().toLocaleTimeString()}`;
-
-    const submitPayload = {
-        id: Math.random().toString(36).substring(2, 9),

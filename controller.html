@@ -91,9 +91,9 @@
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="font-size: 12px; color: #475569; font-weight: 600;">Địa chỉ máy chủ (Domain):</span>
                             <select id="link_domain_select" onchange="onLinkDomainSelectChange()" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: bold; background: white; color: #334155; outline: none; cursor: pointer;">
-                                <option value="current" selected>Máy chủ hiện tại (Current Host)</option>
                                 <option value="acestudio">https://acestudio.mooo.com/DuongDenVinhQuang-main/ (AceStudio Server)</option>
-                                <option value="render">https://duongdenvinhquang.onrender.com (Render Cloud)</option>
+                                <option value="render" selected>https://duongdenvinhquang.onrender.com (Render Cloud)</option>
+                                <option value="current">Máy chủ hiện tại (Current Host)</option>
                                 <option value="custom">Tùy chỉnh IP / Domain...</option>
                             </select>
                             <input type="text" id="custom_domain_input" placeholder="https://..." style="display: none; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 170px;" oninput="updateRoomCodeFromController()">
@@ -231,18 +231,7 @@
                         </td>
                         <td style="text-align: center; color: #94a3b8; font-size: 11px;">—</td>
                         <td style="width: 120px;"><input type="text" value="Máy Chiếu" readonly style="font-weight: bold; background: #f1f5f9;"></td>
-                        <td><input type="text" readonly placeholder="Màn hình Máy chiếu (projector.html)" style="color: #64748b; font-size: 11px;"></td>
-                    </tr>
-                    <tr>
-                        <td style="width: 210px;">
-                            <div style="display: flex; align-items: center; gap: 4px;">
-                                <span id="status_badge_graphic" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; white-space: nowrap;">Chưa kết nối</span>
-                                <button type="button" class="btn" onclick="reloadClientSlot('graphic')" style="padding: 2px 5px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Tải lại màn hình Graphic OBS">Reload</button>
-                            </div>
-                        </td>
-                        <td style="text-align: center; color: #94a3b8; font-size: 11px;">—</td>
-                        <td style="width: 120px;"><input type="text" value="Graphic OBS" readonly style="font-weight: bold; background: #f1f5f9;"></td>
-                        <td><input type="text" readonly placeholder="Màn hình Graphic OBS trong suốt (graphic.html)" style="color: #64748b; font-size: 11px;"></td>
+                        <td><input type="text" readonly placeholder="Màn hình Máy chiếu / Graphic" style="color: #64748b; font-size: 11px;"></td>
                     </tr>
                 </table>
 
@@ -475,24 +464,66 @@
                 </div>
             </div>
 
-            <!-- Khung Quy trình -->
-            <div class="panel process-box">
-                <div style="font-weight: bold; margin-bottom: 5px;">Quy trình chuẩn bị:</div>
-                <div class="process-grid">
-                    <div>BƯỚC 1,2: Tạo và kiểm tra kết nối <span class="status-check green-check">✅</span></div>
-                    <div>BƯỚC 3: Cập nhật tên thí sinh <span class="status-check green-check" id="step3-check">✅</span></div>
-                    <div>BƯỚC 4: Nhập dữ liệu câu hỏi <span class="status-check red-x" id="step4-check">❌</span></div>
-                    <div>BƯỚC 5: Tải lên Ảnh/Video Intro & Media <span class="status-check green-check" id="step5-check">✅</span></div>
-                    <div style="grid-column: span 2;">
-                        BƯỚC 6: Chọn video, hình ảnh câu hỏi các phần thi <span class="status-check red-x">❌</span>
-                        <div style="padding-left: 15px; margin-top: 3px; color: #555;">
-                            + Video, hình ảnh câu hỏi Ra Khơi: 0/4<br>
-                            + Hình ảnh Vượt Sóng (Ô chữ/CNV): 0/1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + Đáp án Vượt Sóng: 0<br>
-                            + Video, hình ảnh câu hỏi Vinh Quang: 0
-                        </div>
+            <!-- Khung Cài đặt Âm thanh Hệ thống -->
+            <div class="panel" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+                    <div style="font-weight: bold; color: #1e3a8a; font-size: 13px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                        🔊 Cài đặt Âm thanh Hệ thống
                     </div>
-                    <div>BƯỚC 7: Chuyển video, hình ảnh câu hỏi <span class="status-check red-x">❌</span></div>
-                    <div>BƯỚC 8: Giải mã video, hình ảnh câu hỏi <span class="status-check red-x">❌</span></div>
+                    <span id="audio_settings_status_badge" style="font-size: 11px; font-weight: bold; color: #16a34a; background: #dcfce7; padding: 2px 8px; border-radius: 12px; border: 1px solid #86efac;">Đồng bộ</span>
+                </div>
+
+                <!-- 1. Chọn web phát âm thanh -->
+                <div style="margin-bottom: 10px;">
+                    <div style="font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 5px;">Màn hình phát âm thanh:</div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 5px; font-weight: bold; cursor: pointer; color: #1e293b;">
+                            <input type="checkbox" id="audio_enable_projector" checked onchange="onAudioSettingsChange()"> 🖥️ Máy Chiếu (Projector)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; font-weight: bold; cursor: pointer; color: #1e293b;">
+                            <input type="checkbox" id="audio_enable_graphic" checked onchange="onAudioSettingsChange()"> 📺 Graphic (Trong suốt)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. Điều chỉnh âm lượng -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div style="background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 4px;">
+                            <span>Âm lượng Máy Chiếu:</span>
+                            <span id="audio_vol_proj_val" style="color: #2563eb; font-weight: bold;">100%</span>
+                        </div>
+                        <input type="range" id="audio_vol_projector" min="0" max="100" value="100" style="width: 100%; cursor: pointer;" oninput="onAudioSettingsChange()">
+                    </div>
+                    <div style="background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 4px;">
+                            <span>Âm lượng Graphic:</span>
+                            <span id="audio_vol_graph_val" style="color: #2563eb; font-weight: bold;">100%</span>
+                        </div>
+                        <input type="range" id="audio_vol_graphic" min="0" max="100" value="100" style="width: 100%; cursor: pointer;" oninput="onAudioSettingsChange()">
+                    </div>
+                </div>
+
+                <!-- 3. Âm thanh đếm giờ vòng 3 và vòng 4 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">
+                            ⏳ Đếm giờ Vòng 3 (20s):
+                        </label>
+                        <select id="audio_round3_select" style="width: 100%; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; background: #ffffff;" onchange="onAudioSettingsChange()">
+                            <option value="sounds/20sV1.mp3">20s Vượt sóng 1 (20sV1.mp3)</option>
+                            <option value="sounds/20sV2.mp3">20s Vượt sóng 2 (20sV2.mp3)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">
+                            ⏳ Đếm giờ Vòng 4 (25s):
+                        </label>
+                        <select id="audio_round4_select" style="width: 100%; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; background: #ffffff;" onchange="onAudioSettingsChange()">
+                            <option value="sounds/25sV1.mp3">25s Vinh quang 1 (25sV1.mp3)</option>
+                            <option value="sounds/25sV2.mp3">25s Vinh quang 2 (25sV2.mp3)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1151,13 +1182,6 @@
                     </div>
                 </div>
 
-                <!-- NÚT BẮT ĐẦU VÒNG 2: RA KHƠI -->
-                <div style="display: flex; gap: 6px; margin: 2px 0;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(2)" style="flex: 1; font-weight: 800; font-size: 13px; padding: 7px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: #2563eb; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Ra Khơi & Ẩn toàn bộ Graphic trên Projector/Graphic">
-                        ⛵ Ra Khơi
-                    </button>
-                </div>
-
                 <!-- ROW 1 CONTROLS: BLUE BAR + HIỆN ĐÁP ÁN + SOUND -->
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <div style="flex: 1; background: #5b9bd5; height: 38px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: white; font-weight: bold;">
@@ -1176,7 +1200,7 @@
 
                 <!-- ROW 2 CONTROLS: ACTION BUTTONS ROW -->
                 <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center;">
-                    <button class="ctrl-btn-bottom" onclick="onClickRKTangToc()">Ra khơi</button>
+                    <button class="ctrl-btn-bottom" onclick="startRoundAndCleanGraphics(2); onClickRKTangToc()" style="font-weight: bold; background: #2563eb; color: white;">⛵ Ra khơi</button>
                     <button class="ctrl-btn-bottom" onclick="onClickBatDauDoanBang()">Đoạn băng</button>
                     <button class="ctrl-btn-bottom" onclick="onClickRKTinhThoiGian()">30s</button>
                     <button class="ctrl-btn-bottom" onclick="onClickRKDapAnTS()">Đáp án TS</button>

@@ -54,44 +54,27 @@ let controllerConnectedClients = {
     ts3: { connected: false, name: 'Thí sinh 3', lastSeen: 0 },
     ts4: { connected: false, name: 'Thí sinh 4', lastSeen: 0 },
     host: { connected: false, name: 'Máy MC', lastSeen: 0 },
-    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 },
-    graphic: { connected: false, name: 'Màn hình Graphic', lastSeen: 0 }
+    projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
 };
 
 function updateClientStatusBadges(connectedClients) {
-    if (connectedClients) {
-        Object.keys(connectedClients).forEach(role => {
-            if (connectedClients[role]) {
-                controllerConnectedClients[role] = {
-                    ...controllerConnectedClients[role],
-                    ...connectedClients[role]
-                };
-            }
-        });
-    }
+    if (!connectedClients) return;
+    Object.keys(connectedClients).forEach(role => {
+        if (connectedClients[role]) {
+            controllerConnectedClients[role] = {
+                ...controllerConnectedClients[role],
+                ...connectedClients[role]
+            };
+        }
+    });
 
+    const roles = ['ts1', 'ts2', 'ts3', 'ts4', 'host', 'projector'];
     const now = Date.now();
-
-    // Check LocalStorage Fallback Statuses for same-browser multi-tab support
-    try {
-        const projStatus = localStorage.getItem('ddvq_projector_status');
-        if (projStatus && (now - parseInt(projStatus) < 15000)) {
-            controllerConnectedClients.projector.connected = true;
-            controllerConnectedClients.projector.lastSeen = now;
-        }
-        const graphStatus = localStorage.getItem('ddvq_graphic_status');
-        if (graphStatus && (now - parseInt(graphStatus) < 15000)) {
-            controllerConnectedClients.graphic.connected = true;
-            controllerConnectedClients.graphic.lastSeen = now;
-        }
-    } catch(e) {}
-
-    const roles = ['ts1', 'ts2', 'ts3', 'ts4', 'host', 'projector', 'graphic'];
 
     roles.forEach(role => {
         const badge = document.getElementById(`status_badge_${role}`);
         const info = controllerConnectedClients[role];
-        const isRecentlyActive = info && (info.connected || (info.lastSeen && (now - info.lastSeen < 15000)));
+        const isRecentlyActive = info && (info.connected || (info.lastSeen && (now - info.lastSeen < 8000)));
 
         if (badge) {
             if (isRecentlyActive) {
@@ -111,7 +94,7 @@ function updateClientStatusBadges(connectedClients) {
     });
 
     if (controllerConnectedClients.projector) {
-        const isProjConn = controllerConnectedClients.projector.connected || (controllerConnectedClients.projector.lastSeen && (now - controllerConnectedClients.projector.lastSeen < 15000));
+        const isProjConn = controllerConnectedClients.projector.connected || (controllerConnectedClients.projector.lastSeen && (now - controllerConnectedClients.projector.lastSeen < 8000));
         updateProjectorStatus(isProjConn);
     }
 }
@@ -277,40 +260,26 @@ function updateRoomCodeFromController(isRandomGen = false) {
 function getPlayerBaseUrl() {
     const sel = document.getElementById('link_domain_select');
     const customInp = document.getElementById('custom_domain_input');
-    const val = sel ? sel.value : 'current';
+    const val = sel ? sel.value : 'acestudio';
 
-    if (val === 'current') {
-        if (typeof window !== 'undefined' && window.location && window.location.origin) {
-            const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
-            const origin = window.location.origin;
-            if (basePath && basePath !== '/') {
-                return origin + basePath.replace(/\/$/, '');
-            }
-            return origin;
-        }
-        return 'http://localhost:3000';
-    } else if (val === 'acestudio') {
+    if (val === 'acestudio') {
         return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
     } else if (val === 'render') {
         return 'https://duongdenvinhquang.onrender.com';
+    } else if (val === 'current') {
+        if (typeof window !== 'undefined' && window.location && window.location.origin) {
+            return window.location.origin;
+        }
+        return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
     } else if (val === 'custom') {
         let customVal = (customInp ? customInp.value.trim() : '');
-        if (!customVal) {
-            if (typeof window !== 'undefined' && window.location && window.location.origin) {
-                customVal = window.location.origin;
-            } else {
-                customVal = 'http://localhost:3000';
-            }
-        }
+        if (!customVal) customVal = 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
         if (!customVal.startsWith('http://') && !customVal.startsWith('https://')) {
             customVal = 'http://' + customVal;
         }
         return customVal.replace(/\/+$/, '');
     }
-    if (typeof window !== 'undefined' && window.location && window.location.origin) {
-        return window.location.origin;
-    }
-    return 'http://localhost:3000';
+    return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
 }
 
 function onLinkDomainSelectChange() {
@@ -817,7 +786,8 @@ function sendToProjector(type, payload = {}) {
     } catch(e) {}
 
     if (!window.__serverActionApiUnavailable && typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
-        if (!window.__recentActionSentMap?.has(type + '_' + (payload.turnIndex || payload.round || ''))) {
+        const isWsActive = (window.globalSyncChannel && window.globalSyncChannel.isWsConnected);
+        if (!isWsActive && !window.__recentActionSentMap?.has(type + '_' + (payload.turnIndex || payload.round || ''))) {
             window.__recentActionSentMap = window.__recentActionSentMap || new Map();
             const actionKey = type + '_' + (payload.turnIndex || payload.round || '');
             window.__recentActionSentMap.set(actionKey, Date.now());
@@ -1523,5 +1493,112 @@ function toggleScoreboardThumbnail(show, contestantId = 'ALL') {
                 showToast(isShown ? `Đã HIỂN THỊ Thumbnail cho ${contestantName} (TS${cId})!` : `Đã ẨN Bảng điểm / Thumbnail của ${contestantName} (TS${cId})!`);
             }
         }
+    }
+}
+
+// ==========================================
+// CÀI ĐẶT ÂM THANH HỆ THỐNG
+// ==========================================
+window.systemAudioSettings = {
+    projectorEnabled: true,
+    graphicEnabled: true,
+    projectorVolume: 100,
+    graphicVolume: 100,
+    round3Audio: 'sounds/20sV1.mp3',
+    round4Audio: 'sounds/25sV1.mp3'
+};
+
+function loadAudioSettings() {
+    try {
+        const saved = localStorage.getItem('ddvq_audio_settings');
+        if (saved) {
+            window.systemAudioSettings = Object.assign(window.systemAudioSettings, JSON.parse(saved));
+        } else if (typeof gameData !== 'undefined' && gameData && gameData.audioSettings) {
+            window.systemAudioSettings = Object.assign(window.systemAudioSettings, gameData.audioSettings);
+        }
+    } catch(e) {}
+
+    const projCb = document.getElementById('audio_enable_projector');
+    if (projCb) projCb.checked = window.systemAudioSettings.projectorEnabled !== false;
+
+    const graphCb = document.getElementById('audio_enable_graphic');
+    if (graphCb) graphCb.checked = window.systemAudioSettings.graphicEnabled !== false;
+
+    const projVol = document.getElementById('audio_vol_projector');
+    const projVolVal = document.getElementById('audio_vol_proj_val');
+    if (projVol) {
+        projVol.value = window.systemAudioSettings.projectorVolume ?? 100;
+        if (projVolVal) projVolVal.innerText = `${projVol.value}%`;
+    }
+
+    const graphVol = document.getElementById('audio_vol_graphic');
+    const graphVolVal = document.getElementById('audio_vol_graph_val');
+    if (graphVol) {
+        graphVol.value = window.systemAudioSettings.graphicVolume ?? 100;
+        if (graphVolVal) graphVolVal.innerText = `${graphVol.value}%`;
+    }
+
+    const r3Sel = document.getElementById('audio_round3_select');
+    if (r3Sel) r3Sel.value = window.systemAudioSettings.round3Audio || 'sounds/20sV1.mp3';
+
+    const r4Sel = document.getElementById('audio_round4_select');
+    if (r4Sel) r4Sel.value = window.systemAudioSettings.round4Audio || 'sounds/25sV1.mp3';
+}
+window.loadAudioSettings = loadAudioSettings;
+
+function onAudioSettingsChange() {
+    const projCb = document.getElementById('audio_enable_projector');
+    const graphCb = document.getElementById('audio_enable_graphic');
+    const projVol = document.getElementById('audio_vol_projector');
+    const projVolVal = document.getElementById('audio_vol_proj_val');
+    const graphVol = document.getElementById('audio_vol_graphic');
+    const graphVolVal = document.getElementById('audio_vol_graph_val');
+    const r3Sel = document.getElementById('audio_round3_select');
+    const r4Sel = document.getElementById('audio_round4_select');
+
+    if (projVol && projVolVal) projVolVal.innerText = `${projVol.value}%`;
+    if (graphVol && graphVolVal) graphVolVal.innerText = `${graphVol.value}%`;
+
+    window.systemAudioSettings = {
+        projectorEnabled: projCb ? projCb.checked : true,
+        graphicEnabled: graphCb ? graphCb.checked : true,
+        projectorVolume: projVol ? parseInt(projVol.value, 10) : 100,
+        graphicVolume: graphVol ? parseInt(graphVol.value, 10) : 100,
+        round3Audio: r3Sel ? r3Sel.value : 'sounds/20sV1.mp3',
+        round4Audio: r4Sel ? r4Sel.value : 'sounds/25sV1.mp3'
+    };
+
+    if (typeof gameData !== 'undefined' && gameData) {
+        gameData.audioSettings = window.systemAudioSettings;
+    }
+    try {
+        localStorage.setItem('ddvq_audio_settings', JSON.stringify(window.systemAudioSettings));
+        if (typeof saveAllData === 'function') saveAllData();
+    } catch(e) {}
+
+    const payload = {
+        type: 'UPDATE_AUDIO_SETTINGS',
+        audioSettings: window.systemAudioSettings,
+        timestamp: Date.now()
+    };
+
+    if (typeof sendToProjector === 'function') sendToProjector('UPDATE_AUDIO_SETTINGS', payload);
+    if (typeof sendSupabaseAction === 'function') sendSupabaseAction(payload);
+    try { localStorage.setItem('ddvq_latest_action', JSON.stringify(payload)); } catch(e) {}
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('ddvq_game_channel');
+            bc.postMessage(payload);
+        }
+    } catch(e) {}
+}
+window.onAudioSettingsChange = onAudioSettingsChange;
+
+// Auto initialize audio settings
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadAudioSettings);
+    } else {
+        loadAudioSettings();
     }
 }
