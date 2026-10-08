@@ -508,11 +508,21 @@ function handleIncomingAction(action, senderWs = null) {
   // 3. Vinh Quang: Only visible when VINH_QUANG_SHOW_QUESTION is explicitly called
   if (type === 'VINH_QUANG_SHOW_QUESTION') {
     serverState.vqQuestionShown = true;
+    serverState.activeRound = 'VINH_QUANG';
+  } else if (
+    type === 'VINH_QUANG_HIDE_PACK' ||
+    type === 'VINH_QUANG_HIDE_QUESTION'
+  ) {
+    serverState.vqQuestionShown = false;
+    serverState.currentTimer = null;
   } else if (
     type === 'VINH_QUANG_SELECT_PACK' ||
-    type === 'VINH_QUANG_SHOW_PACKS' ||
-    type === 'VINH_QUANG_HIDE_PACK' ||
-    type === 'VINH_QUANG_HIDE_QUESTION' ||
+    type === 'VINH_QUANG_SHOW_PACKS'
+  ) {
+    serverState.vqQuestionShown = false;
+    serverState.currentTimer = null;
+    serverState.activeRound = 'VINH_QUANG';
+  } else if (
     type === 'VINH_QUANG_RESET' ||
     type === 'VINH_QUANG_INTRO' ||
     type === 'VINH_QUANG_PHAN_THI' ||
@@ -524,7 +534,7 @@ function handleIncomingAction(action, senderWs = null) {
     serverState.vqQuestionShown = false;
     serverState.currentTimer = null;
     if (action.round) serverState.activeRound = action.round;
-    if (serverState.activeRound === 'VINH_QUANG' || type.startsWith('VINH_QUANG_')) {
+    if (type === 'RESET_ALL_DATA' || type === 'VINH_QUANG_RESET') {
       serverState.currentQuestion = null;
     }
   }
@@ -811,21 +821,54 @@ function getLocalNetworkAddresses() {
   return addresses;
 }
 
-// POST /api/upload - Direct stream upload for Intro videos and media files
-app.post('/api/upload', upload.single('file'), (req, res) => {
+// POST /api/upload & /upload.php - Direct stream upload for Intro videos and media files
+const handleUploadEndpoint = (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, error: 'Không tìm thấy file tải lên' });
   }
-  const fileUrl = `/uploads/${req.file.filename}`;
+  const fileUrl = `uploads/${req.file.filename}`;
+  const fullUrl = `${req.protocol}://${req.get('host')}/${fileUrl}`;
   console.log(`📁 [Upload] File uploaded successfully: ${req.file.originalname} -> ${fileUrl} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
   res.json({
     success: true,
     url: fileUrl,
+    fullUrl: fullUrl,
     filename: req.file.filename,
     originalName: req.file.originalname,
     size: req.file.size
   });
-});
+};
+
+app.post('/api/upload', upload.single('file'), handleUploadEndpoint);
+app.post('/upload.php', upload.single('file'), handleUploadEndpoint);
+
+// GET /upload.php & /api/uploads-list - Return list of uploaded media files
+const handleListUploads = (req, res) => {
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      return res.json({ success: true, files: [] });
+    }
+    const files = fs.readdirSync(uploadsDir)
+      .filter(file => !fs.statSync(path.join(uploadsDir, file)).isDirectory() && file !== '.gitkeep')
+      .map(file => {
+        const stats = fs.statSync(path.join(uploadsDir, file));
+        return {
+          filename: file,
+          url: `uploads/${file}`,
+          fullUrl: `${req.protocol}://${req.get('host')}/uploads/${file}`,
+          size: stats.size,
+          mtime: stats.mtimeMs
+        };
+      })
+      .sort((a, b) => b.mtime - a.mtime);
+    res.json({ success: true, files });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+app.get('/upload.php', handleListUploads);
+app.get('/api/uploads-list', handleListUploads);
 
 // Setup Chunked Upload Directory
 const tempChunksDir = path.join(uploadsDir, 'temp_chunks');

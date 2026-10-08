@@ -87,23 +87,31 @@ function getApiUrl(path) {
         return path;
     }
 
-    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+    let customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
         (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
 
     if (customHost) {
-        const cleanCustom = customHost.replace(/\/$/, '');
-        const cleanP = path.startsWith('/') ? path : '/' + path;
+        let cleanCustom = customHost.replace(/\/$/, '');
+        cleanCustom = cleanCustom.replace(/\/DuongDenVinhQuang-main\/?$/i, '');
+        let cleanP = path.startsWith('/') ? path : '/' + path;
+        cleanP = cleanP.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^\/_api$/, '/api');
         return cleanCustom + cleanP;
     }
 
     if (window.location.protocol === 'file:' || !window.location.host) {
-        const cleanP = path.startsWith('/') ? path : '/' + path;
+        let cleanP = path.startsWith('/') ? path : '/' + path;
+        cleanP = cleanP.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^\/_api$/, '/api');
         return 'http://localhost:3000' + cleanP;
     }
 
     let cleanPath = path;
     if (cleanPath.startsWith('./')) {
         cleanPath = cleanPath.substring(2);
+    }
+    cleanPath = cleanPath.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^_\/api$/, '/api').replace(/^_api\//, 'api/');
+
+    if (cleanPath.startsWith('/api/') || cleanPath === '/api' || cleanPath.startsWith('api/')) {
+        return cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
     }
 
     const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');

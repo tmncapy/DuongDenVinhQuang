@@ -9,23 +9,31 @@ function getApiUrl(path) {
         return path;
     }
 
-    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+    let customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
         (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
 
     if (customHost) {
-        const cleanCustom = customHost.replace(/\/$/, '');
-        const cleanP = path.startsWith('/') ? path : '/' + path;
+        let cleanCustom = customHost.replace(/\/$/, '');
+        cleanCustom = cleanCustom.replace(/\/DuongDenVinhQuang-main\/?$/i, '');
+        let cleanP = path.startsWith('/') ? path : '/' + path;
+        cleanP = cleanP.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^\/_api$/, '/api');
         return cleanCustom + cleanP;
     }
 
     if (window.location.protocol === 'file:' || !window.location.host) {
-        const cleanP = path.startsWith('/') ? path : '/' + path;
+        let cleanP = path.startsWith('/') ? path : '/' + path;
+        cleanP = cleanP.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^\/_api$/, '/api');
         return 'http://localhost:3000' + cleanP;
     }
 
     let cleanPath = path;
     if (cleanPath.startsWith('./')) {
         cleanPath = cleanPath.substring(2);
+    }
+    cleanPath = cleanPath.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^_\/api$/, '/api').replace(/^_api\//, 'api/');
+
+    if (cleanPath.startsWith('/api/') || cleanPath === '/api' || cleanPath.startsWith('api/')) {
+        return cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
     }
 
     const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
@@ -260,26 +268,26 @@ function updateRoomCodeFromController(isRandomGen = false) {
 function getPlayerBaseUrl() {
     const sel = document.getElementById('link_domain_select');
     const customInp = document.getElementById('custom_domain_input');
-    const val = sel ? sel.value : 'acestudio';
+    const val = sel ? sel.value : 'current';
 
     if (val === 'acestudio') {
-        return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
+        return 'https://acestudio.mooo.com';
     } else if (val === 'render') {
         return 'https://duongdenvinhquang.onrender.com';
     } else if (val === 'current') {
         if (typeof window !== 'undefined' && window.location && window.location.origin) {
             return window.location.origin;
         }
-        return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
+        return 'https://duongdenvinhquang.onrender.com';
     } else if (val === 'custom') {
         let customVal = (customInp ? customInp.value.trim() : '');
-        if (!customVal) customVal = 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
+        if (!customVal) customVal = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://duongdenvinhquang.onrender.com';
         if (!customVal.startsWith('http://') && !customVal.startsWith('https://')) {
             customVal = 'http://' + customVal;
         }
         return customVal.replace(/\/+$/, '');
     }
-    return 'https://acestudio.mooo.com/DuongDenVinhQuang-main';
+    return (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://duongdenvinhquang.onrender.com';
 }
 
 function onLinkDomainSelectChange() {
@@ -561,6 +569,10 @@ try {
                 handleIncomingPlayerAnswer(event.data);
             } else if (event.data.type === 'CLIENT_STATUS_UPDATE' && event.data.connectedClients) {
                 updateClientStatusBadges(event.data.connectedClients);
+            } else if (event.data.type === 'VINH_QUANG_SELECT_PACK_FROM_PROJECTOR') {
+                if (typeof onClickVQChonGoiDiem === 'function') {
+                    onClickVQChonGoiDiem(event.data.pack);
+                }
             } else if (event.data.type === 'CLIENT_HEARTBEAT' || event.data.type === 'CLIENT_JOIN') {
                 const role = event.data.role || (event.data.contestantId ? `ts${event.data.contestantId}` : null);
                 if (role && controllerConnectedClients[role]) {

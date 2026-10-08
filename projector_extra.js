@@ -105,10 +105,11 @@ function handleVSOpenKeywordLetters(data) {
         }
     });
 
-    if (typeof soundOpenLetter !== 'undefined' && soundOpenLetter) {
-        safePlay(soundOpenLetter);
+    const openAudio = document.getElementById('soundOpenLetter') || (typeof soundOpenLetter !== 'undefined' ? soundOpenLetter : null);
+    if (openAudio) {
+        safePlay(openAudio);
     } else {
-        safePlay(soundChooseQues);
+        safePlay(new Audio('sounds/OpenLetter.mp3'));
     }
     if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
 }
@@ -526,7 +527,6 @@ function handleRKPlayClip(data) {
                 lastRKMediaUrl = targetMediaUrl;
                 video.src = resolvedUrl;
                 video.currentTime = 0;
-                video.load();
 
                 const playPromise = video.play();
                 if (playPromise !== undefined) {

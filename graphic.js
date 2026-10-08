@@ -1274,6 +1274,12 @@ function handleProjectorMessage(data) {
         handleVSOpenAllAnswers(data);
     } else if (data.type === 'VUOT_SONG_RETURN_GRID') {
         handleVSReturnGrid(data);
+    } else if (data.type === 'VINH_QUANG_INTRO') {
+        switchView(6);
+    } else if (data.type === 'VINH_QUANG_HIDE_QUESTION') {
+        switchView(6);
+        const qEl = document.getElementById('vq_question_text');
+        if (qEl) qEl.innerText = "";
     } else if (data.type === 'VINH_QUANG_SHOW_PACKS' || data.type === 'VINH_QUANG_SHOW_PACK_SELECTION') {
         showPack6();
     } else if (data.type === 'VINH_QUANG_SELECT_PACK') {
@@ -1288,19 +1294,35 @@ function handleProjectorMessage(data) {
         resetVQProjector();
     } else if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
         switchView(7);
+        const view7 = document.getElementById('view-file-7');
+        if (view7) {
+            view7.classList.add('active-view');
+            view7.style.display = 'block';
+        }
         if (countdown7) clearInterval(countdown7);
         isRunning7 = false;
         const vqAudio = document.getElementById('vongThiAudio7');
         if (vqAudio) { try { vqAudio.pause(); vqAudio.currentTime = 0; } catch(e) {} }
         safePlay(soundBeginQues1);
-        const qEl = document.getElementById('vq_question_text');
+        let qEl = document.getElementById('vq_question_text');
+        if (!qEl) {
+            const box = document.querySelector('#view-file-7 .question-box');
+            if (box) {
+                box.innerHTML = '<img id="vq_star_icon" src="Images/star.gif" alt="Ngôi sao hy vọng" class="vq-star-gif"><div id="vq_question_text" style="flex: 1;"></div>';
+                qEl = document.getElementById('vq_question_text');
+            }
+        }
         const rEl = document.getElementById('vq_round_title');
         const pEl = document.getElementById('vq_selected_pack_title');
         const starIcon = document.getElementById('vq_star_icon');
-        if (qEl) qEl.innerText = data.questionText || "Nội dung câu hỏi Vinh Quang...";
+        const qText = data.questionText || (data.question ? data.question.q : '') || "Nội dung câu hỏi Vinh Quang...";
+        if (qEl) {
+            qEl.innerText = qText;
+            qEl.style.display = 'block';
+        }
         if (rEl) rEl.innerText = "VINH QUANG";
         if (pEl) {
-            const packTxt = data.pack ? `GÓI ${data.pack} ĐIỂM` : (data.subject ? data.subject.toUpperCase() : "");
+            const packTxt = data.pack ? `GÓI ${data.pack} ĐIỂM` + (data.subject ? ` - ${data.subject.toUpperCase()}` : '') : (data.subject ? data.subject.toUpperCase() : "GÓI ĐIỂM");
             pEl.innerText = packTxt;
         }
         if (data.hasStar !== undefined) {
@@ -1447,6 +1469,7 @@ function handleProjectorMessage(data) {
         } else if (roundIdx === 4) {
             switchView(6);
             resetVQProjector();
+            safePlay(soundShowTitle1);
             const pageWrapper = document.getElementById('pageWrapper');
             if (pageWrapper) {
                 pageWrapper.classList.remove('show');
@@ -1454,8 +1477,13 @@ function handleProjectorMessage(data) {
             }
             const subjContainer = document.querySelector('.subject-container');
             if (subjContainer) subjContainer.classList.remove('show');
-            const vqQuesBox = document.querySelector('#view-file-7 .question-box');
-            if (vqQuesBox) vqQuesBox.innerText = '';
+            const qEl7 = document.getElementById('vq_question_text');
+            if (qEl7) {
+                qEl7.innerText = '';
+            } else {
+                const box = document.querySelector('#view-file-7 .question-box');
+                if (box) box.innerHTML = '<img id="vq_star_icon" src="Images/star.gif" alt="Ngôi sao hy vọng" class="vq-star-gif"><div id="vq_question_text" style="flex: 1;"></div>';
+            }
         }
     } else if (data.type === 'RELOAD_CLIENT') {
         if (data.target === 'projector' || data.target === 'graphic' || data.target === 'all' || data.role === 'projector' || data.role === 'graphic') {
@@ -1498,7 +1526,6 @@ function handleProjectorMessage(data) {
                 if (player) {
                     player.style.display = 'block';
                     player.src = fullSrc;
-                    player.load();
                     player.play().catch(err => {
                         console.warn("Intro media play error on graphic:", err);
                     });

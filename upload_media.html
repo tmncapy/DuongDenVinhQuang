@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tải Lên Media & Video Câu Hỏi | Đường Đến Vinh Quang</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            padding: 24px;
+            border-bottom: 1px solid #4338ca;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #e0e7ff;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            color: #a5b4fc;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .content {
+            padding: 24px;
+        }
+
+        .server-config {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .server-config label {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #6366f1;
+        }
+
+        .drop-zone {
+            border: 2px dashed #6366f1;
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+            background: rgba(99, 102, 241, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: #818cf8;
+            transform: translateY(-2px);
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .drop-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 6px;
+        }
+
+        .drop-sub {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #4f46e5;
+        }
+
+        .btn-secondary {
+            background: #334155;
+            color: #cbd5e1;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .progress-container {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar-bg {
+            background: #334155;
+            border-radius: 999px;
+            height: 12px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .preview-card {
+            display: none;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .media-player-box {
+            width: 100%;
+            max-height: 400px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .media-player-box video {
+            width: 100%;
+            max-height: 400px;
+            outline: none;
+        }
+
+        .url-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #1e293b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .url-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #38bdf8;
+            font-family: monospace;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .file-list-section {
+            margin-top: 32px;
+        }
+
+        .file-list-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .file-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-card-preview {
+            height: 120px;
+            background: #000;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .file-card-preview video, .file-card-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .file-card-name {
+            font-size: 13px;
+            color: #e2e8f0;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-card-meta {
+            font-size: 11px;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🎬 Tải Lên Media & Video Câu Hỏi</h1>
+        <p>Hệ thống hỗ trợ tải video .mp4, audio .mp3, ảnh .jpg/.png cho cuộc thi</p>
+    </div>
+
+    <div class="content">
+        <!-- Server PHP Endpoint Config -->
+        <div class="server-config">
+            <label for="uploadEndpointInput">🌐 Cấu hình Endpoint Upload (Hỗ trợ Server PHP / Domain tùy chỉnh):</label>
+            <div class="input-group">
+                <input type="text" id="uploadEndpointInput" value="upload.php" placeholder="Nhập đường dẫn upload.php hoặc domain tùy chỉnh">
+                <button class="btn btn-secondary" onclick="resetEndpoint()">Mặc định</button>
+            </div>
+        </div>
+
+        <!-- Drag & Drop Area -->
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="drop-icon">📹</div>
+            <div class="drop-title">Kéo & thả file Video (MP4) hoặc nhấn vào đây để chọn file</div>
+            <div class="drop-sub">Hỗ trợ các định dạng: .mp4, .webm, .mov, .mp3, .jpg, .png (Dung lượng đến 500MB)</div>
+            <input type="file" id="fileInput" style="display: none;" accept="video/*,audio/*,image/*" onchange="handleFileSelect(this.files)">
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+            <div class="progress-info">
+                <span id="progressStatus">Đang tải lên server PHP...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="preview-card" id="previewCard">
+            <div class="preview-title">
+                <span>✨ Tải lên thành công! Xem trước & Chạy thử MP4:</span>
+            </div>
+            <div class="media-player-box" id="mediaPlayerBox">
+                <video id="previewVideo" controls style="display: none;"></video>
+                <img id="previewImage" style="display: none; max-width: 100%; max-height: 380px;">
+            </div>
+
+            <div style="margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="testPlayVideo()">
+                    ▶ Chạy thử video (video.src.play())
+                </button>
+                <button class="btn btn-secondary" onclick="copyLink('uploadedUrlInput')">
+                    📋 Sao chép link MP4
+                </button>
+            </div>
+
+            <div class="url-box">
+                <span style="color: #94a3b8; font-size: 13px; font-weight: bold;">LINK MP4:</span>
+                <input type="text" id="uploadedUrlInput" readonly>
+            </div>
+        </div>
+
+        <!-- List of Uploaded Files -->
+        <div class="file-list-section">
+            <div class="file-list-title">
+                <span>📁 Các file Media đã tải lên</span>
+                <button class="btn btn-secondary" onclick="loadUploadedFiles()" style="padding: 6px 12px; font-size: 12px;">
+                    🔄 Tải lại danh sách
+                </button>
+            </div>
+            <div class="file-grid" id="fileGrid">
+                <div style="color: #64748b; font-size: 14px; grid-column: 1 / -1; text-align: center; padding: 20px;">
+                    Đang tải danh sách file...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">Đã sao chép đường dẫn file!</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileSelect(e.dataTransfer.files);
+        }
+    });
+
+    function getEndpoint() {
+        const input = document.getElementById('uploadEndpointInput');
+        return (input && input.value.trim()) ? input.value.trim() : 'upload.php';
+    }
+
+    function resetEndpoint() {
+        document.getElementById('uploadEndpointInput').value = 'upload.php';
+        showToast('Đã đặt lại Endpoint về upload.php');
+    }
+
+    function handleFileSelect(files) {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+        uploadMediaFile(file);
+    }
+
+    function uploadMediaFile(file) {
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressPercent = document.getElementById('progressPercent');
+        const previewCard = document.getElementById('previewCard');
+
+        progressContainer.style.display = 'block';
+        previewCard.style.display = 'none';
+        progressBarFill.style.width = '0%';
+        progressPercent.innerText = '0%';
+        progressStatus.innerText = `Đang tải lên: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        const endpoint = getEndpoint();
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBarFill.style.width = percent + '%';
+                progressPercent.innerText = percent + '%';
+            }
+        });
+
+        xhr.addEventListener('load', () => {
+            progressContainer.style.display = 'none';
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        displayPreview(res);
+                        loadUploadedFiles();
+                        showToast('Tải lên thành công!');
+                    } else {
+                        alert('Lỗi khi tải lên: ' + (res.error || 'Xảy ra lỗi server PHP'));
+                    }
+                } catch(e) {
+                    alert('Lỗi phản hồi từ server: ' + xhr.responseText);
+                }
+            } else {
+                alert(`Lỗi upload HTTP ${xhr.status}: ${xhr.statusText}`);
+            }
+        });
+
+        xhr.addEventListener('error', () => {
+            progressContainer.style.display = 'none';
+            alert('Không thể kết nối tới server upload. Vui lòng kiểm tra lại endpoint upload.php!');
+        });
+
+        xhr.open('POST', endpoint, true);
+        xhr.send(formData);
+    }
+
+    function displayPreview(res) {
+        const previewCard = document.getElementById('previewCard');
+        const previewVideo = document.getElementById('previewVideo');
+        const previewImage = document.getElementById('previewImage');
+        const uploadedUrlInput = document.getElementById('uploadedUrlInput');
+
+        const mp4Url = res.url || res.fullUrl;
+        uploadedUrlInput.value = mp4Url;
+
+        const isVideo = mp4Url.match(/\.(mp4|webm|mov|m4v)($|\?)/i);
+        const isImage = mp4Url.match(/\.(jpg|png|jpeg|webp|gif)($|\?)/i);
+
+        if (isVideo) {
+            previewImage.style.display = 'none';
+            previewVideo.style.display = 'block';
+            previewVideo.src = mp4Url;
+            previewVideo.currentTime = 0;
+            previewVideo.play().catch(e => console.log('Autoplay prevented:', e));
+        } else if (isImage) {
+            previewVideo.style.display = 'none';
+            previewImage.style.display = 'block';
+            previewImage.src = mp4Url;
+        }
+
+        previewCard.style.display = 'block';
+        previewCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function testPlayVideo() {
+        const previewVideo = document.getElementById('previewVideo');
+        const mp4Url = document.getElementById('uploadedUrlInput').value;
+        if (!mp4Url) {
+            alert('Chưa có đường dẫn MP4!');
+            return;
+        }
+        previewVideo.style.display = 'block';
+        previewVideo.src = mp4Url;
+        previewVideo.currentTime = 0;
+        const playPromise = previewVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                showToast('▶ Đang phát video thành công!');
+            }).catch(err => {
+                alert('Không thể phát video: ' + err.message);
+            });
+        }
+    }
+
+    function copyLink(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input || !input.value) return;
+        navigator.clipboard.writeText(input.value).then(() => {
+            showToast('📋 Đã sao chép link MP4!');
+        }).catch(() => {
+            input.select();
+            document.execCommand('copy');
+            showToast('📋 Đã sao chép link MP4!');
+        });
+    }
+
+    function loadUploadedFiles() {
+        const grid = document.getElementById('fileGrid');
+        const endpoint = getEndpoint();
+
+        fetch(endpoint)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.files)) {
+                    if (data.files.length === 0) {
+                        grid.innerHTML = '<div style="color: #64748b; font-size: 14px; grid-column: 1 / -1; text-align: center; padding: 20px;">Chưa có file nào trong thư mục uploads/</div>';
+                        return;
+                    }
+                    grid.innerHTML = data.files.map(f => {
+                        const isVid = f.filename.match(/\.(mp4|webm|mov|m4v)($|\?)/i);
+                        const isImg = f.filename.match(/\.(jpg|jpeg|png|webp|gif)($|\?)/i);
+                        const fileSizeMB = (f.size / 1024 / 1024).toFixed(2);
+
+                        let mediaHtml = '🎵 Audio / Dynamic File';
+                        if (isVid) {
+                            mediaHtml = `<video src="${f.url}" preload="metadata" muted style="width: 100%; height: 100%; object-fit: cover;"></video>`;
+                        } else if (isImg) {
+                            mediaHtml = `<img src="${f.url}" alt="${f.filename}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                        }
+
+                        return `
+                            <div class="file-card">
+                                <div class="file-card-preview">
+                                    ${mediaHtml}
+                                </div>
+                                <div class="file-card-name" title="${f.filename}">${f.filename}</div>
+                                <div class="file-card-meta">
+                                    <span>${fileSizeMB} MB</span>
+                                    <span>${new Date(f.mtime * 1000).toLocaleDateString('vi-VN')}</span>
+                                </div>
+                                <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${f.url}'); showToast('📋 Đã chép link!');" style="padding: 6px; font-size: 12px; margin-top: 4px; width: 100%; justify-content: center;">
+                                    📋 Sao chép link
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            })
+            .catch(() => {
+                grid.innerHTML = '<div style="color: #ef4444; font-size: 13px; grid-column: 1 / -1; text-align: center; padding: 20px;">Không thể tải danh sách file từ server.</div>';
+            });
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Initial load
+    window.addEventListener('DOMContentLoaded', () => {
+        loadUploadedFiles();
+    });
+</script>
+</body>
+</html>

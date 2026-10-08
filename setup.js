@@ -240,6 +240,7 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
     } else if (roundIndex === 4) {
         sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG', vqQuestionShown: false });
         sendToProjector('VINH_QUANG_HIDE_PACK', { round: 'VINH_QUANG', vqQuestionShown: false });
+        sendToProjector('VINH_QUANG_INTRO', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
     } else if (roundIndex === 5) {
         if (typeof onClickCHPReset === 'function') onClickCHPReset();
         sendToProjector('CAU_HOI_PHU_RESET', { round: 'CHP', activeRound: 'CHP' });

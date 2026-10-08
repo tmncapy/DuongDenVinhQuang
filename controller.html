@@ -91,7 +91,7 @@
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="font-size: 12px; color: #475569; font-weight: 600;">Địa chỉ máy chủ (Domain):</span>
                             <select id="link_domain_select" onchange="onLinkDomainSelectChange()" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: bold; background: white; color: #334155; outline: none; cursor: pointer;">
-                                <option value="acestudio">https://acestudio.mooo.com/DuongDenVinhQuang-main/ (AceStudio Server)</option>
+                                <option value="acestudio">https://acestudio.mooo.com/ (AceStudio Server)</option>
                                 <option value="render" selected>https://duongdenvinhquang.onrender.com (Render Cloud)</option>
                                 <option value="current">Máy chủ hiện tại (Current Host)</option>
                                 <option value="custom">Tùy chỉnh IP / Domain...</option>
@@ -1720,7 +1720,7 @@
 
                 <!-- ROW 2 CONTROLS: ACTION BUTTONS -->
                 <div style="display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                    <button class="btn" onclick="startRoundAndCleanGraphics(4)" style="font-weight: 800; font-size: 12px; padding: 6px 10px; border-radius: 3px; cursor: pointer; background: #dc2626; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang & Ẩn toàn bộ Graphic trên Projector/Graphic">
+                    <button class="btn" onclick="startRoundAndCleanGraphics(4); if(typeof onClickVQVeDich === 'function') onClickVQVeDich();" style="font-weight: 800; font-size: 12px; padding: 6px 10px; border-radius: 3px; cursor: pointer; background: #dc2626; color: white; border: none;" title="Chuyển tab máy thí sinh sang Vòng Vinh Quang, phát nhạc & Ẩn toàn bộ Graphic trên Projector/Graphic">
                         👑 Vinh Quang
                     </button>
                     <button class="btn" onclick="onClickVQHienChonGoiDiem()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
@@ -1731,6 +1731,9 @@
                     </button>
                     <button class="btn" onclick="onClickVQHienCauHoi()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
                         Hiện câu hỏi
+                    </button>
+                    <button class="btn" onclick="onClickVQAnCauHoi()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
+                        Ẩn câu hỏi
                     </button>
                     <button class="btn" onclick="onClickVQ25s()" style="background: #ffffff; border: 1px solid #ccc; font-weight: bold; padding: 6px 10px; border-radius: 3px; font-size: 12px;">
                         25s

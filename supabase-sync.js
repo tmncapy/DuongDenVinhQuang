@@ -42,23 +42,32 @@ function getApiUrl(path) {
         return path;
     }
 
-    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+    let customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
         (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
 
     if (customHost) {
-        const cleanCustom = customHost.replace(/\/$/, '');
-        const cleanP = path.startsWith('/') ? path : '/' + path;
+        let cleanCustom = customHost.replace(/\/$/, '');
+        cleanCustom = cleanCustom.replace(/\/DuongDenVinhQuang-main\/?$/i, '');
+        
+        let cleanP = path.startsWith('/') ? path : '/' + path;
+        cleanP = cleanP.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^\/_api$/, '/api');
         return cleanCustom + cleanP;
     }
 
     if (window.location.protocol === 'file:' || !window.location.host) {
-        const cleanP = path.startsWith('/') ? path : '/' + path;
+        let cleanP = path.startsWith('/') ? path : '/' + path;
+        cleanP = cleanP.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^\/_api$/, '/api');
         return 'http://localhost:3000' + cleanP;
     }
 
     let cleanPath = path;
     if (cleanPath.startsWith('./')) {
         cleanPath = cleanPath.substring(2);
+    }
+    cleanPath = cleanPath.replace(/^\/_api\//, '/api/').replace(/^_\/api\//, '/api/').replace(/^_\/api$/, '/api').replace(/^_api\//, 'api/');
+
+    if (cleanPath.startsWith('/api/') || cleanPath === '/api' || cleanPath.startsWith('api/')) {
+        return cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
     }
 
     const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : (window.location.pathname ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) : '/');
@@ -86,18 +95,24 @@ function getWsUrl() {
         return window.getWsUrl();
     }
     if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
-    const customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
+    let customHost = (typeof localStorage !== 'undefined' && localStorage.getItem('ddvq_server_host')) || 
         (typeof URLSearchParams !== 'undefined' && window.location ? new URLSearchParams(window.location.search).get('server') : null);
     if (customHost) {
-        return customHost.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
+        let clean = customHost.trim();
+        clean = clean.replace(/\/DuongDenVinhQuang-main\/?$/i, '');
+        try {
+            const parsed = new URL(clean.startsWith('http') ? clean : 'http://' + clean);
+            const wsProto = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${wsProto}//${parsed.host}/ws`;
+        } catch(e) {
+            return clean.replace(/^http/i, 'ws').replace(/\/$/, '') + '/ws';
+        }
     }
     if (window.location.protocol === 'file:' || !window.location.host) {
         return 'ws://localhost:3000/ws';
     }
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const basePath = (typeof window.getAppBasePath === 'function') ? window.getAppBasePath() : '/';
-    const wsPath = (basePath && basePath !== '/' ? basePath.replace(/\/$/, '') : '') + '/ws';
-    return `${proto}//${window.location.host}${wsPath}`;
+    return `${proto}//${window.location.host}/ws`;
 }
 window.getWsUrl = getWsUrl;
 
@@ -178,7 +193,12 @@ class GameSyncChannel {
         // Native WebSocket link
         this.ws = null;
         this.isWsConnected = false;
+        this.isWsConnecting = false;
         this.wsReconnectTimer = null;
+        this.wsConnectAttempts = 0;
+        this.wsMaxImmediateRetries = 3;
+        this.wsBackoffMs = 2000;
+        this.wsDisabledTemporarily = false;
         this.wsQueue = [];
 
         // Cloud MQTT & SSE links
@@ -276,16 +296,47 @@ class GameSyncChannel {
 
     initWebSocket() {
         if (typeof WebSocket === 'undefined' || !hasLocalServerBackend()) return;
+
+        // 1. Prevent concurrent connection attempts
+        if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+            return;
+        }
+
+        // 2. If host repeatedly failed WS handshakes, pause attempts temporarily (uses MQTT/SSE fallback)
+        if (this.wsDisabledTemporarily) {
+            return;
+        }
+
+        if (this.wsReconnectTimer) {
+            clearTimeout(this.wsReconnectTimer);
+            this.wsReconnectTimer = null;
+        }
+
+        // 3. Clean up previous socket instance & handlers
+        if (this.ws) {
+            try {
+                this.ws.onopen = null;
+                this.ws.onmessage = null;
+                this.ws.onerror = null;
+                this.ws.onclose = null;
+                this.ws.close();
+            } catch(e) {}
+            this.ws = null;
+        }
+
+        const wsUrl = getWsUrl();
+        this.isWsConnecting = true;
+
         try {
-            if (this.wsReconnectTimer) {
-                clearTimeout(this.wsReconnectTimer);
-                this.wsReconnectTimer = null;
-            }
-            const wsUrl = getWsUrl();
             this.ws = new WebSocket(wsUrl);
 
             this.ws.onopen = () => {
                 this.isWsConnected = true;
+                this.isWsConnecting = false;
+                this.wsConnectAttempts = 0;
+                this.wsBackoffMs = 2000;
+                this.wsDisabledTemporarily = false;
+
                 this.notifyConnectionStatus(true);
                 
                 // Cancel standby SSE fallback once WebSocket is healthy
@@ -326,32 +377,61 @@ class GameSyncChannel {
                             dispatchSupabaseMessage(data);
                         }
                     }
-                } catch (err) {
-                    console.error('[WebSocket] Message parse error:', err);
-                }
+                } catch (err) {}
             };
 
-            this.ws.onerror = (err) => {
+            this.ws.onerror = () => {
                 this.isWsConnected = false;
+                this.isWsConnecting = false;
             };
 
             this.ws.onclose = () => {
                 this.isWsConnected = false;
+                this.isWsConnecting = false;
                 this.notifyConnectionStatus(false);
+
+                this.wsConnectAttempts++;
+
                 if (hasLocalServerBackend()) {
                     if (!this.sse) {
                         this.initLanSse();
                     }
+                    if (!this.mqttClient || !this.mqttClient.connected) {
+                        this.initMqtt();
+                    }
+
+                    // If max immediate retries reached for this host (e.g. static/PHP host without WS), pause attempts for 60s
+                    if (this.wsConnectAttempts >= this.wsMaxImmediateRetries) {
+                        this.wsDisabledTemporarily = true;
+
+                        if (!this.wsReconnectTimer) {
+                            this.wsReconnectTimer = setTimeout(() => {
+                                this.wsDisabledTemporarily = false;
+                                this.wsConnectAttempts = 0;
+                                this.wsBackoffMs = 2000;
+                                this.initWebSocket();
+                            }, 60000);
+                        }
+                        return;
+                    }
+
+                    // Exponential Backoff: 2s -> 4s -> 8s...
+                    const delay = this.wsBackoffMs;
+                    this.wsBackoffMs = Math.min(30000, this.wsBackoffMs * 2);
+
                     if (!this.wsReconnectTimer) {
                         this.wsReconnectTimer = setTimeout(() => {
                             this.initWebSocket();
-                        }, 2000);
+                        }, delay);
                     }
                 }
             };
         } catch (e) {
-            console.warn('[WebSocket] Init warning:', e);
             this.isWsConnected = false;
+            this.isWsConnecting = false;
+            this.wsConnectAttempts++;
+            if (!this.sse) this.initLanSse();
+            if (!this.mqttClient || !this.mqttClient.connected) this.initMqtt();
         }
     }
 
