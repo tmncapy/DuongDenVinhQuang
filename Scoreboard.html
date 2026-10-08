@@ -194,13 +194,24 @@
                 }
             } catch(e) {}
 
+            try {
+                const gDataStr = localStorage.getItem('duong_den_vinh_quang_data');
+                if (gDataStr) {
+                    const gData = JSON.parse(gDataStr);
+                    if (gData && Array.isArray(gData.contestants) && gData.contestants[playerIdx]) {
+                        updateScoreboardView(gData.contestants);
+                    }
+                }
+            } catch(e) {}
+
             if (typeof hasLocalServerBackend === 'function' && !hasLocalServerBackend()) return;
             const stateUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/state') : '/api/state';
             fetch(stateUrl)
                 .then(r => r.json())
                 .then(data => {
-                    if (data && data.contestants) {
-                        updateScoreboardView(data.contestants);
+                    const contestants = data && (data.contestants || (data.gameData && data.gameData.contestants));
+                    if (contestants && Array.isArray(contestants)) {
+                        updateScoreboardView(contestants);
                     }
                 })
                 .catch(() => {});

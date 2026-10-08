@@ -332,15 +332,16 @@ function handleIncomingAction(action, senderWs = null) {
     });
   }
 
-  // Handle Contestant updates
-  if (type === 'UPDATE_CONTESTANTS' && action.contestants) {
+  // Handle Contestant & Game Data updates from any action
+  if (action.contestants && Array.isArray(action.contestants)) {
     serverState.contestants = action.contestants;
     if (serverState.gameData) serverState.gameData.contestants = action.contestants;
   }
-
-  if (type === 'UPDATE_SCORES' && action.contestants) {
-    serverState.contestants = action.contestants;
-    if (serverState.gameData) serverState.gameData.contestants = action.contestants;
+  if (action.gameData && typeof action.gameData === 'object') {
+    serverState.gameData = Object.assign(serverState.gameData || {}, action.gameData);
+    if (action.gameData.contestants && Array.isArray(action.gameData.contestants)) {
+      serverState.contestants = action.gameData.contestants;
+    }
   }
 
   // Handle Player Answer Submissions
@@ -1066,12 +1067,15 @@ app.get('/state', handleGetState);
 // POST /api/state & /state - Update game state
 const handlePostState = (req, res) => {
   const body = req.body || {};
-  if (body.contestants) {
+  if (body.contestants && Array.isArray(body.contestants)) {
     serverState.contestants = body.contestants;
     if (serverState.gameData) serverState.gameData.contestants = body.contestants;
   }
-  if (body.gameData) {
-    serverState.gameData = Object.assign(serverState.gameData, body.gameData);
+  if (body.gameData && typeof body.gameData === 'object') {
+    serverState.gameData = Object.assign(serverState.gameData || {}, body.gameData);
+    if (body.gameData.contestants && Array.isArray(body.gameData.contestants)) {
+      serverState.contestants = body.gameData.contestants;
+    }
   }
   if (body.roomCode) {
     serverState.roomCode = body.roomCode.trim().toUpperCase();

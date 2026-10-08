@@ -978,11 +978,18 @@ function saveAllData(notify = false) {
         const syncPayload = {
             type: 'SYNC_GAME_DATA',
             gameData: gameData,
+            contestants: gameData.contestants,
             timestamp: Date.now()
         };
         sendToProjector('SYNC_GAME_DATA', syncPayload);
         if (typeof sendSupabaseAction === 'function') {
             sendSupabaseAction(syncPayload);
+        }
+        if (typeof debouncePostServerState === 'function') {
+            debouncePostServerState({
+                contestants: gameData.contestants,
+                gameData: gameData
+            });
         }
         if (notify) {
             showToast('Đã lưu tất cả dữ liệu câu hỏi vào hệ thống!');
@@ -1138,8 +1145,14 @@ function syncContestantsUI() {
         try {
             localStorage.setItem('ddvq_contestants', JSON.stringify(gameData.contestants));
         } catch(e) {}
-        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants });
-        sendToProjector('UPDATE_CONTESTANTS', { contestants: gameData.contestants });
+        sendToProjector('UPDATE_SCORES', { contestants: gameData.contestants, gameData: gameData });
+        sendToProjector('UPDATE_CONTESTANTS', { contestants: gameData.contestants, gameData: gameData });
+        if (typeof debouncePostServerState === 'function') {
+            debouncePostServerState({
+                contestants: gameData.contestants,
+                gameData: gameData
+            }, true);
+        }
     }
 }
 
@@ -1243,9 +1256,9 @@ function updateContestantName(i, val) {
 }
 
 let __postServerStateTimeout = null;
-function debouncePostServerState(data) {
+function debouncePostServerState(data, immediate = false) {
     if (__postServerStateTimeout) clearTimeout(__postServerStateTimeout);
-    __postServerStateTimeout = setTimeout(() => {
+    const doSend = () => {
         try {
             if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
                 fetch(getApiUrl('/api/state'), {
@@ -1255,7 +1268,12 @@ function debouncePostServerState(data) {
                 }).catch(() => {});
             }
         } catch(e) {}
-    }, 600);
+    };
+    if (immediate) {
+        doSend();
+    } else {
+        __postServerStateTimeout = setTimeout(doSend, 600);
+    }
 }
 
 function updateContestantNames() {
