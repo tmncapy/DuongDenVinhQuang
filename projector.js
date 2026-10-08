@@ -46,7 +46,15 @@ function scaleStage() {
     wrapper.style.top = `${(windowHeight - targetHeight * scale) / 2}px`;
 }
 
-window.addEventListener('resize', scaleStage);
+let scaleStageRaf = null;
+function scheduleScaleStage() {
+    if (scaleStageRaf) return;
+    scaleStageRaf = requestAnimationFrame(() => {
+        scaleStage();
+        scaleStageRaf = null;
+    });
+}
+window.addEventListener('resize', scheduleScaleStage);
 window.addEventListener('DOMContentLoaded', () => {
     scaleStage();
     let vsData = null;
@@ -75,6 +83,7 @@ let soundRKTimer = new Audio('sounds/25sV1.mp3');
 let soundChooseQues = new Audio('sounds/ChooseQues.mp3');
 let soundRightV3 = new Audio('sounds/RightV3.mp3');
 let soundActivate = new Audio('sounds/Activate.mp3');
+let soundOpenLetter = new Audio('sounds/OpenLetter.mp3');
 
 let screenAudioSettings = {
     enabled: true,
@@ -108,7 +117,7 @@ function applyAudioSettingsProjector(settings) {
         soundRKTimer.muted = !screenAudioSettings.enabled;
     }
 
-    const allAudios = [soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3, soundActivate];
+    const allAudios = [soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3, soundActivate, soundOpenLetter];
     allAudios.forEach(a => {
         if (a) {
             a.volume = screenAudioSettings.volume;
@@ -835,6 +844,8 @@ function isDuplicateProjectorMessage(data) {
     return false;
 }
 
+// Real-time actions are delivered instantly via window.addEventListener('storage') and WebSocket
+// A lightweight fallback checks every 2s in case of rare tab sleep
 setInterval(() => {
     try {
         const raw = localStorage.getItem('ddvq_latest_action');
@@ -846,7 +857,7 @@ setInterval(() => {
             }
         }
     } catch(e) {}
-}, 150);
+}, 2000);
 
 function handleProjectorMessage(data) {
     if (isDuplicateProjectorMessage(data)) return;

@@ -105,7 +105,11 @@ function handleVSOpenKeywordLetters(data) {
         }
     });
 
-    safePlay(soundChooseQues);
+    if (typeof soundOpenLetter !== 'undefined' && soundOpenLetter) {
+        safePlay(soundOpenLetter);
+    } else {
+        safePlay(soundChooseQues);
+    }
     if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
 }
 

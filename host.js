@@ -212,6 +212,8 @@ window.addEventListener('storage', function(e) {
 });
 
 function fetchHostState() {
+    if (typeof hasLocalServerBackend === 'function' && !hasLocalServerBackend()) return;
+    if (window.globalSyncChannel && window.globalSyncChannel.isWsConnected) return;
     fetch(getApiUrl('/api/state'))
         .then(r => r.json())
         .then(data => processHostAction(data))
@@ -219,7 +221,7 @@ function fetchHostState() {
 }
 
 fetchHostState();
-setInterval(fetchHostState, 2000);
+setInterval(fetchHostState, 10000);
 
 function processHostAction(data) {
     if (!data) return;

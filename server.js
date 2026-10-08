@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { WebSocketServer, WebSocket } from 'ws';
 import multer from 'multer';
+import compression from 'compression';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = http.createServer(app);
 const PORT = 3000;
+
+// High-speed HTTP response compression (reduces HTML/JS/CSS/JSON transfer size by 75-80%)
+app.use(compression({
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Setup disk storage for uploaded media (intro videos, audio, etc.)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -644,8 +654,8 @@ function handleIncomingAction(action, senderWs = null) {
   }
 }
 
-// Initialize WebSocket Server to handle /ws and subfolder /ws (e.g. /DuongDenVinhQuang-main/ws)
-const wss = new WebSocketServer({ noServer: true });
+// Initialize WebSocket Server with perMessageDeflate disabled for ultra-fast microsecond packet delivery
+const wss = new WebSocketServer({ noServer: true, perMessageDeflate: false });
 
 server.on('upgrade', (request, socket, head) => {
   try {
@@ -1138,13 +1148,21 @@ app.post('/api/broadcast', (req, res) => {
   res.json({ ok: true, wsReceivers: wsClients.size, buzzerState: serverState.buzzerState });
 });
 
-// Robust Case-Insensitive Sound Route & Fallback
+// Robust Case-Insensitive Sound Route & Caching
 app.get('/sounds/:filename', (req, res, next) => {
   const reqName = req.params.filename;
   const soundsDir = path.join(__dirname, 'sounds');
   const exactPath = path.join(soundsDir, reqName);
   
   if (fs.existsSync(exactPath)) {
+    try {
+      const stat = fs.statSync(exactPath);
+      if (stat.size === 0) {
+        // Return 204 No Content for empty 0-byte audio files to prevent browser audio demuxer crash
+        return res.status(204).end();
+      }
+    } catch(e) {}
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
     return res.sendFile(exactPath);
   }
   
@@ -1152,7 +1170,13 @@ app.get('/sounds/:filename', (req, res, next) => {
     const files = fs.readdirSync(soundsDir);
     const match = files.find(f => f.toLowerCase() === reqName.toLowerCase());
     if (match) {
-      return res.sendFile(path.join(soundsDir, match));
+      const matchPath = path.join(soundsDir, match);
+      const stat = fs.statSync(matchPath);
+      if (stat.size === 0) {
+        return res.status(204).end();
+      }
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+      return res.sendFile(matchPath);
     }
   } catch (e) {
     console.warn('[Sound Route] Warning:', e);
@@ -1160,13 +1184,14 @@ app.get('/sounds/:filename', (req, res, next) => {
   next();
 });
 
-// Robust Case-Insensitive Images Route
+// Robust Case-Insensitive Images Route & Caching
 app.get(['/Images/:filename', '/images/:filename'], (req, res, next) => {
   const reqName = req.params.filename;
   const imgDir = path.join(__dirname, 'Images');
   const exactPath = path.join(imgDir, reqName);
   
   if (fs.existsSync(exactPath)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
     return res.sendFile(exactPath);
   }
   
@@ -1174,6 +1199,7 @@ app.get(['/Images/:filename', '/images/:filename'], (req, res, next) => {
     const files = fs.readdirSync(imgDir);
     const match = files.find(f => f.toLowerCase() === reqName.toLowerCase());
     if (match) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
       return res.sendFile(path.join(imgDir, match));
     }
   } catch (e) {
@@ -1182,8 +1208,19 @@ app.get(['/Images/:filename', '/images/:filename'], (req, res, next) => {
   next();
 });
 
-// Serve all static assets from the current directory
-app.use(express.static(__dirname));
+// Serve all static assets with optimal caching headers
+app.use(express.static(__dirname, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (filePath.match(/\.(mp4|webm|ogg|mp3|wav|png|jpg|jpeg|gif|webp|ico|svg|css|js|woff|woff2)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+    }
+  }
+}));
 
 // Route shortcuts
 app.get('/control', (req, res) => { res.sendFile(path.join(__dirname, 'control.html')); });

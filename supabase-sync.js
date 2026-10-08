@@ -252,9 +252,18 @@ class GameSyncChannel {
             }
         };
 
-        this.initWebSocket();
-        this.initMqtt();
-        this.initLanSse();
+        // Streamlined connection hierarchy: Native WebSocket is primary.
+        // SSE and MQTT are standby fallbacks to eliminate redundant network traffic and duplicate events.
+        if (hasLocalServerBackend()) {
+            this.initWebSocket();
+            this.sseFallbackTimer = setTimeout(() => {
+                if (!this.isWsConnected) {
+                    this.initLanSse();
+                }
+            }, 3000);
+        } else {
+            this.initMqtt();
+        }
     }
 
     get onmessage() {
@@ -278,6 +287,17 @@ class GameSyncChannel {
             this.ws.onopen = () => {
                 this.isWsConnected = true;
                 this.notifyConnectionStatus(true);
+                
+                // Cancel standby SSE fallback once WebSocket is healthy
+                if (this.sseFallbackTimer) {
+                    clearTimeout(this.sseFallbackTimer);
+                    this.sseFallbackTimer = null;
+                }
+                if (this.sse) {
+                    try { this.sse.close(); } catch(e) {}
+                    this.sse = null;
+                    this.isLanConnected = false;
+                }
                 
                 // Flush any pending WS messages
                 while (this.wsQueue.length > 0) {
@@ -318,10 +338,15 @@ class GameSyncChannel {
             this.ws.onclose = () => {
                 this.isWsConnected = false;
                 this.notifyConnectionStatus(false);
-                if (!this.wsReconnectTimer && hasLocalServerBackend()) {
-                    this.wsReconnectTimer = setTimeout(() => {
-                        this.initWebSocket();
-                    }, 2500);
+                if (hasLocalServerBackend()) {
+                    if (!this.sse) {
+                        this.initLanSse();
+                    }
+                    if (!this.wsReconnectTimer) {
+                        this.wsReconnectTimer = setTimeout(() => {
+                            this.initWebSocket();
+                        }, 2000);
+                    }
                 }
             };
         } catch (e) {
@@ -331,15 +356,26 @@ class GameSyncChannel {
     }
 
     initLanSse() {
-        if (typeof EventSource === 'undefined' || !hasLocalServerBackend()) return;
+        if (typeof EventSource === 'undefined' || !hasLocalServerBackend() || this.isWsConnected) return;
         try {
+            if (this.sse) {
+                try { this.sse.close(); } catch(e) {}
+            }
             const sseUrl = getApiUrl('/api/events');
-            const sse = new EventSource(sseUrl);
-            sse.onopen = () => {
+            this.sse = new EventSource(sseUrl);
+            this.sse.onopen = () => {
                 this.isLanConnected = true;
                 this.notifyConnectionStatus(true);
             };
-            sse.onmessage = (event) => {
+            this.sse.onmessage = (event) => {
+                // If WebSocket re-connected, close redundant SSE stream
+                if (this.isWsConnected) {
+                    if (this.sse) {
+                        try { this.sse.close(); } catch(e) {}
+                        this.sse = null;
+                    }
+                    return;
+                }
                 try {
                     const data = JSON.parse(event.data);
                     if (!data || data.type === 'PING' || data.event === 'ping') return;
@@ -355,7 +391,7 @@ class GameSyncChannel {
                     }
                 } catch(e) {}
             };
-            sse.onerror = () => {
+            this.sse.onerror = () => {
                 this.isLanConnected = false;
             };
         } catch(e) {
@@ -571,7 +607,7 @@ class GameSyncChannel {
     postMessage(msg) {
         if (!msg) return;
         const msgId = msg._msgId || (this.instanceId + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
-        const payload = Object.assign({}, msg, { _senderId: this.instanceId, _timestamp: Date.now(), _msgId: msgId });
+        const payload = Object.assign({}, msg, { _senderId: this.instanceId, _timestamp: Date.now(), _msgId: msgId, _fromNetwork: true });
 
         // Record message ID locally to prevent re-processing self message
         this.processedMsgIds.set(msgId, Date.now());
@@ -585,6 +621,7 @@ class GameSyncChannel {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             try {
                 this.ws.send(JSON.stringify(payload));
+                return; // Primary transmission complete with minimum latency! Avoid flooding fallback channels.
             } catch (e) {
                 if (this.wsQueue.length < 30) this.wsQueue.push(payload);
             }
@@ -592,7 +629,7 @@ class GameSyncChannel {
             if (this.wsQueue.length < 30) this.wsQueue.push(payload);
         }
 
-        // 3. Send via MQTT WebSocket for Internet / remote connections
+        // 3. Fallback: Send via MQTT WebSocket for static hosting without backend
         if (this.mqttClient && this.mqttClient.connected) {
             try {
                 const str = JSON.stringify(payload);
@@ -611,7 +648,7 @@ class GameSyncChannel {
             } catch (e) {
                 if (this.pendingQueue.length < 20) this.pendingQueue.push(payload);
             }
-        } else {
+        } else if (!hasLocalServerBackend()) {
             if (this.pendingQueue.length < 20) this.pendingQueue.push(payload);
             else this.pendingQueue.shift();
         }
@@ -724,9 +761,10 @@ function initSupabaseSync() {
 }
 
 function sendSupabaseAction(actionData) {
-    if (!actionData) return;
+    if (!actionData || actionData._supabaseSent) return;
+    actionData._supabaseSent = true;
 
-    // 1. Broadcast via GameSyncChannel (LAN Server HTTP/SSE + MQTT + BroadcastChannel)
+    // 1. Broadcast via GameSyncChannel (LAN Server WebSocket + BroadcastChannel)
     if (globalSyncChannel) {
         try {
             globalSyncChannel.postMessage(actionData);

@@ -1145,9 +1145,11 @@ window.addEventListener('storage', function(e) {
     }
 });
 
-// 4. Initial & Interval State Polling Fallback (if server backend is present)
+// 4. Initial & Interval State Polling Fallback (only when WebSocket is not connected)
 function fetchCurrentState() {
     if (typeof hasLocalServerBackend === 'function' && !hasLocalServerBackend()) return;
+    // Skip polling if WebSocket is already connected and delivering real-time push updates
+    if (window.syncChannel && window.syncChannel.isWsConnected) return;
     const apiPath = typeof window.getApiUrl === 'function' ? window.getApiUrl('/api/state') : '/api/state';
     fetch(apiPath)
         .then(res => res.json())
@@ -1156,7 +1158,8 @@ function fetchCurrentState() {
 }
 
 fetchCurrentState();
-setInterval(fetchCurrentState, 2000);
+// Check occasionally (every 10s) as recovery watchdog when disconnected, instead of hammering every 2s
+setInterval(fetchCurrentState, 10000);
 
 function triggerRandomDeFromPlayer() {
     if (!currentS1TurnIndex || currentS1TurnIndex <= 0) {

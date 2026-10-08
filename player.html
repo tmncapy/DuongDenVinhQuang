@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Màn Hình Thí Sinh - Đường Đến Vinh Quang</title>
-    <!-- Include network_sync.js for Cross-Device Realtime MQTT / BroadcastChannel / SSE Sync -->
-    <script src="network_sync.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -1444,23 +1442,20 @@
             if (syncChannel) {
                 try { syncChannel.postMessage(payload); } catch(e) {}
             }
-            try {
-                if (typeof BroadcastChannel !== 'undefined') {
-                    const bc = new BroadcastChannel('ddvq_game_channel');
-                    bc.postMessage(payload);
-                }
-            } catch(e) {}
 
             try {
                 localStorage.setItem(`ddvq_player_ans_${currentRoomCode}_${currentContestantId}`, JSON.stringify(payload));
                 localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
             } catch(e) {}
 
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(() => {});
+            // If WebSocket is not currently connected, use HTTP fallback
+            if (!syncChannel || !syncChannel.isWsConnected) {
+                fetch(getApiUrl('/api/action'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(() => {});
+            }
         }
 
         // Ring Bell function for Xuất Phát, Vượt Sóng, Vinh Quang & Câu Hỏi Phụ
@@ -1531,31 +1526,25 @@
                 timestamp: Date.now()
             };
 
+            // Fast microsecond path: post to native WebSocket + local BroadcastChannel
             if (syncChannel) {
                 try { syncChannel.postMessage(payload); } catch(e) {}
                 try { syncChannel.postMessage(ansPayload); } catch(e) {}
                 try { syncChannel.postMessage(flashPayload); } catch(e) {}
             }
-            if (typeof sendSupabaseAction === 'function') {
-                sendSupabaseAction(payload);
-                sendSupabaseAction(ansPayload);
-                sendSupabaseAction(flashPayload);
-            }
-            try {
-                if (typeof BroadcastChannel !== 'undefined') {
-                    const bc = new BroadcastChannel('ddvq_game_channel');
-                    bc.postMessage(flashPayload);
-                }
-            } catch(e) {}
+
             try {
                 localStorage.setItem('ddvq_latest_action', JSON.stringify(payload));
             } catch(e) {}
 
-            fetch(getApiUrl('/api/action'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(() => {});
+            // If WebSocket is offline, fallback to HTTP fetch
+            if (!syncChannel || !syncChannel.isWsConnected) {
+                fetch(getApiUrl('/api/action'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(() => {});
+            }
         }
 
         let s1HasSelectedDeForTurn = { 1: false, 2: false, 3: false, 4: false };
