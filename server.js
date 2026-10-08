@@ -510,6 +510,16 @@ function handleIncomingAction(action, senderWs = null) {
   if (type === 'VINH_QUANG_SHOW_QUESTION') {
     serverState.vqQuestionShown = true;
     serverState.activeRound = 'VINH_QUANG';
+    if (action.questionText) {
+      serverState.currentQuestion = {
+        questionText: action.questionText,
+        questionIndex: action.questionIndex || 1,
+        pack: action.pack || 10,
+        subject: action.subject || '',
+        answerText: action.answerText || action.answer || '',
+        round: 'VINH_QUANG'
+      };
+    }
   } else if (
     type === 'VINH_QUANG_HIDE_PACK' ||
     type === 'VINH_QUANG_HIDE_QUESTION'

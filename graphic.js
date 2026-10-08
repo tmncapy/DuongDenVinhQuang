@@ -22,12 +22,18 @@ function switchView(viewNum) {
     for (let i = 1; i <= 10; i++) {
         const viewEl = document.getElementById(`view-file-${i}`);
         const btnEl = document.getElementById(`btn-view-${i}`);
-        if (viewEl) viewEl.classList.remove('active-view');
+        if (viewEl) {
+            viewEl.classList.remove('active-view');
+            viewEl.style.display = '';
+        }
         if (btnEl) btnEl.classList.remove('active-view-btn');
     }
     const activeView = document.getElementById(`view-file-${viewNum}`);
     const activeBtn = document.getElementById(`btn-view-${viewNum}`);
-    if (activeView) activeView.classList.add('active-view');
+    if (activeView) {
+        activeView.classList.add('active-view');
+        activeView.style.display = 'block';
+    }
     if (activeBtn) activeBtn.classList.add('active-view-btn');
 }
 

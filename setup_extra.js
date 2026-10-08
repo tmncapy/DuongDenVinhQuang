@@ -768,6 +768,8 @@ function sendToProjector(type, payload = {}) {
         type,
         activeRound: round,
         round: round,
+        contestants: (typeof gameData !== 'undefined' && gameData && gameData.contestants) ? gameData.contestants : undefined,
+        gameData: (typeof gameData !== 'undefined' && gameData) ? gameData : undefined,
         ...payload,
         timestamp: Date.now(),
         id: Math.random().toString(36).substring(2, 9),

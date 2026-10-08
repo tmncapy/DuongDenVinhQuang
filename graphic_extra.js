@@ -105,11 +105,15 @@ function handleVSOpenKeywordLetters(data) {
         }
     });
 
-    const openAudio = document.getElementById('soundOpenLetter') || (typeof soundOpenLetter !== 'undefined' ? soundOpenLetter : null);
-    if (openAudio) {
-        safePlay(openAudio);
-    } else {
-        safePlay(new Audio('sounds/OpenLetter.mp3'));
+    const now = Date.now();
+    if (!window.__lastOpenLetterSoundTime || (now - window.__lastOpenLetterSoundTime) > 800) {
+        window.__lastOpenLetterSoundTime = now;
+        const openAudio = document.getElementById('soundOpenLetter') || (typeof soundOpenLetter !== 'undefined' ? soundOpenLetter : null);
+        if (openAudio) {
+            safePlay(openAudio);
+        } else {
+            safePlay(new Audio('sounds/OpenLetter.mp3'));
+        }
     }
     if (window.vsFlashInterval) clearInterval(window.vsFlashInterval);
 }
