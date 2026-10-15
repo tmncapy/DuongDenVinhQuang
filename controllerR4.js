@@ -473,6 +473,11 @@ function onClickVQHienDapAnTS() {
     showToast('Hiển thị đáp án thí sinh Vinh Quang + Phát âm thanh Answer.mp3');
 }
 
+function onClickVQAnTatCa() {
+    sendToProjector('VINH_QUANG_HIDE_ALL');
+    showToast('Đã ẩn mọi giao diện Vinh Quang trên Projector & Graphic');
+}
+
 function onClickVQDatLai() {
     window.vqQuestionIsShown = false;
     clearInterval(vqTimerInterval);

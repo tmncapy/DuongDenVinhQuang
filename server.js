@@ -279,14 +279,16 @@ function handleIncomingAction(action, senderWs = null) {
     serverState.s1ChosenDeMap = { 1: null, 2: null, 3: null, 4: null };
   }
 
-  // Handle Client Join / Heartbeats
-  if (type === 'CLIENT_JOIN' || type === 'CLIENT_HEARTBEAT') {
+  // Handle Client Join / Heartbeats / Pong
+  if (type === 'CLIENT_JOIN' || type === 'CLIENT_HEARTBEAT' || type === 'PONG_RESPONSE') {
     const role = action.role || (action.contestantId ? `ts${action.contestantId}` : null);
     if (role && serverState.connectedClients[role]) {
       serverState.connectedClients[role].connected = true;
       serverState.connectedClients[role].lastSeen = now;
       if (action.sessionId) serverState.connectedClients[role].sessionId = action.sessionId;
       if (action.name) serverState.connectedClients[role].name = action.name;
+      if (action.sendTime) serverState.connectedClients[role].ping = Math.max(1, now - action.sendTime);
+      else if (action.ping !== undefined) serverState.connectedClients[role].ping = action.ping;
     }
   }
 
@@ -522,7 +524,8 @@ function handleIncomingAction(action, senderWs = null) {
     }
   } else if (
     type === 'VINH_QUANG_HIDE_PACK' ||
-    type === 'VINH_QUANG_HIDE_QUESTION'
+    type === 'VINH_QUANG_HIDE_QUESTION' ||
+    type === 'VINH_QUANG_HIDE_ALL'
   ) {
     serverState.vqQuestionShown = false;
     serverState.currentTimer = null;

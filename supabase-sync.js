@@ -891,6 +891,18 @@ if (typeof BroadcastChannel !== 'undefined' && !BroadcastChannel.prototype._patc
 function dispatchSupabaseMessage(data) {
     if (!data) return;
 
+    // Real-time Ping Measurement Probe & Pong
+    if (data.type === 'PING_PROBE') {
+        if (typeof respondToPingProbe === 'function') {
+            respondToPingProbe(data);
+        }
+        return;
+    } else if (data.type === 'PONG_RESPONSE') {
+        if (typeof handlePongResponse === 'function') {
+            handlePongResponse(data);
+        }
+    }
+
     // Process Connection Heartbeats & Presence Status Updates across screens
     if (data.type === 'PROJECTOR_READY' || data.type === 'PROJECTOR_PONG') {
         if (typeof lastProjectorPing !== 'undefined') lastProjectorPing = Date.now();
@@ -907,6 +919,12 @@ function dispatchSupabaseMessage(data) {
                 controllerConnectedClients[role].connected = true;
                 controllerConnectedClients[role].lastSeen = Date.now();
                 if (data.name) controllerConnectedClients[role].name = data.name;
+                if (data.timestamp) {
+                    const delay = Math.max(1, Date.now() - data.timestamp);
+                    if (delay < 5000 && !controllerConnectedClients[role].ping) {
+                        controllerConnectedClients[role].ping = delay;
+                    }
+                }
                 if (typeof updateClientStatusBadges === 'function') updateClientStatusBadges(controllerConnectedClients);
             }
             if (role === 'projector') {
@@ -988,6 +1006,67 @@ function closeSupabaseModal() {
     const modal = document.getElementById('supabase_config_modal');
     if (modal) modal.style.display = 'none';
 }
+
+function respondToPingProbe(probeData) {
+    if (!probeData || !probeData.sendTime) return;
+    let role = window.CURRENT_ROLE;
+    if (!role || role === 'player' || role === 'unknown') {
+        const path = (window.location.pathname || '').toLowerCase();
+        const file = path.split('/').pop() || '';
+        if (file.includes('player')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const slot = urlParams.get('slot') || urlParams.get('id') || window.currentContestantId || window.contestantId;
+            if (slot) role = `ts${slot}`;
+        } else if (file.includes('host')) {
+            role = 'host';
+        } else if (file.includes('projector') || file.includes('graphic')) {
+            role = 'projector';
+        }
+    }
+    if (!role || role === 'controller' || role === 'unknown') return;
+
+    let cName = (role === 'host') ? 'Máy MC' : (role === 'projector' ? 'Máy Chiếu' : '');
+    if (!cName && role.startsWith('ts')) {
+        const slotIdx = parseInt(role.replace('ts', ''));
+        if (window.contestantName) cName = window.contestantName;
+        else if (window.playerContestants && window.playerContestants[slotIdx - 1]?.name) cName = window.playerContestants[slotIdx - 1].name;
+        else cName = `Thí sinh ${slotIdx}`;
+    }
+
+    const pong = {
+        type: 'PONG_RESPONSE',
+        role: role,
+        name: cName,
+        pingId: probeData.pingId,
+        sendTime: probeData.sendTime,
+        timestamp: Date.now()
+    };
+
+    if (window.globalSyncChannel && typeof window.globalSyncChannel.postMessage === 'function') {
+        try { window.globalSyncChannel.postMessage(pong); } catch(e) {}
+    }
+    if (typeof sendSupabaseAction === 'function') {
+        try { sendSupabaseAction(pong); } catch(e) {}
+    }
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('ddvq_game_channel');
+            bc.postMessage(pong);
+        }
+    } catch(e) {}
+    try {
+        localStorage.setItem('ddvq_client_pong', JSON.stringify(pong));
+    } catch(e) {}
+    if (typeof hasLocalServerBackend === 'function' && hasLocalServerBackend()) {
+        const apiUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/action') : '/api/action';
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pong)
+        }).catch(() => {});
+    }
+}
+window.respondToPingProbe = respondToPingProbe;
 
 window.addEventListener('DOMContentLoaded', () => {
     initSupabaseSync();

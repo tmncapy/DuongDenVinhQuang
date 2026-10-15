@@ -237,10 +237,12 @@ window.startRoundAndCleanGraphics = function(roundIndex) {
     } else if (roundIndex === 3) {
         if (typeof updateVuotSongState === 'function') updateVuotSongState();
         sendToProjector('VUOT_SONG_RESET', { round: 'VUOT_SONG', activeRound: 'VUOT_SONG', vsQuestionShown: false, roundStartTime: window.vsRoundStartTime });
+        sendToProjector('PLAY_SOUND', { sound: 'sounds/showRound.mp3' });
     } else if (roundIndex === 4) {
         sendToProjector('VINH_QUANG_RESET', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG', vqQuestionShown: false });
-        sendToProjector('VINH_QUANG_HIDE_PACK', { round: 'VINH_QUANG', vqQuestionShown: false });
+        sendToProjector('VINH_QUANG_HIDE_PACK', { round: 'VINH_QUANG', vqQuestionShown: false, silent: true });
         sendToProjector('VINH_QUANG_INTRO', { round: 'VINH_QUANG', activeRound: 'VINH_QUANG' });
+        sendToProjector('STOP_SOUND');
     } else if (roundIndex === 5) {
         if (typeof onClickCHPReset === 'function') onClickCHPReset();
         sendToProjector('CAU_HOI_PHU_RESET', { round: 'CHP', activeRound: 'CHP' });

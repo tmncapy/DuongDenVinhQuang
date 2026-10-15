@@ -65,6 +65,9 @@ let controllerConnectedClients = {
     projector: { connected: false, name: 'Máy Chiếu', lastSeen: 0 }
 };
 
+function updateSingleClientPingUI() {}
+window.updateSingleClientPingUI = updateSingleClientPingUI;
+
 function updateClientStatusBadges(connectedClients) {
     if (!connectedClients) return;
     Object.keys(connectedClients).forEach(role => {
@@ -82,7 +85,7 @@ function updateClientStatusBadges(connectedClients) {
     roles.forEach(role => {
         const badge = document.getElementById(`status_badge_${role}`);
         const info = controllerConnectedClients[role];
-        const isRecentlyActive = info && (info.connected || (info.lastSeen && (now - info.lastSeen < 8000)));
+        const isRecentlyActive = info && (info.connected || (info.lastSeen && (now - info.lastSeen < 12000)));
 
         if (badge) {
             if (isRecentlyActive) {
@@ -102,7 +105,7 @@ function updateClientStatusBadges(connectedClients) {
     });
 
     if (controllerConnectedClients.projector) {
-        const isProjConn = controllerConnectedClients.projector.connected || (controllerConnectedClients.projector.lastSeen && (now - controllerConnectedClients.projector.lastSeen < 8000));
+        const isProjConn = controllerConnectedClients.projector.connected || (controllerConnectedClients.projector.lastSeen && (now - controllerConnectedClients.projector.lastSeen < 12000));
         updateProjectorStatus(isProjConn);
     }
 }
@@ -266,36 +269,39 @@ function updateRoomCodeFromController(isRandomGen = false) {
 }
 
 function getPlayerBaseUrl() {
-    const sel = document.getElementById('link_domain_select');
-    const customInp = document.getElementById('custom_domain_input');
-    const val = sel ? sel.value : 'current';
+    if (typeof window !== 'undefined' && window.location) {
+        let origin = '';
+        if (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file://')) {
+            origin = window.location.origin.replace(/\/+$/, '');
+        } else if (window.location.host) {
+            const proto = (window.location.protocol && window.location.protocol.startsWith('http')) ? window.location.protocol : 'http:';
+            origin = `${proto}//${window.location.host}`.replace(/\/+$/, '');
+        }
 
-    if (val === 'acestudio') {
-        return 'https://acestudio.mooo.com';
-    } else if (val === 'render') {
-        return 'https://duongdenvinhquang.onrender.com';
-    } else if (val === 'current') {
-        if (typeof window !== 'undefined' && window.location && window.location.origin) {
-            return window.location.origin;
+        // Tự động bảo toàn đường dẫn thư mục / subpath (ví dụ: /DuongDenVinhQuang/controller.html -> /DuongDenVinhQuang)
+        let pathname = window.location.pathname || '';
+        let basePath = '';
+        if (pathname.includes('/')) {
+            const lastPart = pathname.split('/').pop() || '';
+            if (lastPart.includes('.')) {
+                basePath = pathname.substring(0, pathname.lastIndexOf('/'));
+            } else {
+                basePath = pathname;
+            }
         }
-        return 'https://duongdenvinhquang.onrender.com';
-    } else if (val === 'custom') {
-        let customVal = (customInp ? customInp.value.trim() : '');
-        if (!customVal) customVal = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://duongdenvinhquang.onrender.com';
-        if (!customVal.startsWith('http://') && !customVal.startsWith('https://')) {
-            customVal = 'http://' + customVal;
+
+        if (basePath === '/' || basePath === '') {
+            basePath = '';
+        } else {
+            basePath = '/' + basePath.replace(/^\/+|\/+$/g, '');
         }
-        return customVal.replace(/\/+$/, '');
+
+        return `${origin}${basePath}`;
     }
-    return (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'https://duongdenvinhquang.onrender.com';
+    return '';
 }
 
 function onLinkDomainSelectChange() {
-    const sel = document.getElementById('link_domain_select');
-    const customInp = document.getElementById('custom_domain_input');
-    if (customInp) {
-        customInp.style.display = (sel && sel.value === 'custom') ? 'inline-block' : 'none';
-    }
     updateRoomCodeFromController();
 }
 
@@ -426,6 +432,10 @@ function updateAllLinkPreviews() {
     if (linkPreview) {
         linkPreview.innerText = getPlayerDirectLink();
     }
+    const qrLinkText = document.getElementById('player_qr_link_text');
+    if (qrLinkText) {
+        qrLinkText.innerText = getPlayerDirectLink();
+    }
     for (let i = 1; i <= 4; i++) {
         const slotPreview = document.getElementById(`slot_link_preview_${i}`);
         if (slotPreview) {
@@ -555,6 +565,12 @@ function respondToStateRequest() {
     sendToProjector('FULL_STATE_SYNC', statePayload);
 }
 
+function handlePongResponse() {}
+window.handlePongResponse = handlePongResponse;
+
+function measureAllClientsPing() {}
+window.measureAllClientsPing = measureAllClientsPing;
+
 try {
     if (typeof BroadcastChannel !== 'undefined') {
         controllerChannel = new BroadcastChannel('ddvq_game_channel');
@@ -562,6 +578,8 @@ try {
             if (!event.data) return;
             if (event.data.type === 'REQUEST_CURRENT_STATE') {
                 respondToStateRequest();
+            } else if (event.data.type === 'PONG_RESPONSE') {
+                handlePongResponse(event.data);
             } else if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
                 lastProjectorPing = Date.now();
                 updateProjectorStatus(true);
@@ -579,6 +597,12 @@ try {
                     controllerConnectedClients[role].connected = true;
                     controllerConnectedClients[role].lastSeen = Date.now();
                     if (event.data.name) controllerConnectedClients[role].name = event.data.name;
+                    if (event.data.timestamp) {
+                        const delay = Math.max(1, Date.now() - event.data.timestamp);
+                        if (delay < 5000 && !controllerConnectedClients[role].ping) {
+                            controllerConnectedClients[role].ping = delay;
+                        }
+                    }
                     updateClientStatusBadges(controllerConnectedClients);
                 }
             }
@@ -595,7 +619,9 @@ if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocal
         sseSource.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
-                if (data && (data.type === 'PROJECTOR_READY' || data.type === 'PROJECTOR_PONG')) {
+                if (data && data.type === 'PONG_RESPONSE') {
+                    handlePongResponse(data);
+                } else if (data && (data.type === 'PROJECTOR_READY' || data.type === 'PROJECTOR_PONG')) {
                     lastProjectorPing = Date.now();
                     updateProjectorStatus(true);
                 } else if (data && (data.type === 'PLAYER_SUBMIT_ANSWER' || data.type === 'PLAYER_RING_BELL' || data.type === 'RING_BELL' || data.playerAnswers)) {
@@ -623,7 +649,12 @@ if (typeof EventSource !== 'undefined' && !window.syncChannel && typeof hasLocal
 }
 
 window.addEventListener('storage', function(event) {
-    if (event.key === 'ddvq_projector_status' && event.newValue) {
+    if (event.key === 'ddvq_client_pong' && event.newValue) {
+        try {
+            const data = JSON.parse(event.newValue);
+            handlePongResponse(data);
+        } catch(e) {}
+    } else if (event.key === 'ddvq_projector_status' && event.newValue) {
         lastProjectorPing = Date.now();
         updateProjectorStatus(true);
     } else if (event.key === 'ddvq_client_heartbeat' && event.newValue) {
@@ -635,6 +666,12 @@ window.addEventListener('storage', function(event) {
                     controllerConnectedClients[role].connected = true;
                     controllerConnectedClients[role].lastSeen = Date.now();
                     if (data.name) controllerConnectedClients[role].name = data.name;
+                    if (data.timestamp) {
+                        const delay = Math.max(1, Date.now() - data.timestamp);
+                        if (delay < 5000 && !controllerConnectedClients[role].ping) {
+                            controllerConnectedClients[role].ping = delay;
+                        }
+                    }
                     updateClientStatusBadges(controllerConnectedClients);
                 }
             }
@@ -642,7 +679,9 @@ window.addEventListener('storage', function(event) {
     } else if (event.key === 'ddvq_latest_action' && event.newValue) {
         try {
             const data = JSON.parse(event.newValue);
-            if (data && (data.type === 'PLAYER_SUBMIT_ANSWER' || data.type === 'PLAYER_RING_BELL' || data.type === 'RING_BELL' || data.playerAnswers)) {
+            if (data && data.type === 'PONG_RESPONSE') {
+                handlePongResponse(data);
+            } else if (data && (data.type === 'PLAYER_SUBMIT_ANSWER' || data.type === 'PLAYER_RING_BELL' || data.type === 'RING_BELL' || data.playerAnswers)) {
                 handleIncomingPlayerAnswer(data);
             }
         } catch(e) {}
@@ -651,7 +690,9 @@ window.addEventListener('storage', function(event) {
 
 window.addEventListener('message', function(event) {
     if (!event.data) return;
-    if (event.data.type === 'REQUEST_CURRENT_STATE') {
+    if (event.data.type === 'PONG_RESPONSE') {
+        handlePongResponse(event.data);
+    } else if (event.data.type === 'REQUEST_CURRENT_STATE') {
         respondToStateRequest();
     } else if (event.data.type === 'PROJECTOR_READY' || event.data.type === 'PROJECTOR_PONG') {
         lastProjectorPing = Date.now();
@@ -660,6 +701,19 @@ window.addEventListener('message', function(event) {
         handleIncomingPlayerAnswer(event.data);
     }
 });
+
+// Kiểm tra định kỳ trạng thái online/offline của các máy (nhẹ nhàng, không đo ping gây lag)
+setInterval(() => {
+    const now = Date.now();
+    const roles = ['ts1', 'ts2', 'ts3', 'ts4', 'host', 'projector'];
+    roles.forEach(role => {
+        const info = controllerConnectedClients[role];
+        if (info && info.lastSeen && (now - info.lastSeen > 15000)) {
+            info.connected = false;
+        }
+    });
+    updateClientStatusBadges(controllerConnectedClients);
+}, 4000);
 
 // Single initial state fetch on controller startup with strict one-time guard
 let hasFetchedInitialServerState = false;
@@ -757,6 +811,7 @@ function sendToProjector(type, payload = {}) {
         type.includes('SHOW_QUESTION') ||
         type.includes('SELECT_ROW') ||
         type.includes('SELECT_PACK') ||
+        type.includes('HIDE') ||
         type === 'STOP_TIMER' ||
         type === 'RESET_ALL_DATA'
     ) {
@@ -1608,11 +1663,15 @@ function onAudioSettingsChange() {
 }
 window.onAudioSettingsChange = onAudioSettingsChange;
 
-// Auto initialize audio settings
+// Auto initialize audio settings & contestant link previews
 if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadAudioSettings);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAudioSettings();
+            updateAllLinkPreviews();
+        });
     } else {
         loadAudioSettings();
+        updateAllLinkPreviews();
     }
 }

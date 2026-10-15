@@ -831,7 +831,7 @@
                 };
             }
 
-            // Send Heartbeat every 8s
+            // Send Heartbeat every 4s
             setInterval(() => {
                 const hb = {
                     type: 'CLIENT_HEARTBEAT',
@@ -850,7 +850,7 @@
                         body: JSON.stringify(hb)
                     }).catch(() => {});
                 }
-            }, 8000);
+            }, 4000);
 
             // Fetch initial state
             fetch(getApiUrl(`/api/state?roomid=${encodeURIComponent(currentRoomCode)}`))
@@ -877,6 +877,13 @@
         // Handle Realtime Sync Messages from Controller / Server
         function handleIncomingSyncMessage(data) {
             if (!data) return;
+
+            if (data.type === 'PING_PROBE') {
+                if (typeof respondToPingProbe === 'function') {
+                    respondToPingProbe(data);
+                }
+                return;
+            }
 
             if (data.type === 'LOCK_BELLS' || data.type === 'XUAT_PHAT_SHOW_FASTEST_HL' || (data.type === 'PLAYER_RING_BELL' && (data.round === 'KD' || data.round === 'XUAT_PHAT' || data.round === 'KHOI_DONG' || activeSceneNum === 1))) {
                 isBellLocked = true;

@@ -90,6 +90,7 @@ let soundChooseQues = new Audio('sounds/ChooseQues.mp3');
 let soundRightV3 = new Audio('sounds/RightV3.mp3');
 let soundActivate = new Audio('sounds/Activate.mp3');
 let soundOpenLetter = new Audio('sounds/OpenLetter.mp3');
+let soundShowRound = new Audio('sounds/showRound.mp3');
 
 let screenAudioSettings = {
     enabled: true,
@@ -123,7 +124,7 @@ function applyAudioSettingsProjector(settings) {
         soundRKTimer.muted = !screenAudioSettings.enabled;
     }
 
-    const allAudios = [soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3, soundActivate, soundOpenLetter];
+    const allAudios = [soundShowTitle1, soundRandomSet1, soundBeginQues1, sound60s1, soundTick1, soundTimeUp1, soundRight1, soundWrong1, soundRKAnswer, soundChooseQues, soundRightV3, soundActivate, soundOpenLetter, soundShowRound];
     allAudios.forEach(a => {
         if (a) {
             a.volume = screenAudioSettings.volume;
@@ -200,6 +201,13 @@ function stopAllAudio1() {
     safePause(soundTimeUp1);
     safePause(soundRight1);
     safePause(soundWrong1);
+    safePause(soundShowRound);
+    safePause(soundRKAnswer);
+    safePause(soundChooseQues);
+    safePause(soundRightV3);
+    safePause(soundActivate);
+    safePause(soundOpenLetter);
+    if (typeof stopCustomSound === 'function') stopCustomSound();
 }
 
 function updateBlink1() {
@@ -648,11 +656,13 @@ function selectPack6(element, score, subjectName) {
     }
 }
 
-function hidePack6() {
-    const closeAudio = document.getElementById('audioClose6');
-    if (closeAudio) {
-        closeAudio.currentTime = 0;
-        closeAudio.play().catch(e => console.log(e));
+function hidePack6(silent = false) {
+    if (!silent) {
+        const closeAudio = document.getElementById('audioClose6');
+        if (closeAudio) {
+            closeAudio.currentTime = 0;
+            closeAudio.play().catch(e => console.log(e));
+        }
     }
     const pageWrapper = document.querySelector('#view-file-6 #pageWrapper');
     if (pageWrapper) {
@@ -878,6 +888,13 @@ setInterval(() => {
 
 function handleProjectorMessage(data) {
     if (isDuplicateProjectorMessage(data)) return;
+
+    if (data.type === 'PING_PROBE') {
+        if (typeof respondToPingProbe === 'function') {
+            respondToPingProbe(data);
+        }
+        return;
+    }
 
     if (data.type === 'UPDATE_AUDIO_SETTINGS') {
         applyAudioSettingsProjector(data.audioSettings);
@@ -1310,7 +1327,7 @@ function handleProjectorMessage(data) {
         selectPack6(elem, pack.toString(), data.subject || `Gói ${pack} Điểm`);
     } else if (data.type === 'VINH_QUANG_HIDE_PACK' || data.type === 'VINH_QUANG_FLY_OUT') {
         switchView(6);
-        hidePack6();
+        hidePack6(data.silent || false);
     } else if (data.type === 'VINH_QUANG_RESET') {
         resetVQProjector();
     } else if (data.type === 'VINH_QUANG_SHOW_QUESTION') {
@@ -1399,6 +1416,47 @@ function handleProjectorMessage(data) {
                 fitAnswerText(ansEl, ts.answer || '');
             }
         }
+    } else if (data.type === 'VINH_QUANG_HIDE_ALL') {
+        if (countdown7) clearInterval(countdown7);
+        isRunning7 = false;
+        stopAllAudio1();
+        if (typeof stopCustomSound === 'function') stopCustomSound();
+
+        // Ẩn màn hình đáp án TS (View 8)
+        const v8 = document.getElementById('view-file-8');
+        if (v8) {
+            v8.classList.remove('active-view');
+            v8.style.display = 'none';
+        }
+        // Ẩn màn hình câu hỏi (View 7)
+        const v7 = document.getElementById('view-file-7');
+        if (v7) {
+            v7.classList.remove('active-view');
+            v7.style.display = 'none';
+        }
+        const qEl7 = document.getElementById('vq_question_text');
+        if (qEl7) qEl7.innerText = '';
+        const starIcon7 = document.getElementById('vq_star_icon');
+        if (starIcon7) starIcon7.style.display = 'none';
+
+        // Ẩn gói câu hỏi View 6
+        hidePack6(true);
+        const subjContainer = document.querySelector('#view-file-6 .subject-container');
+        if (subjContainer) subjContainer.classList.remove('show');
+        const subjectTitleEl = document.getElementById('subjectTitle6');
+        if (subjectTitleEl) {
+            subjectTitleEl.innerText = '';
+            subjectTitleEl.classList.remove('show');
+        }
+
+        // Ẩn overlay video nếu có
+        const overlay = document.getElementById('intro_video_overlay');
+        const vplayer = document.getElementById('intro_video_player');
+        if (overlay) overlay.style.display = 'none';
+        if (vplayer) { try { vplayer.pause(); vplayer.src = ''; } catch(e) {} }
+
+        // Quay về view 6 (phông nền sạch)
+        switchView(6);
     } else if (data.type === 'UPDATE_CONTESTANTS' || data.type === 'UPDATE_SCORES' || data.type === 'FULL_STATE_SYNC' || data.type === 'UPDATE_STATE') {
         if (data.contestants && Array.isArray(data.contestants)) {
             updateProjectorContestants(data.contestants);
@@ -1487,10 +1545,12 @@ function handleProjectorMessage(data) {
             if (vsAnsScene) vsAnsScene.style.display = 'none';
             const vsQuesScene = document.getElementById('scene-cau-hoi-vs');
             if (vsQuesScene) vsQuesScene.classList.remove('active');
+            stopAllAudio1();
+            safePlay(soundShowRound);
         } else if (roundIdx === 4) {
             switchView(6);
             resetVQProjector();
-            safePlay(soundShowTitle1);
+            stopAllAudio1();
             const pageWrapper = document.getElementById('pageWrapper');
             if (pageWrapper) {
                 pageWrapper.classList.remove('show');

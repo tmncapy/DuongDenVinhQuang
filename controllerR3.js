@@ -104,8 +104,8 @@ function onClickVSOpenRowAnswer() {
     } else {
         a = document.getElementById(`vs_a_${currentVSRow}`)?.value || "";
     }
-    sendToProjector('VUOT_SONG_OPEN_ROW_ANSWER', { row: currentVSRow, answer: a });
-    showToast(`Đã mở đáp án hàng ngang ${currentVSRow}`);
+    sendToProjector('VUOT_SONG_OPEN_ROW_ANSWER', { row: currentVSRow, answer: a, noSound: true });
+    showToast(`Đã mở đáp án hàng ngang ${currentVSRow} (không phát nhạc)`);
 }
 
 function onClickVSOpenKeywordLetters() {

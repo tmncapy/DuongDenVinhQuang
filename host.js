@@ -234,6 +234,13 @@ setInterval(fetchHostState, 10000);
 function processHostAction(data) {
     if (!data) return;
 
+    if (data.type === 'PING_PROBE') {
+        if (typeof respondToPingProbe === 'function') {
+            respondToPingProbe(data);
+        }
+        return;
+    }
+
     // Room code auto-sync
     if (data.roomCode && data.roomCode !== hostRoomCode) {
         hostRoomCode = data.roomCode;
