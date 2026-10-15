@@ -1,804 +1,219 @@
-// script.js
-const globalFavicon = document.createElement('link');
-globalFavicon.rel = 'icon';
-globalFavicon.type = 'image/x-icon';
-globalFavicon.href = 'favicon.ico';
-document.head.appendChild(globalFavicon);
-
-// --- KHỞI TẠO ĐỐI TƯỢNG ĐỒNG BỘ SUPABASE & BROADCAST CHANNEL ---
-var SUPABASE_URL = window.SUPABASE_URL || "https://wmskoyiljrcamrawffoe.supabase.co";
-var SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indtc2tveWlsanJjYW1yYXdmZm9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Nzc0NTgsImV4cCI6MjEwMjI1MzQ1OH0.eswUBkeZ7pfqR6O-8jAWeSJpV_8sjlaQO0XjC4AIXkg";
-
-if (SUPABASE_URL && !SUPABASE_URL.startsWith("http://") && !SUPABASE_URL.startsWith("https://")) {
-    SUPABASE_URL = "https://" + SUPABASE_URL;
-}
-
-var supabaseClient = null;
-var channel = null;
-try {
-    if (typeof supabase !== "undefined" && supabase.createClient) {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        channel = supabaseClient.channel('crossword_broadcast_room', {
-            config: { broadcast: { ack: false, self: true } }
-        });
-    }
-} catch (err) {
-    console.warn("Supabase initialization error, falling back to Server/BroadcastChannel/localStorage:", err);
-}
-
-// Fallback local BroadcastChannel for tab-to-tab communication without external server dependency
-const localBC = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel('crossword_broadcast_room') : null;
-
-// Auto-scale board to fit preview / window size
-function fitGameContainer() {
-    const container = document.getElementById("game-container");
-    if (!container) return;
-    const scaleX = window.innerWidth / 1920;
-    const scaleY = window.innerHeight / 1080;
-    const scale = Math.min(scaleX, scaleY, 1);
-    container.style.transform = `scale(${scale})`;
-}
-window.addEventListener("resize", fitGameContainer);
-window.addEventListener("DOMContentLoaded", fitGameContainer);
-setTimeout(fitGameContainer, 100);
-
-const board = document.getElementById("board");
-
-// Khởi tạo các đối tượng âm thanh hệ thống chính
-const showSound = new Audio("reveal.mp3");
-const revealSound = new Audio("ClearTossUp.mp3");
-const clearPuzzleSound = new Audio("ClearPuzzle.mp3");
-const tossupSound = new Audio("tossup.mp3");
-tossupSound.loop = true;
-
-// Lấy tham chiếu tới các đèn hiệu ứng overlay
-const lightWhite = document.getElementById("light-white");
-const lightGreen = document.getElementById("light-green");
-const lightRed = document.getElementById("light-red");
-
-let activeSFXList = [];
-let tossupTimeoutIds = [];
-let allCells = [];
-let absoluteCells = new Array(52).fill(null);
-let currentQuizIndex = -1;
-
-// Mute control for control page preview iframe
-const urlParams = new URLSearchParams(window.location.search);
-let isMuted = urlParams.get('muted') === '1' || urlParams.get('muted') === 'true' || window.name === 'audiencePreviewFrame';
-
-const originalAudioPlay = Audio.prototype.play;
-
-function updateMuteState(muted) {
-    isMuted = !!muted;
-    showSound.muted = isMuted;
-    revealSound.muted = isMuted;
-    clearPuzzleSound.muted = isMuted;
-    tossupSound.muted = isMuted;
-    if (isMuted) {
-        showSound.volume = 0;
-        revealSound.volume = 0;
-        clearPuzzleSound.volume = 0;
-        tossupSound.volume = 0;
-        try { tossupSound.pause(); } catch(e){}
-        Audio.prototype.play = function() {
-            return Promise.resolve();
-        };
-    } else {
-        showSound.volume = 1.0;
-        revealSound.volume = 1.0;
-        clearPuzzleSound.volume = 1.0;
-        tossupSound.volume = 1.0;
-        Audio.prototype.play = originalAudioPlay;
-    }
-}
-
-updateMuteState(isMuted);
-
-window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SET_MUTE_STATE') {
-        updateMuteState(event.data.muted);
-    }
-});
-
-function initAudioPermission() {
-    if (isMuted) return;
-    showSound.load(); revealSound.load(); clearPuzzleSound.load(); tossupSound.load();
-}
-
-function playDing(){
-    if (isMuted) return;
-    const audio = new Audio("ding.mp3");
-    audio.play().then(() => { audio.onended = () => { audio.remove(); }; }).catch(e => console.log(e));
-}
-
-function playSecondDing(){
-    if (isMuted) return;
-    const audio = new Audio("2nd_ding.wav");
-    audio.play().then(() => { audio.onended = () => { audio.remove(); }; }).catch(e => console.log(e));
-}
-
-// Sửa hàm phát tiếng đoán sai để quản lý vòng đời audio tốt hơn
-function playWrong() {
-    if (isMuted) return;
-    initAudioPermission();
-    const audio = new Audio("wrong.mp3");
-    audio.play().then(() => { 
-        audio.onended = () => { audio.remove(); }; 
-    }).catch(e => console.log(e));
-}
-
-function playTimerSound(seconds) {
-    if (isMuted) return;
-    const filename = seconds === 30 ? "30s.mp3" : "10s.mp3";
-    const audio = new Audio(filename);
-    audio.play().catch(e => console.log(e));
-}
-
-let fadeInterval = null;
-
-function fadeOutTossupMusic(durationMs = 400, resetPosition = false) {
-    if (fadeInterval) {
-        clearInterval(fadeInterval);
-        fadeInterval = null;
-    }
-    if (tossupSound.paused || isMuted) {
-        if (resetPosition) tossupSound.currentTime = 0;
-        return;
-    }
-    const startVolume = tossupSound.volume || 1.0;
-    const steps = 20;
-    const stepTime = Math.max(10, durationMs / steps);
-    const volumeStep = startVolume / steps;
-
-    fadeInterval = setInterval(() => {
-        if (tossupSound.volume - volumeStep > 0) {
-            tossupSound.volume -= volumeStep;
-        } else {
-            tossupSound.volume = 0;
-            tossupSound.pause();
-            if (resetPosition) {
-                tossupSound.currentTime = 0;
-            }
-            tossupSound.volume = 1.0;
-            clearInterval(fadeInterval);
-            fadeInterval = null;
-        }
-    }, stepTime);
-}
-
-function playTossupMusic() {
-    if (isMuted) return;
-    if (fadeInterval) {
-        clearInterval(fadeInterval);
-        fadeInterval = null;
-    }
-    tossupSound.volume = 1.0; 
-    let playPromise = tossupSound.play();
-    if (playPromise !== undefined) {
-        playPromise.catch(() => {
-            document.body.addEventListener('click', function memoPlay() {
-                if (!isMuted) tossupSound.play();
-                document.body.removeEventListener('click', memoPlay);
-            }, { once: true });
-        });
-    }
-}
-
-// Hàm hỗ trợ ẩn tất cả đèn hiệu ứng màn hình
-function hideAllLights() {
-    if (lightWhite) lightWhite.style.display = "none";
-    if (lightGreen) lightGreen.style.display = "none";
-    if (lightRed) lightRed.style.display = "none";
-}
-
-// Hàm kích hoạt nháy đèn đỏ khi đoán sai chữ
-function triggerRedLight() {
-    if (lightRed) {
-        lightRed.style.display = "block";
-        setTimeout(() => {
-            lightRed.style.display = "none";
-        }, 1000); // Đèn đỏ sáng trong 1 giây rồi tắt
-    }
-}
-
-function triggerWhiteLight() {
-    const lightWhite = document.getElementById("light-white");
-    if (lightWhite) {
-        lightWhite.style.display = "block";
-        setTimeout(() => {
-            lightWhite.style.display = "none";
-        }, 1000);
-    }
-}
-
-function triggerGreenLight() {
-    const lightGreen = document.getElementById("light-green");
-    if (lightGreen) {
-        lightGreen.style.display = "block";
-        setTimeout(() => {
-            lightGreen.style.display = "none";
-        }, 1000);
-    }
-}
-
-function cleanLetter(letter) {
-    if (!letter) return "";
-    let cleaned = letter.replace("_", "");
-    return removeVietnameseTones(cleaned).toUpperCase();
-}
-
-function removeVietnameseTones(str) {
-    const map = {
-        "á": "a", "à": "a", "ả": "a", "ã": "a", "ạ": "a", "Á": "A", "À": "A", "Ả": "A", "Ã": "A", "Ạ": "A",
-        "ấ": "â", "ầ": "â", "ẩ": "â", "ẫ": "â", "ậ": "â", "Ấ": "Â", "Ầ": "Â", "Ẩ": "Â", "Ẫ": "Â", "Ậ": "Â",
-        "ắ": "ă", "ằ": "ă", "ẳ": "ă", "ẵ": "ă", "ặ": "ă", "Ắ": "Ă", "Ằ": "Ă", "Ẳ": "Ă", "Ẵ": "Ă", "Ặ": "Ă",
-        "é": "e", "è": "e", "ẻ": "e", "ẽ": "e", "ẹ": "e", "É": "E", "È": "E", "Ẻ": "E", "Ẽ": "E", "Ẹ": "E",
-        "ế": "ê", "ề": "ê", "ể": "ê", "ễ": "ê", "ệ": "ê", "Ế": "Ê", "Ề": "Ê", "Ể": "Ê", "Ễ": "Ê", "Ệ": "Ê",
-        "í": "i", "ì": "i", "ỉ": "i", "ĩ": "i", "ị": "i", "Í": "I", "Ì": "I", "Ỉ": "I", "Ĩ": "I", "Ị": "I",
-        "ó": "o", "ò": "o", "ỏ": "o", "õ": "o", "ọ": "o", "Ó": "O", "Ò": "O", "Ỏ": "O", "Õ": "O", "Ọ": "O",
-        "ố": "ô", "ồ": "ô", "ổ": "ô", "ỗ": "ô", "ộ": "ô", "Ố": "Ô", "Ồ": "Ô", "Ổ": "Ô", "Ễ": "Ô", "Ộ": "Ô",
-        "ớ": "ơ", "ờ": "ơ", "ở": "ơ", "ỡ": "ơ", "ợ": "ơ", "Ớ": "Ơ", "Ờ": "Ơ", "Ở": "Ơ", "Ỡ": "Ơ", "Ợ": "Ơ",
-        "ú": "u", "ù": "u", "ủ": "u", "ũ": "u", "ụ": "u", "Ú": "U", "Ù": "U", "Ủ": "U", "Ũ": "U", "Ụ": "U",
-        "ứ": "ư", "ừ": "ư", "ử": "ư", "ữ": "ư", "ự": "ư", "Ứ": "Ư", "Ừ": "Ư", "Ử": "Ư", "Ữ": "Ư", "Ự": "Ư",
-        "ý": "y", "ỳ": "y", "ỷ": "y", "ỹ": "y", "ỵ": "y", "Ý": "Y", "Ỳ": "Y", "Ỷ": "Y", "Ỹ": "Y", "Ỵ": "Y"
-    };
-    return str.split("").map(c => map[c] || c).join("");
-}
-
-const cells = [
-    { x: 246, y: 240 }, { x: 366, y: 240 }, { x: 486, y: 240 }, { x: 606, y: 240 }, { x: 726, y: 240 }, { x: 846, y: 240 }, { x: 966, y: 240 }, { x: 1086, y: 240 }, { x: 1206, y: 240 }, { x: 1326, y: 240 }, { x: 1446, y: 240 }, { x: 1566, y: 240 },
-    { x: 126, y: 390 }, { x: 246, y: 390 }, { x: 366, y: 390 }, { x: 486, y: 390 }, { x: 606, y: 390 }, { x: 726, y: 390 }, { x: 846, y: 390 }, { x: 966, y: 390 }, { x: 1086, y: 390 }, { x: 1206, y: 390 }, { x: 1326, y: 390 }, { x: 1446, y: 390 }, { x: 1566, y: 390 }, { x: 1686, y: 390 },
-    { x: 126, y: 540 }, { x: 246, y: 540 }, { x: 366, y: 540 }, { x: 486, y: 540 }, { x: 606, y: 540 }, { x: 726, y: 540 }, { x: 846, y: 540 }, { x: 966, y: 540 }, { x: 1086, y: 540 }, { x: 1206, y: 540 }, { x: 1326, y: 540 }, { x: 1446, y: 540 }, { x: 1566, y: 540 }, { x: 1688, y: 540 },
-    { x: 246, y: 690 }, { x: 366, y: 690 }, { x: 486, y: 690 }, { x: 606, y: 690 }, { x: 726, y: 690 }, { x: 846, y: 690 }, { x: 966, y: 690 }, { x: 1086, y: 690 }, { x: 1206, y: 690 }, { x: 1326, y: 690 }, { x: 1446, y: 690 }, { x: 1566, y: 690 }
+const shapesData = [
+    { id: 0, name: "Group 3", type: "GROUP", text: "—", x: 4.1, y: 0, w: 1271.8, h: 30.4, fill: "none", line: "none", font: "—" },
+    { id: 1, name: "Rectangle 21", type: "AUTO_SHAPE", text: "—", x: 92.4, y: 25.8, w: 88.3, h: 4.8, fill: "#00B050", line: "#C6D1DE", font: "—" },
+    { id: 2, name: "Rectangle 24", type: "AUTO_SHAPE", text: "Câu hỏi", x: 3.7, y: 44.5, w: 78.7, h: 17.9, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 3, name: "Rectangle 25", type: "AUTO_SHAPE", text: "Nhập dữ liệu câu hỏi từ file", x: 3.7, y: 60.8, w: 387.2, h: 32, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 4, name: "Rectangle 26", type: "AUTO_SHAPE", text: "Chọn file", x: 180.7, y: 60.8, w: 88.3, h: 32, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 5, name: "Rectangle 27", type: "AUTO_SHAPE", text: "Chọn file", x: 280.4, y: 60.8, w: 341.8, h: 32, fill: "#FDFDFD", line: "none", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 6, name: "Rectangle 29", type: "AUTO_SHAPE", text: "--- Phần thi Xuất phát ---", x: 3.7, y: 92.6, w: 618.5, h: 17.9, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 7, name: "Rectangle 2", type: "AUTO_SHAPE", text: "Bộ đề 1", x: 3.7, y: 110.5, w: 77.3, h: 32, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 8, name: "Rectangle 20", type: "AUTO_SHAPE", text: "Bộ đề 2", x: 81.1, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 9, name: "Rectangle 22", type: "AUTO_SHAPE", text: "Bộ đề 3", x: 158.4, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 10, name: "Rectangle 23", type: "AUTO_SHAPE", text: "Bộ đề 4", x: 235.7, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 11, name: "Rectangle 28", type: "AUTO_SHAPE", text: "Bộ đề 5", x: 313, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 12, name: "Rectangle 30", type: "AUTO_SHAPE", text: "Bộ đề 6", x: 390.3, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 13, name: "Rectangle 31", type: "AUTO_SHAPE", text: "Bộ đề 7", x: 467.6, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 14, name: "Rectangle 32", type: "AUTO_SHAPE", text: "Bộ đề 8", x: 544.9, y: 110.5, w: 77.3, h: 32, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 15, name: "Rectangle 43", type: "AUTO_SHAPE", text: "—", x: 3.7, y: 142.3, w: 618.5, h: 273.8, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "—" },
+    { id: 16, name: "Rectangle 44", type: "AUTO_SHAPE", text: "Câu hỏi", x: 660.3, y: 60.8, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 17, name: "Rectangle 45", type: "AUTO_SHAPE", text: "Đáp án", x: 1049.4, y: 60.8, w: 74.8, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 18, name: "Rectangle 46", type: "AUTO_SHAPE", text: "Câu 1", x: 3.7, y: 166.8, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 19, name: "Rectangle 47", type: "AUTO_SHAPE", text: "Câu 2", x: 3.7, y: 191.1, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 20, name: "Rectangle 48", type: "AUTO_SHAPE", text: "Câu 3", x: 3.7, y: 215.4, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 21, name: "Rectangle 49", type: "AUTO_SHAPE", text: "Câu 4", x: 3.7, y: 239.7, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 22, name: "Rectangle 50", type: "AUTO_SHAPE", text: "Câu 5", x: 3.7, y: 263.7, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 23, name: "Rectangle 51", type: "AUTO_SHAPE", text: "Câu 6", x: 3.7, y: 288, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 24, name: "Rectangle 52", type: "AUTO_SHAPE", text: "Câu 7", x: 3.7, y: 312.3, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 25, name: "Rectangle 53", type: "AUTO_SHAPE", text: "Câu 8", x: 3.7, y: 336.6, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 26, name: "Rectangle 54", type: "AUTO_SHAPE", text: "Câu 9", x: 3.7, y: 360.9, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 27, name: "Rectangle 55", type: "AUTO_SHAPE", text: "Câu 10", x: 3.7, y: 385.2, w: 77.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 28, name: "Rectangle 57", type: "AUTO_SHAPE", text: "Câu 1", x: 76.6, y: 168.9, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 29, name: "Rectangle 58", type: "AUTO_SHAPE", text: "Câu 2", x: 76.6, y: 193.2, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 30, name: "Rectangle 59", type: "AUTO_SHAPE", text: "Câu 3", x: 76.6, y: 217.5, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 31, name: "Rectangle 60", type: "AUTO_SHAPE", text: "Câu 4", x: 76.6, y: 241.8, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 32, name: "Rectangle 61", type: "AUTO_SHAPE", text: "Câu 5", x: 76.6, y: 265.9, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 33, name: "Rectangle 62", type: "AUTO_SHAPE", text: "Câu 6", x: 76.6, y: 290.2, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 34, name: "Rectangle 63", type: "AUTO_SHAPE", text: "Câu 7", x: 76.6, y: 314.5, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 35, name: "Rectangle 64", type: "AUTO_SHAPE", text: "Câu 8", x: 76.6, y: 338.7, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 36, name: "Rectangle 65", type: "AUTO_SHAPE", text: "Câu 9", x: 76.6, y: 363, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 37, name: "Rectangle 66", type: "AUTO_SHAPE", text: "Câu 10", x: 76.6, y: 387.3, w: 391, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 38, name: "Rectangle 67", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 168.9, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 39, name: "Rectangle 68", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 193.2, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 40, name: "Rectangle 69", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 217.5, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 41, name: "Rectangle 70", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 241.8, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 42, name: "Rectangle 71", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 265.9, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 43, name: "Rectangle 72", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 290.2, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 44, name: "Rectangle 73", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 314.5, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 45, name: "Rectangle 74", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 338.7, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 46, name: "Rectangle 75", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 363, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 47, name: "Rectangle 76", type: "AUTO_SHAPE", text: "Đáp án", x: 470.9, y: 387.3, w: 145.8, h: 22.3, fill: "THEME:BACKGROUND_1", line: "THEME:BACKGROUND_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 48, name: "Rectangle 77", type: "AUTO_SHAPE", text: "--- Phần thi Ra khơi ---", x: 0, y: 416.1, w: 618.5, h: 17.9, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 49, name: "Rectangle 80", type: "AUTO_SHAPE", text: "Câu hỏi", x: 81.1, y: 434.2, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 50, name: "Rectangle 81", type: "AUTO_SHAPE", text: "Đáp án", x: 470.1, y: 434.2, w: 74.8, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 51, name: "Rectangle 82", type: "AUTO_SHAPE", text: "Câu 1", x: 3.7, y: 459, w: 77.3, h: 23.2, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 52, name: "Rectangle 83", type: "AUTO_SHAPE", text: "—", x: 76.6, y: 459, w: 391, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 53, name: "Rectangle 84", type: "AUTO_SHAPE", text: "—", x: 470.9, y: 459, w: 145.8, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 54, name: "Rectangle 85", type: "AUTO_SHAPE", text: "Chọn video", x: 81.1, y: 487.5, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 55, name: "Rectangle 86", type: "AUTO_SHAPE", text: "Chọn ảnh", x: 470.9, y: 487.5, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 56, name: "Rectangle 87", type: "AUTO_SHAPE", text: "Câu 2", x: 3.7, y: 523, w: 77.3, h: 23.2, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 57, name: "Rectangle 88", type: "AUTO_SHAPE", text: "—", x: 76.6, y: 523, w: 391, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 58, name: "Rectangle 89", type: "AUTO_SHAPE", text: "—", x: 470.9, y: 523, w: 145.8, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 59, name: "Rectangle 90", type: "AUTO_SHAPE", text: "Chọn video", x: 81.1, y: 551.6, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 60, name: "Rectangle 91", type: "AUTO_SHAPE", text: "Chọn ảnh", x: 470.9, y: 551.6, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 61, name: "Rectangle 92", type: "AUTO_SHAPE", text: "Câu 3", x: 3.7, y: 587.9, w: 77.3, h: 23.2, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 62, name: "Rectangle 93", type: "AUTO_SHAPE", text: "—", x: 76.6, y: 587.9, w: 391, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 63, name: "Rectangle 94", type: "AUTO_SHAPE", text: "—", x: 470.9, y: 587.9, w: 145.8, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 64, name: "Rectangle 95", type: "AUTO_SHAPE", text: "Chọn video", x: 81.1, y: 616.5, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 65, name: "Rectangle 96", type: "AUTO_SHAPE", text: "Chọn ảnh", x: 470.9, y: 616.5, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 66, name: "Rectangle 97", type: "AUTO_SHAPE", text: "Câu 4", x: 3.7, y: 655.9, w: 77.3, h: 23.2, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 67, name: "Rectangle 98", type: "AUTO_SHAPE", text: "—", x: 76.6, y: 655.9, w: 391, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 68, name: "Rectangle 99", type: "AUTO_SHAPE", text: "—", x: 470.9, y: 655.9, w: 145.8, h: 23.2, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 69, name: "Rectangle 100", type: "AUTO_SHAPE", text: "Chọn video", x: 81.1, y: 684.5, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 70, name: "Rectangle 101", type: "AUTO_SHAPE", text: "Chọn ảnh", x: 470.9, y: 684.5, w: 103.8, h: 30.3, fill: "THEME:BACKGROUND_1", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 71, name: "Rectangle 103", type: "AUTO_SHAPE", text: "--- Phần thi Vượt sóng ---", x: 622.3, y: 42.9, w: 618.5, h: 17.9, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 72, name: "Rectangle 104", type: "AUTO_SHAPE", text: "Hàng 1", x: 660.3, y: 85.3, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 73, name: "Rectangle 105", type: "AUTO_SHAPE", text: "Hàng 2", x: 660.3, y: 109.8, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 74, name: "Rectangle 106", type: "AUTO_SHAPE", text: "Hàng 3", x: 660.3, y: 134.3, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 75, name: "Rectangle 107", type: "AUTO_SHAPE", text: "Hàng 4", x: 660.3, y: 158.7, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 76, name: "Rectangle 108", type: "AUTO_SHAPE", text: "Hàng 1", x: 737.1, y: 85.3, w: 312.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 77, name: "Rectangle 109", type: "AUTO_SHAPE", text: "Hàng 2", x: 737.1, y: 109.8, w: 312.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 78, name: "Rectangle 110", type: "AUTO_SHAPE", text: "Hàng 3", x: 737.1, y: 134.3, w: 312.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 79, name: "Rectangle 111", type: "AUTO_SHAPE", text: "Hàng 4", x: 737.1, y: 158.7, w: 312.3, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 80, name: "Rectangle 112", type: "AUTO_SHAPE", text: "Hàng 1", x: 1061, y: 85.3, w: 129.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 81, name: "Rectangle 113", type: "AUTO_SHAPE", text: "Hàng 2", x: 1061, y: 109.8, w: 129.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 82, name: "Rectangle 114", type: "AUTO_SHAPE", text: "Hàng 3", x: 1061, y: 134.3, w: 129.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 83, name: "Rectangle 115", type: "AUTO_SHAPE", text: "Hàng 4", x: 1061, y: 158.7, w: 129.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 84, name: "Rectangle 116", type: "AUTO_SHAPE", text: "0 ký tự", x: 1196.5, y: 85.3, w: 79.8, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 85, name: "Rectangle 117", type: "AUTO_SHAPE", text: "0 ký tự", x: 1196.5, y: 109.8, w: 79.8, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / PRESET / Arial" },
+    { id: 86, name: "Rectangle 118", type: "AUTO_SHAPE", text: "0 ký tự", x: 1196.5, y: 134.3, w: 79.8, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / PRESET / Arial" },
+    { id: 87, name: "Rectangle 119", type: "AUTO_SHAPE", text: "0 ký tự", x: 1196.5, y: 158.7, w: 79.8, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / PRESET / Arial" },
+    { id: 88, name: "Rectangle 120", type: "AUTO_SHAPE", text: "Đáp án vòng thi", x: 666.7, y: 183.2, w: 382.7, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 89, name: "Rectangle 122", type: "AUTO_SHAPE", text: "Đáp án vòng thi", x: 1061, y: 183.2, w: 129.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 90, name: "Rectangle 123", type: "AUTO_SHAPE", text: "0 ký tự", x: 1196.5, y: 183.2, w: 79.8, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / PRESET / Arial" },
+    { id: 91, name: "Rectangle 124", type: "AUTO_SHAPE", text: "--- Phần thi Vinh quang ---", x: 622.3, y: 211.6, w: 618.5, h: 17.9, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 92, name: "Rectangle 125", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.9, y: 250.4, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 93, name: "Rectangle 126", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.9, y: 250.4, w: 74.8, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 94, name: "Rectangle 128", type: "AUTO_SHAPE", text: "Môn học", x: 660.3, y: 250.4, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 95, name: "Rectangle 129", type: "AUTO_SHAPE", text: "10 điểm", x: 737.1, y: 229.5, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 96, name: "Oval 131", type: "AUTO_SHAPE", text: "—", x: 729.7, y: 238.3, w: 7.4, h: 7.4, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 97, name: "Rectangle 132", type: "AUTO_SHAPE", text: "20 điểm", x: 850.5, y: 229.5, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 98, name: "Oval 133", type: "AUTO_SHAPE", text: "—", x: 843.1, y: 238.3, w: 7.4, h: 7.4, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 99, name: "Rectangle 134", type: "AUTO_SHAPE", text: "30 điểm", x: 956.6, y: 229.5, w: 77.3, h: 24.5, fill: "#9E9E9E", line: "#FDFDFD", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 100, name: "Oval 135", type: "AUTO_SHAPE", text: "—", x: 949.2, y: 238.3, w: 7.4, h: 7.4, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "—" },
+    { id: 101, name: "Rectangle 136", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 274.7, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 102, name: "Rectangle 137", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 274.7, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 103, name: "Rectangle 138", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 274.7, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 104, name: "Rectangle 139", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 301.1, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 105, name: "Rectangle 140", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 301.1, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 106, name: "Rectangle 141", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 301.1, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 107, name: "Rectangle 142", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 328.6, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 108, name: "Rectangle 143", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 328.6, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 109, name: "Rectangle 144", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 328.6, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 110, name: "Rectangle 145", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 355, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 111, name: "Rectangle 146", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 355, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 112, name: "Rectangle 147", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 355, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 113, name: "Rectangle 148", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 381.6, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 114, name: "Rectangle 149", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 381.6, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 115, name: "Rectangle 150", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 381.6, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 116, name: "Rectangle 151", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 408, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 117, name: "Rectangle 152", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 408, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 118, name: "Rectangle 153", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 408, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 119, name: "Rectangle 154", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 435.5, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 120, name: "Rectangle 155", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 435.5, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 121, name: "Rectangle 156", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 435.5, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 122, name: "Rectangle 157", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 461.9, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 123, name: "Rectangle 158", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 461.9, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 124, name: "Rectangle 159", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 461.9, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 125, name: "Rectangle 160", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 489.6, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 126, name: "Rectangle 161", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 489.6, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 127, name: "Rectangle 162", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 489.6, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 128, name: "Rectangle 163", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 516.1, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 129, name: "Rectangle 164", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 516.1, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 130, name: "Rectangle 165", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 516.1, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 131, name: "Rectangle 166", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 543.6, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 132, name: "Rectangle 167", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 543.6, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 133, name: "Rectangle 168", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 543.6, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 134, name: "Rectangle 169", type: "AUTO_SHAPE", text: "Câu hỏi", x: 756.3, y: 570, w: 386.7, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 135, name: "Rectangle 170", type: "AUTO_SHAPE", text: "Đáp án", x: 1145.3, y: 570, w: 125.1, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 136, name: "Rectangle 171", type: "AUTO_SHAPE", text: "Môn học", x: 659.7, y: 570, w: 94.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 137, name: "Rectangle 172", type: "AUTO_SHAPE", text: "--- Phần thi Câu hỏi phụ ---", x: 622.3, y: 597.2, w: 618.5, h: 17.9, fill: "THEME:ACCENT_1", line: "THEME:ACCENT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 138, name: "Rectangle 173", type: "AUTO_SHAPE", text: "Câu hỏi", x: 812.4, y: 597.1, w: 330.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 139, name: "Rectangle 174", type: "AUTO_SHAPE", text: "Đáp án", x: 1163.5, y: 597.1, w: 106.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 140, name: "Rectangle 175", type: "AUTO_SHAPE", text: "Câu hỏi", x: 812.4, y: 624.6, w: 330.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 141, name: "Rectangle 176", type: "AUTO_SHAPE", text: "Đáp án", x: 1163.5, y: 624.6, w: 106.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 142, name: "Rectangle 177", type: "AUTO_SHAPE", text: "Câu hỏi", x: 812.4, y: 651, w: 330.6, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" },
+    { id: 143, name: "Rectangle 178", type: "AUTO_SHAPE", text: "Đáp án", x: 1163.5, y: 651, w: 106.9, h: 24.5, fill: "THEME:BACKGROUND_1", line: "THEME:TEXT_1", font: "10.5 / THEME:TEXT_1 / Arial" }
 ];
 
-function syncControlUI(type, data) {
-    const payload = { type: type, data: data };
-    const ts = Date.now();
-    const msgObj = { event: 'display-to-control', payload: payload, ts: ts };
-
-    // 1. Post to Server API for cross-device sync
-    try {
-        fetch('/api/broadcast', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(msgObj)
-        }).catch(() => {});
-    } catch(e) {}
-
-    // 2. Supabase Realtime
-    if (channel) {
-        try {
-            channel.send({ type: 'broadcast', event: 'display-to-control', payload: payload });
-        } catch (e) {}
-    }
-
-    // 3. Local BroadcastChannel
-    if (localBC) {
-        try {
-            localBC.postMessage(msgObj);
-        } catch (e) {}
-    }
-
-    // 4. LocalStorage
-    try {
-        localStorage.setItem('display-to-control-msg', JSON.stringify(msgObj));
-    } catch(e) {}
+function resolveColor(c) {
+    if (!c || c === "—" || c === "None") return "transparent";
+    if (c.startsWith("#")) return c;
+    if (c.includes("THEME:ACCENT_1")) return "#4F81BD";
+    if (c.includes("THEME:BACKGROUND_1")) return "#FFFFFF";
+    if (c.includes("THEME:TEXT_1")) return "#333333";
+    if (c.includes("PRESET")) return "#333333";
+    return "#CCCCCC";
 }
 
-function clearOldBoardElements() {
-    const oldCells = board.querySelectorAll('.cell');
-    oldCells.forEach(c => c.remove());
-}
+function renderSlide() {
+    const canvas = document.getElementById("slideCanvas");
+    if (!canvas) return;
 
-function clearAllTossupTimeouts() {
-    tossupTimeoutIds.forEach(id => clearTimeout(id));
-    tossupTimeoutIds = [];
-}
-
-function loadQuiz(quizPayload) {
-    hideAllLights(); 
-
-    const index = quizPayload.index;
-    const letters = quizPayload.letters;
-
-    currentQuizIndex = index;
-    tossupSound.load();
-    initAudioPermission();
-
-    tossupSound.currentTime = 0;
-    tossupSound.volume = 1.0;
-    clearAllTossupTimeouts(); 
-    syncControlUI("UPDATE_CTRL_ACTIVE", null);
-
-    clearOldBoardElements();
-    allCells = [];
-    absoluteCells = new Array(52).fill(null);
-
-    cells.forEach((p, i) => {
-        const letter = letters[i];
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        cell.style.left = p.x + "px";
-        cell.style.top = p.y + "px";
-
-        if (letter === "" || letter === " " || !letter) {
-            cell.style.background = 'url("defaultbox.png") center center no-repeat';
-            cell.style.backgroundSize = "100% 100%";
-            cell.style.pointerEvents = "none";
-            board.appendChild(cell);
-            return;
+    shapesData.forEach(shape => {
+        const div = document.createElement("div");
+        div.className = `shape shape-${shape.id}`;
+        if (shape.name.toLowerCase().includes("oval")) {
+            div.classList.add("ellipse");
         }
 
-        cell.style.pointerEvents = "none";
+        div.style.left = `${shape.x}px`;
+        div.style.top = `${shape.y}px`;
+        div.style.width = `${shape.w}px`;
+        div.style.height = `${shape.h}px`;
 
-        let cellObj = { element: cell, letter: letter, revealed: false, state: 0, absoluteIndex: i + 1 };
-        allCells.push(cellObj);
-        absoluteCells[i] = cellObj;
-        board.appendChild(cell);
-    });
+        const bgColor = resolveColor(shape.fill);
+        div.style.backgroundColor = bgColor;
 
-    syncControlUI("UPDATE_QUIZ_ACTIVE", index);
-}
-
-function handleControlCommand(payload) {
-    if (!payload) return;
-    const { type, data } = payload;
-
-    if (type === "UPDATE_SCOREBOARD") {
-        if (document.getElementById("playerName1")) document.getElementById("playerName1").textContent = data.p1.name;
-        if (document.getElementById("playerScore1")) {
-            const score1 = Number(data.p1.score) || 0;
-            document.getElementById("playerScore1").textContent = score1.toLocaleString('vi-VN');
-        }
-        
-        if (document.getElementById("playerName2")) document.getElementById("playerName2").textContent = data.p2.name;
-        if (document.getElementById("playerScore2")) {
-            const score2 = Number(data.p2.score) || 0;
-            document.getElementById("playerScore2").textContent = score2.toLocaleString('vi-VN');
-        }
-        
-        if (document.getElementById("playerName3")) document.getElementById("playerName3").textContent = data.p3.name;
-        if (document.getElementById("playerScore3")) {
-            const score3 = Number(data.p3.score) || 0;
-            document.getElementById("playerScore3").textContent = score3.toLocaleString('vi-VN');
-        }
-    }
-    else if (type === "LOAD_QUIZ") {
-        clearBuzzerHighlights();
-        loadQuiz(data);
-    }
-    else if (type === "SHOW_MANUAL_TEXT") {
-        clearBuzzerHighlights();
-        hideAllLights(); 
-        initAudioPermission();
-        tossupSound.pause();
-        tossupSound.currentTime = 0;
-        tossupSound.volume = 1.0;
-        clearAllTossupTimeouts();
-        syncControlUI("UPDATE_CTRL_ACTIVE", null);
-
-        clearOldBoardElements();
-        allCells = [];
-        absoluteCells = new Array(52).fill(null);
-
-        const lines = data;
-        const rowConfigs = [
-            { startIdx: 0, totalCells: 12 },  
-            { startIdx: 12, totalCells: 14 }, 
-            { startIdx: 26, totalCells: 14 }, 
-            { startIdx: 40, totalCells: 12 }  
-        ];
-
-        let manualTextGrid = new Array(52).fill(null);
-        let targetRowIndex = 1; 
-        if (lines.length === 1) targetRowIndex = 1;
-        else if (lines.length === 2) targetRowIndex = 1;
-        else if (lines.length === 3) targetRowIndex = 0;
-        else if (lines.length === 4) targetRowIndex = 0;
-
-        lines.forEach((lineText, index) => {
-            let currentRow = targetRowIndex + index;
-            if (currentRow > 3) currentRow = 3; 
-
-            let config = rowConfigs[currentRow];
-            let offset = Math.floor((config.totalCells - lineText.length) / 2);
-            if (offset < 0) offset = 0; 
-
-            let activeStartIdx = config.startIdx + offset;
-            for (let charPos = 0; charPos < lineText.length; charPos++) {
-                let gridIndex = activeStartIdx + charPos;
-                if (gridIndex < config.startIdx + config.totalCells) {
-                    manualTextGrid[gridIndex] = lineText[charPos];
-                }
-            }
-        });
-
-        cells.forEach((p, i) => {
-            const cell = document.createElement("div");
-            cell.className = "cell cell-manual"; 
-            cell.style.left = p.x + "px";
-            cell.style.top = p.y + "px";
-            cell.style.pointerEvents = "none";
-
-            const charAtPos = manualTextGrid[i];
-            if (charAtPos !== null) {
-                if (charAtPos === " ") {
-                    cell.style.background = 'url("defaultbox.png") center center no-repeat';
-                    cell.style.backgroundSize = "100% 100%";
-                } else {
-                    cell.style.background = 'url("occhu.png") center center no-repeat';
-                    cell.style.backgroundSize = "100% 100%";
-                    cell.textContent = charAtPos;
-                    let cellObj = { element: cell, letter: charAtPos, revealed: true, state: 2, absoluteIndex: i + 1 };
-                    allCells.push(cellObj);
-                    absoluteCells[i] = cellObj;
-                }
-            } else {
-                cell.style.background = 'url("defaultbox.png") center center no-repeat';
-                cell.style.backgroundSize = "100% 100%";
-            }
-            board.appendChild(cell);
-        });
-
-        showSound.currentTime = 0;
-        showSound.play().catch(e => console.log(e));
-        syncControlUI("UPDATE_QUIZ_ACTIVE", -1);
-    }
-    else if (type === "SHOW_THUMBNAIL") {
-        const thumb = document.getElementById("programThumbnail");
-        if (thumb) thumb.style.display = "block";
-    }
-    else if (type === "HIDE_THUMBNAIL") {
-        const thumb = document.getElementById("programThumbnail");
-        if (thumb) thumb.style.display = "none";
-    }
-    else if (type === "PLAY_SFX") {
-        initAudioPermission();
-        const sfxAudio = new Audio(data);
-        activeSFXList.push(sfxAudio);
-        sfxAudio.play().catch(e => console.log(e));
-        sfxAudio.onended = () => {
-            activeSFXList = activeSFXList.filter(audio => audio !== sfxAudio);
-            sfxAudio.remove();
-        };
-
-        if (data === "wrong.mp3" || data === "FailBonus.mp3" || data === "FlashRed.mp3") {
-            triggerRedLight();
-        }
-        else if (data === "FlashWhite.mp3") {
-            triggerWhiteLight();
-        }
-        else if (data === "FlashGreen.mp3") {
-            triggerGreenLight();
-        }
-
-        // KHI GIẢI SAI Ô CHỮ BONUS Ở ĐỀ 10, 11, 12 (Index tương ứng 9, 10, 11) -> HIỆN TOÀN BỘ Ô CHỮ
-        if (data === "FailBonus.mp3" && [9, 10, 11].includes(currentQuizIndex)) {
-            allCells.forEach(item => {
-                item.element.style.background = 'url("obox.png") center center no-repeat';
-                item.element.style.backgroundSize = "100% 100%";
-                item.element.textContent = item.letter;
-                item.revealed = true;
-                item.state = 2;
-            });
-        }
-    }
-    else if (type === "STOP_ALL_SFX") {
-        tossupSound.pause(); showSound.pause(); revealSound.pause(); clearPuzzleSound.pause();
-        tossupSound.currentTime = 0; showSound.currentTime = 0; revealSound.currentTime = 0; clearPuzzleSound.currentTime = 0;
-        tossupSound.volume = 1.0;
-        activeSFXList.forEach(audio => { try { audio.pause(); audio.currentTime = 0; audio.remove(); } catch (e) {} });
-        activeSFXList = [];
-    }
-    else if (type === "GUESS_LETTER") {
-        initAudioPermission();
-        const guessedChar = data.toUpperCase();
-        let matchPositions = [];
-        absoluteCells.forEach(item => {
-            if (item && cleanLetter(item.letter) === guessedChar && item.state === 0) matchPositions.push(item.absoluteIndex);
-        });
-
-        // SỬA LỖI: Phát ngay âm thanh wrong.mp3 và nháy đèn đỏ nếu không có chữ nào khớp trên bảng
-        if (matchPositions.length === 0) {
-            playWrong();
-            triggerRedLight();
-        }
-
-        syncControlUI("FILL_POSITIONS", matchPositions);
-    }
-    else if (type === "GUESS_MULTI_LETTERS") {
-        initAudioPermission();
-        const guessedChars = data.map(c => removeVietnameseTones(c).toUpperCase());
-        let matchPositions = [];
-        absoluteCells.forEach(item => {
-            if (item && item.state === 0 && guessedChars.includes(cleanLetter(item.letter))) matchPositions.push(item.absoluteIndex);
-        });
-
-        // SỬA LỖI: Phát tiếng wrong.mp3 và nháy đèn đỏ nếu chuỗi ký tự đoán không có ký tự nào trùng khớp
-        if (matchPositions.length === 0) {
-            playWrong();
-            triggerRedLight();
-        }
-
-        syncControlUI("FILL_POSITIONS", matchPositions);
-    }
-    else if (type === "RESET_BOARD") {
-        try {
-            localStorage.setItem('tossup-buzzer-unlocked', 'false');
-            localStorage.removeItem('tossup-buzzer-winner');
-        } catch(e){}
-        clearBuzzerHighlights();
-        hideAllLights(); 
-        const allDomCells = document.querySelectorAll('.cell');
-        allDomCells.forEach(cell => {
-            cell.style.background = 'url("defaultbox.png") center center no-repeat';
-            cell.style.backgroundSize = "100% 100%";
-            cell.textContent = "";
-        });
-        allCells.forEach(item => { item.revealed = false; item.state = 0; });
-        clearAllTossupTimeouts();
-    }
-    else if (type === "MARK_SEQ") {
-        initAudioPermission();
-        let delay = 0;
-        data.forEach(pos => {
-            setTimeout(() => {
-                let item = absoluteCells[pos - 1];
-                if (item && item.state === 0) {
-                    item.element.style.background = 'url("choosebox.png") center center no-repeat';
-                    item.element.style.backgroundSize = "100% 100%";
-                    item.state = 1;
-                    playDing();
-                }
-            }, delay);
-            delay += 1000;
-        });
-    }
-    else if (type === "REVEAL_SEQ") {
-        initAudioPermission();
-        let delay = 0;
-        data.forEach(pos => {
-            setTimeout(() => {
-                let item = absoluteCells[pos - 1];
-                if (item && (item.state === 1 || item.state === 0)) {
-                    item.element.style.background = 'url("occhu.png") center center no-repeat';
-                    item.element.style.backgroundSize = "100% 100%";
-                    item.element.textContent = removeVietnameseTones(item.letter).replace("_", "").toUpperCase();
-                    item.revealed = true;
-                    item.state = 2;
-                    playSecondDing();
-                }
-            }, delay);
-            delay += 1000;
-        });
-    }
-    else if (type === "START_TOSSUP") {
-        try {
-            localStorage.setItem('tossup-buzzer-unlocked', 'true');
-            localStorage.removeItem('tossup-buzzer-winner');
-        } catch(e){}
-        clearBuzzerHighlights();
-        initAudioPermission();
-        clearAllTossupTimeouts();
-        syncControlUI("UPDATE_CTRL_ACTIVE", "startBtn");
-        allCells.forEach(item => {
-            item.element.style.background = 'url("obox.png") center center no-repeat';
-            item.element.style.backgroundSize = "100% 100%";
-            item.element.textContent = "";
-            item.revealed = false;
-            item.state = 0;
-        });
-        tossupSound.currentTime = 0;
-        playTossupMusic();
-    }
-    else if (type === "TOSSUP_REVEAL_CELL") {
-        const idx = data.absoluteIndex;
-        const targetItem = absoluteCells[idx - 1];
-        if (targetItem && !targetItem.revealed) {
-            targetItem.element.style.background = 'url("obox.png") center center no-repeat';
-            targetItem.element.style.backgroundSize = "100% 100%";
-            targetItem.element.textContent = removeVietnameseTones(targetItem.letter);
-            targetItem.revealed = true;
-            targetItem.state = 2;
-        }
-    }
-    else if (type === "PAUSE_TOSSUP") {
-        syncControlUI("UPDATE_CTRL_ACTIVE", "pauseBtn");
-        clearAllTossupTimeouts(); 
-        if (!data || !data.keepMusic) {
-            playDing(); 
-            fadeOutTossupMusic(400, false);
-        }
-    }
-    else if (type === "PLAY_TOSSUP") {
-        clearBuzzerHighlights();
-        initAudioPermission();
-        syncControlUI("UPDATE_CTRL_ACTIVE", "playBtn");
-        playTossupMusic(); 
-    }
-    else if (type === "STOP_TOSSUP_MUSIC") {
-        clearAllTossupTimeouts();
-        syncControlUI("UPDATE_CTRL_ACTIVE", null);
-        fadeOutTossupMusic(300, true);
-    }
-    else if (type === "SHOW_BOARD") {
-        hideAllLights(); 
-        initAudioPermission();
-        showSound.currentTime = 0;
-        showSound.play();
-
-        if (lightWhite) {
-            lightWhite.style.display = "block";
-            setTimeout(() => {
-                lightWhite.style.display = "none";
-            }, 1000); 
-        }
-
-        allCells.forEach((item, index) => {
-            setTimeout(() => {
-                item.element.style.background = 'url("obox.png") center center no-repeat';
-                item.element.style.backgroundSize = "100% 100%";
-                item.element.textContent = "";
-                item.revealed = false;
-                item.state = 0;
-            }, index * 10);
-        });
-    }
-    else if (type === "REVEAL_ALL") {
-        try {
-            localStorage.setItem('tossup-buzzer-unlocked', 'false');
-            localStorage.removeItem('tossup-buzzer-winner');
-        } catch(e){}
-        fadeOutTossupMusic(200, true);
-        clearAllTossupTimeouts();
-        syncControlUI("UPDATE_CTRL_ACTIVE", null);
-        if ([9, 10, 11].includes(currentQuizIndex)) {
-            const bonusWinSound = new Audio("ClearBonus.mp3");
-            activeSFXList.push(bonusWinSound);
-            bonusWinSound.play().catch(e => console.log(e));
-            bonusWinSound.onended = () => {
-                activeSFXList = activeSFXList.filter(audio => audio !== bonusWinSound);
-                bonusWinSound.remove();
-            };
-        } else if ([2, 3, 4, 8].includes(currentQuizIndex)) {
-            clearPuzzleSound.currentTime = 0; clearPuzzleSound.play().catch(e => console.log(e));
+        let lineColor = resolveColor(shape.line);
+        if (shape.line && shape.line !== "none" && shape.line !== "—") {
+            div.style.border = `1px solid ${lineColor}`;
         } else {
-            revealSound.currentTime = 0; revealSound.play().catch(e => console.log(e));
+            div.style.border = `none`;
         }
 
-        if (lightGreen) {
-            lightGreen.style.display = "block";
-        }
-
-        allCells.forEach(item => {
-            item.element.style.background = 'url("obox.png") center center no-repeat';
-            item.element.style.backgroundSize = "100% 100%";
-            item.element.textContent = item.letter;
-            item.revealed = true;
-            item.state = 2;
-        });
-    }
-    else if (type === "PLAY_TIMER") {
-        initAudioPermission();
-        playTimerSound(data);
-    }
-}
-
-let lastProcessedControlTs = 0;
-
-function handleControlCommandWrapper(payload, ts) {
-    if (!payload) return;
-    if (ts && ts <= lastProcessedControlTs) return;
-    if (ts) lastProcessedControlTs = ts;
-    handleControlCommand(payload);
-}
-
-function clearBuzzerHighlights() {
-    document.querySelectorAll('.player-box').forEach(box => box.classList.remove('buzzed-active'));
-    try {
-        localStorage.removeItem('tossup-buzzer-winner');
-    } catch(e){}
-}
-
-function handlePlayerBuzz(playerNum) {
-    if (!playerNum) return;
-    document.querySelectorAll('.player-box').forEach(box => box.classList.remove('buzzed-active'));
-    const pBox = document.querySelector(`.player-box.player-${playerNum}`);
-    if (pBox) {
-        pBox.classList.add('buzzed-active');
-    }
-    // Play ding.wav (or ding.mp3 as fallback)
-    if (!isMuted) {
-        const audio = new Audio("ding.wav");
-        audio.play().catch(() => {
-            const fallback = new Audio("ding.mp3");
-            fallback.play().catch(e => console.log(e));
-        });
-    }
-}
-
-// 1. Supabase Realtime Listener
-if (channel) {
-    try {
-        channel.on('broadcast', { event: 'control-to-display' }, ({ payload }) => handleControlCommandWrapper(payload, Date.now()));
-        channel.on('broadcast', { event: 'player-buzz' }, ({ payload }) => {
-            if (payload && payload.playerNum) {
-                handlePlayerBuzz(payload.playerNum);
-            }
-        });
-        channel.subscribe();
-    } catch (e) {}
-}
-
-// 2. Server-Sent Events (SSE) Listener for cross-device sync
-try {
-    if (typeof EventSource !== "undefined") {
-        const sse = new EventSource('/api/events');
-        sse.onmessage = (e) => {
-            try {
-                const msg = JSON.parse(e.data);
-                if (!msg) return;
-                if (msg.event === 'control-to-display' && msg.payload) {
-                    handleControlCommandWrapper(msg.payload, msg.ts || Date.now());
-                } else if (msg.event === 'player-buzz' && msg.payload && msg.payload.playerNum) {
-                    handlePlayerBuzz(msg.payload.playerNum);
+        if (shape.text && shape.text !== "—") {
+            // Replace "/" with space if needed as per prompt
+            const cleanText = shape.text.replace(/\//g, ' ');
+            div.innerText = cleanText;
+            
+            // Check font styling
+            if (shape.font && shape.font !== "—") {
+                if (shape.font.includes("THEME:TEXT_1") || shape.font.includes("PRESET")) {
+                    div.style.color = "#333333";
+                } else {
+                    div.style.color = "#333333";
                 }
-            } catch(err){}
-        };
-    }
-} catch(e) {}
-
-// 3. Local BroadcastChannel
-if (localBC) {
-    localBC.onmessage = (event) => {
-        if (event.data) {
-            if (event.data.event === 'control-to-display') {
-                handleControlCommandWrapper(event.data.payload, event.data.ts || Date.now());
-            } else if (event.data.event === 'player-buzz' && event.data.payload) {
-                handlePlayerBuzz(event.data.payload.playerNum);
             }
         }
-    };
+
+        canvas.appendChild(div);
+    });
 }
 
-window.addEventListener('message', (event) => {
-    if (event.data) {
-        if (event.data.event === 'control-to-display') {
-            handleControlCommandWrapper(event.data.payload, event.data.ts || Date.now());
-        } else if (event.data.event === 'player-buzz' && event.data.payload) {
-            handlePlayerBuzz(event.data.payload.playerNum);
-        }
-    }
-});
+function scaleCanvas() {
+    const container = document.getElementById("canvasContainer");
+    if (!container) return;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const targetWidth = 1280;
+    const targetHeight = 720;
 
-window.addEventListener('storage', (e) => {
-    if (e.key === 'control-to-display-msg' && e.newValue) {
-        try {
-            const data = JSON.parse(e.newValue);
-            if (data && data.payload) {
-                handleControlCommandWrapper(data.payload, data.ts);
-            }
-        } catch (err) {}
-    }
-    if (e.key === 'player-buzz-msg' && e.newValue) {
-        try {
-            const data = JSON.parse(e.newValue);
-            if (data && data.payload && data.payload.playerNum) {
-                handlePlayerBuzz(data.payload.playerNum);
-            }
-        } catch (err) {}
-    }
-});
+    const scale = Math.min(windowWidth / targetWidth, windowHeight / targetHeight);
+    container.style.transform = `scale(${scale})`;
+}
 
-setInterval(() => {
-    try {
-        const raw = localStorage.getItem('control-to-display-msg');
-        if (raw) {
-            const data = JSON.parse(raw);
-            if (data && data.payload && data.ts && data.ts > lastProcessedControlTs) {
-                handleControlCommandWrapper(data.payload, data.ts);
-            }
-        }
-    } catch (err) {}
-}, 100);
+window.addEventListener("resize", scaleCanvas);
+window.addEventListener("DOMContentLoaded", () => {
+    renderSlide();
+    scaleCanvas();
+});

@@ -20,6 +20,13 @@ app.use(compression({
   threshold: 1024,
   filter: (req, res) => {
     if (req.headers['x-no-compression']) return false;
+    // CRITICAL: Never compress video, audio, or pre-compressed images
+    // This allows instant byte-range streaming for MP4 videos and avoids audio lag
+    const url = (req.url || '').toLowerCase();
+    if (url.match(/\.(mp4|webm|ogg|mp3|wav|png|jpg|jpeg|gif|webp|ico|woff|woff2)$/i) || 
+        url.includes('/sounds/') || url.includes('/images/') || url.includes('/uploads/')) {
+      return false;
+    }
     return compression.filter(req, res);
   }
 }));
@@ -1268,7 +1275,155 @@ app.get(['/Images/:filename', '/images/:filename'], (req, res, next) => {
   next();
 });
 
-// Serve all static assets with optimal caching headers
+// Dedicated High-Performance HTTP 206 Byte-Range Video Streaming Handler
+function streamMediaFile(req, res, filePath, contentType = 'video/mp4') {
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).end('Media file not found');
+  }
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize || end >= fileSize) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      return res.status(416).end();
+    }
+
+    const chunksize = (end - start) + 1;
+    const fileStream = fs.createReadStream(filePath, { start, end });
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': contentType,
+    });
+    fileStream.pipe(res);
+  } else {
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+    });
+    fs.createReadStream(filePath).pipe(res);
+  }
+}
+
+// Dedicated streaming for all MP4 files (Opening.mp4, V1..V4.mp4, cau1..cau4.mp4, uploads)
+app.get('/*.mp4', (req, res, next) => {
+  const fileName = path.basename(req.path);
+  const filePath = path.join(__dirname, fileName);
+  if (fs.existsSync(filePath)) {
+    return streamMediaFile(req, res, filePath, 'video/mp4');
+  }
+  const uploadPath = path.join(uploadsDir, fileName);
+  if (fs.existsSync(uploadPath)) {
+    return streamMediaFile(req, res, uploadPath, 'video/mp4');
+  }
+  next();
+});
+
+// Directory for HTML Designer imported pages
+const designerImportDir = path.join(__dirname, 'uploads', 'imported_pages');
+if (!fs.existsSync(designerImportDir)) {
+  fs.mkdirSync(designerImportDir, { recursive: true });
+}
+
+// Serve designer imported pages directly with same-origin headers
+app.use('/imported', express.static(designerImportDir, {
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  }
+}));
+
+// API: List all project HTML pages dynamically for Designer
+app.get('/api/designer/pages', (req, res) => {
+  try {
+    const rootFiles = fs.readdirSync(__dirname);
+    const mainPages = [
+      { name: 'controller.html', label: '📱 Bảng Điều Khiển (Controller)' },
+      { name: 'projector.html', label: '🖥️ Màn Hình Chiếu (Projector)' },
+      { name: 'graphic.html', label: '🎨 Màn Hình Graphic' },
+      { name: 'host.html', label: '🎤 Màn Hình MC (Host)' },
+      { name: 'Scoreboard.html', label: '📊 Màn Hình Bảng Điểm (Chính)' },
+      { name: 'scoreboard1.html', label: '📊 Bảng Điểm Thí Sinh 1' },
+      { name: 'scoreboard2.html', label: '📊 Bảng Điểm Thí Sinh 2' },
+      { name: 'scoreboard3.html', label: '📊 Bảng Điểm Thí Sinh 3' },
+      { name: 'scoreboard4.html', label: '📊 Bảng Điểm Thí Sinh 4' },
+      { name: 'player.html', label: '⚡ Màn Hình Thí Sinh (Player)' },
+      { name: 'playerLogin.html', label: '🔑 Đăng Nhập Thí Sinh' },
+      { name: 'player_scene1.html', label: '⚡ Player Scene 1' },
+      { name: 'player_scene2.html', label: '⚡ Player Scene 2' },
+      { name: 'player_scene3.html', label: '⚡ Player Scene 3' },
+      { name: 'index.html', label: '🏠 Trang Chủ Giới Thiệu' },
+      { name: 'answer.html', label: '📝 Bảng Câu Trả Lời' }
+    ];
+
+    // Other root HTML files
+    const otherFiles = rootFiles
+      .filter(f => f.endsWith('.html') && f !== 'designer.html' && !mainPages.some(m => m.name === f))
+      .map(f => ({ name: f, label: `📄 ${f}`, isImported: false }));
+
+    // Imported HTML files
+    let importedFiles = [];
+    if (fs.existsSync(designerImportDir)) {
+      importedFiles = fs.readdirSync(designerImportDir)
+        .filter(f => f.endsWith('.html'))
+        .map(f => ({ name: f, label: `📥 ${f} (Đã nhập)`, isImported: true, url: `/imported/${f}` }));
+    }
+
+    res.json({ success: true, pages: [...mainPages, ...otherFiles, ...importedFiles] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API: Import HTML file for Designer (stores server-side, 100% same-origin)
+app.post('/api/designer/import', express.json({ limit: '50mb' }), (req, res) => {
+  try {
+    const { filename, content } = req.body;
+    if (!filename || !content) {
+      return res.status(400).json({ success: false, error: 'Thiếu filename hoặc content' });
+    }
+    const safeName = path.basename(filename);
+    const targetPath = path.join(designerImportDir, safeName);
+
+    let finalContent = content;
+    // Inject <base href="/"> if not present so relative paths like ./Images/ work smoothly
+    if (!finalContent.includes('<base ') && !finalContent.includes('<base>')) {
+      if (finalContent.includes('<head>')) {
+        finalContent = finalContent.replace('<head>', '<head><base href="/">');
+      } else if (finalContent.includes('<head ')) {
+        finalContent = finalContent.replace(/<head[^>]*>/i, '$&<base href="/">');
+      }
+    }
+    // Inject designer-runtime.js
+    if (!finalContent.includes('designer-runtime.js')) {
+      if (finalContent.includes('</head>')) {
+        finalContent = finalContent.replace('</head>', '<script src="/designer-runtime.js"></script></head>');
+      } else {
+        finalContent = '<script src="/designer-runtime.js"></script>' + finalContent;
+      }
+    }
+
+    fs.writeFileSync(targetPath, finalContent, 'utf-8');
+    res.json({
+      success: true,
+      filename: safeName,
+      url: `/imported/${safeName}`,
+      message: 'Đã lưu file HTML thành công'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 app.use(express.static(__dirname, {
   maxAge: '1d',
   etag: true,

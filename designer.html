@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT VISUAL DESIGNER - Đường Đến Vinh Quang</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+        }
+        
+        /* Layout: Top Toolbar, Main Workspace (Left Sidebar, Center Canvas, Right Panel) */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Top Toolbar */
+        .top-toolbar {
+            height: 56px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-tool {
+            background: #334155;
+            color: #f1f5f9;
+            border: 1px solid #475569;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-tool:hover {
+            background: #475569;
+            border-color: #64748b;
+        }
+        .btn-tool.primary {
+            background: #2563eb;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+        .btn-tool.primary:hover {
+            background: #1d4ed8;
+        }
+        .btn-tool.success {
+            background: #059669;
+            border-color: #10b981;
+            color: #fff;
+        }
+        .btn-tool.success:hover {
+            background: #047857;
+        }
+        .btn-tool.active {
+            background: #0284c7;
+            border-color: #38bdf8;
+        }
+        select.btn-tool {
+            padding-right: 28px;
+            cursor: pointer;
+        }
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .status-badge.saved {
+            background: rgba(5, 150, 105, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(5, 150, 105, 0.4);
+        }
+        .status-badge.unsaved {
+            background: rgba(217, 119, 6, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(217, 119, 6, 0.4);
+        }
+
+        /* Main Workspace */
+        .main-workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Left Sidebar (Pages & Layers Tree) */
+        .left-sidebar {
+            width: 280px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .sidebar-section-header {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            background: #0f172a;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sidebar-search {
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+        }
+        .sidebar-search input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        .sidebar-search input:focus {
+            border-color: #38bdf8;
+        }
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .page-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #cbd5e1;
+            transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+        .page-item:hover {
+            background: rgba(51, 65, 85, 0.5);
+            color: #f8fafc;
+        }
+        .page-item.active {
+            background: #2563eb;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        /* Layer Tree Item */
+        .layer-tree {
+            font-size: 13px;
+        }
+        .layer-node {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 1px;
+            color: #cbd5e1;
+            user-select: none;
+        }
+        .layer-node:hover {
+            background: #334155;
+            color: #fff;
+        }
+        .layer-node.selected {
+            background: #1d4ed8;
+            color: #fff;
+            font-weight: 600;
+        }
+        .layer-node-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .layer-node-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.7;
+        }
+        .layer-node:hover .layer-node-actions {
+            opacity: 1;
+        }
+        .layer-node-actions i {
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        /* Center Canvas Workspace */
+        .center-canvas-area {
+            flex: 1;
+            background: #0b0f19;
+            position: relative;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #000;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transition: transform 0.1s ease;
+            transform-origin: center center;
+        }
+        .canvas-wrapper.grid-bg {
+            background-image: 
+                linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        iframe.design-iframe {
+            width: 1920px;
+            height: 1080px;
+            border: none;
+            background: transparent;
+            display: block;
+            pointer-events: auto;
+        }
+
+        /* Floating Alignment & Action Toolbar (Bottom Center of Canvas) */
+        .floating-align-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 50;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+        .align-btn {
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.15s;
+        }
+        .align-btn:hover {
+            background: #334155;
+            color: #fff;
+        }
+        .align-separator {
+            width: 1px;
+            height: 20px;
+            background: #475569;
+            margin: 0 2px;
+        }
+
+        /* Right Property Panel */
+        .right-property-panel {
+            width: 320px;
+            background: #1e293b;
+            border-left: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .property-tabs {
+            display: flex;
+            background: #0f172a;
+            border-bottom: 1px solid #334155;
+            overflow-x: auto;
+        }
+        .property-tab {
+            flex: 1;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .property-tab:hover {
+            color: #cbd5e1;
+        }
+        .property-tab.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+            background: #1e293b;
+        }
+        .property-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .property-group {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #334155;
+        }
+        .property-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .property-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .prop-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .prop-row.grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .prop-label {
+            font-size: 12px;
+            color: #94a3b8;
+            width: 90px;
+            flex-shrink: 0;
+        }
+        .prop-control {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        .prop-control:focus {
+            border-color: #38bdf8;
+        }
+        select.prop-control {
+            cursor: pointer;
+        }
+        input[type="color"].prop-control {
+            padding: 2px 4px;
+            height: 32px;
+            cursor: pointer;
+        }
+        .no-selection-msg {
+            text-align: center;
+            color: #64748b;
+            margin-top: 40px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Overlay selection box injected into canvas or handled in iframe */
+        .design-overlay-box {
+            position: absolute;
+            border: 2px dashed #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            pointer-events: auto;
+            cursor: move;
+            display: none;
+            z-index: 9999;
+        }
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border: 1.5px solid #0284c7;
+            pointer-events: auto;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            z-index: 10000;
+        }
+        .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+        .handle-n  { top: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+        .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+        .handle-e  { top: calc(50% - 5px); right: -5px; cursor: ew-resize; }
+        .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+        .handle-s  { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+        .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .handle-w  { top: calc(50% - 5px); left: -5px; cursor: ew-resize; }
+
+        .controller-tab-btn {
+            padding: 5px 12px;
+            font-size: 12px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #94a3b8;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 600;
+        }
+        .controller-tab-btn:hover {
+            background: #334155;
+            color: #f8fafc;
+        }
+        .controller-tab-btn.active {
+            background: #0284c7;
+            color: #ffffff;
+            font-weight: 700;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        /* Modal / Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 16px;
+        }
+        .modal-textarea {
+            width: 100%;
+            height: 250px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Toast notification */
+        #toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast-msg {
+            background: #1e293b;
+            border-left: 4px solid #38bdf8;
+            color: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            animation: slideIn 0.2s ease, fadeOut 0.2s ease 2.8s forwards;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Toolbar -->
+        <div class="top-toolbar">
+            <div class="toolbar-group">
+                <div class="app-title">
+                    <i class="fa-solid fa-paintbrush"></i> PROJECT VISUAL DESIGNER
+                </div>
+                <div class="toolbar-separator" style="width:1px; height:24px; background:#334155; margin:0 8px;"></div>
+                <select id="pageSelector" class="btn-tool" onchange="switchPage(this.value)">
+                    <!-- Populated dynamically -->
+                </select>
+                <a id="openOriginalBtn" href="#" target="_blank" class="btn-tool" title="Mở trang gốc trong tab mới">
+                    <i class="fa-solid fa-external-link-alt"></i> Xem trang gốc
+                </a>
+            </div>
+
+            <div class="toolbar-group">
+                <span id="saveStatusBadge" class="status-badge saved">Đã lưu thay đổi</span>
+                <button id="interactionModeBtn" class="btn-tool" onclick="toggleInteractionMode()" title="Bật/Tắt chế độ thao tác trang gốc (cho phép bấm chuyển tab / tương tác bình thường)"><i class="fa-solid fa-arrow-pointer"></i> <span id="interactionModeText">Chế độ Thiết kế</span></button>
+                <div class="toolbar-separator" style="width:1px; height:24px; background:#334155; margin:0 4px;"></div>
+                <button class="btn-tool" onclick="undoAction()" title="Hoàn tác (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+                <button class="btn-tool" onclick="redoAction()" title="Làm lại (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+                <div class="toolbar-separator" style="width:1px; height:24px; background:#334155; margin:0 4px;"></div>
+                <button class="btn-tool" onclick="zoomCanvas(-0.1)" title="Thu nhỏ"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <span id="zoomLevelText" style="font-size:12px; color:#94a3b8; width:45px; text-align:center;">100%</span>
+                <button class="btn-tool" onclick="zoomCanvas(0.1)" title="Phóng to"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <button class="btn-tool" onclick="resetZoom()" title="Đặt lại tỷ lệ"><i class="fa-solid fa-expand"></i></button>
+                <div class="toolbar-separator" style="width:1px; height:24px; background:#334155; margin:0 4px;"></div>
+                <button id="gridToggleBtn" class="btn-tool active" onclick="toggleGrid()" title="Bật/tắt lưới nền"><i class="fa-solid fa-table-cells"></i> Lưới</button>
+                <button id="previewModeBtn" class="btn-tool" onclick="togglePreviewMode()" title="Chế độ xem trước / Vận hành"><i class="fa-solid fa-eye"></i> Xem trước</button>
+            </div>
+
+            <div class="toolbar-group">
+                <button class="btn-tool" onclick="openExportModal()"><i class="fa-solid fa-file-arrow-down"></i> Xuất JSON</button>
+                <button class="btn-tool" onclick="openImportModal()"><i class="fa-solid fa-file-arrow-up"></i> Nhập JSON</button>
+                <button class="btn-tool success" onclick="document.getElementById('importHtmlFileInput').click()"><i class="fa-solid fa-file-code"></i> Nhập file HTML</button>
+                <input type="file" id="importHtmlFileInput" accept=".html,.htm" style="display:none" onchange="handleImportHtmlFile(event)">
+                <button class="btn-tool" onclick="resetPageConfig()" style="color:#f87171;" title="Khôi phục mặc định trang này"><i class="fa-solid fa-triangle-exclamation"></i> Reset</button>
+                <button class="btn-tool primary" onclick="saveCurrentConfig()"><i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi</button>
+            </div>
+        </div>
+
+        <!-- Controller Tab Quick Switcher (Visible only when controller.html is selected) -->
+        <div id="controllerTabNav" style="display:none; background:#0f172a; border-bottom:1px solid #334155; padding:6px 16px; align-items:center; gap:8px; font-size:12px; z-index:99; flex-shrink:0;">
+            <span style="color:#38bdf8; font-weight:700;"><i class="fa-solid fa-folder-tree"></i> Tab Điều Khiển:</span>
+            <button class="controller-tab-btn active" data-tab="0" onclick="switchControllerTab(0)">0. Hệ Thống</button>
+            <button class="controller-tab-btn" data-tab="1" onclick="switchControllerTab(1)">1. Xuất Phát</button>
+            <button class="controller-tab-btn" data-tab="2" onclick="switchControllerTab(2)">2. Ra Khơi</button>
+            <button class="controller-tab-btn" data-tab="3" onclick="switchControllerTab(3)">3. Vượt Sóng</button>
+            <button class="controller-tab-btn" data-tab="4" onclick="switchControllerTab(4)">4. Vinh Quang</button>
+            <button class="controller-tab-btn" data-tab="5" onclick="switchControllerTab(5)">5. Câu Hỏi Phụ</button>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="main-workspace">
+            <!-- Left Sidebar -->
+            <div class="left-sidebar">
+                <div class="sidebar-section-header" style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span><i class="fa-solid fa-layer-group"></i> Cấu trúc Layer</span>
+                        <span id="layerCountBadge" style="font-size:11px; background:#334155; padding:2px 6px; border-radius:10px;">0 đối tượng</span>
+                    </div>
+                    <button class="btn-tool" style="padding:2px 6px; font-size:11px;" onclick="buildLayerTree()" title="Làm mới danh sách layer"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+                <div class="sidebar-search">
+                    <input type="text" id="layerSearchInput" placeholder="Tìm kiếm đối tượng..." oninput="filterLayers(this.value)">
+                </div>
+                <div class="sidebar-content" id="layerTreeContainer">
+                    <div style="text-align:center; color:#64748b; margin-top:20px; font-size:13px;">Đang tải danh sách layer...</div>
+                </div>
+            </div>
+
+            <!-- Center Canvas Area -->
+            <div class="center-canvas-area" id="canvasArea">
+                <div class="canvas-wrapper grid-bg" id="canvasWrapper">
+                    <iframe id="designIframe" class="design-iframe" onload="onIframeLoaded()"></iframe>
+                    <div id="canvasOverlay" class="design-overlay-box" style="display:none; position:absolute; border:2px dashed #38bdf8; background:rgba(56,189,248,0.12); pointer-events:auto; cursor:move; z-index:9999;">
+                        <!-- Floating coordinate info badge -->
+                        <div id="overlayCoordBadge" style="position:absolute; top:-24px; left:0; background:#0284c7; color:#fff; font-size:11px; font-family:monospace; padding:2px 6px; border-radius:4px; white-space:nowrap; pointer-events:none; font-weight:bold;">X: 0, Y: 0</div>
+                        
+                        <!-- 8 PowerPoint-style Resize Handles -->
+                        <div class="resize-handle handle-nw" data-handle="nw" title="Co giãn Tây Bắc"></div>
+                        <div class="resize-handle handle-n" data-handle="n" title="Co giãn Bắc"></div>
+                        <div class="resize-handle handle-ne" data-handle="ne" title="Co giãn Đông Bắc"></div>
+                        <div class="resize-handle handle-e" data-handle="e" title="Co giãn Đông"></div>
+                        <div class="resize-handle handle-se" data-handle="se" title="Co giãn Đông Nam"></div>
+                        <div class="resize-handle handle-s" data-handle="s" title="Co giãn Nam"></div>
+                        <div class="resize-handle handle-sw" data-handle="sw" title="Co giãn Tây Nam"></div>
+                        <div class="resize-handle handle-w" data-handle="w" title="Co giãn Tây"></div>
+                    </div>
+                </div>
+
+                <!-- Floating Alignment Toolbar -->
+                <div class="floating-align-bar">
+                    <button class="align-btn" onclick="alignSelected('left')" title="Căn trái"><i class="fa-solid fa-align-left"></i></button>
+                    <button class="align-btn" onclick="alignSelected('center')" title="Căn giữa ngang"><i class="fa-solid fa-align-center"></i></button>
+                    <button class="align-btn" onclick="alignSelected('right')" title="Căn phải"><i class="fa-solid fa-align-right"></i></button>
+                    <div class="align-separator"></div>
+                    <button class="align-btn" onclick="alignSelected('top')" title="Căn trên"><i class="fa-solid fa-arrow-up"></i></button>
+                    <button class="align-btn" onclick="alignSelected('middle')" title="Căn giữa dọc"><i class="fa-solid fa-arrows-up-down"></i></button>
+                    <button class="align-btn" onclick="alignSelected('bottom')" title="Căn dưới"><i class="fa-solid fa-arrow-down"></i></button>
+                    <div class="align-separator"></div>
+                    <button class="align-btn" onclick="duplicateSelectedElement()" title="Nhân bản đối tượng"><i class="fa-solid fa-copy"></i></button>
+                    <button class="align-btn" onclick="deleteSelectedElement()" title="Xóa đối tượng" style="color:#f87171;"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+
+            <!-- Right Property Panel -->
+            <div class="right-property-panel">
+                <div class="property-tabs">
+                    <div class="property-tab active" onclick="switchPropTab('layout')">Bố cục</div>
+                    <div class="property-tab" onclick="switchPropTab('style')">Màu & Viền</div>
+                    <div class="property-tab" onclick="switchPropTab('typography')">Văn bản</div>
+                    <div class="property-tab" onclick="switchPropTab('advanced')">Nâng cao</div>
+                </div>
+                <div class="property-body" id="propertyPanelBody">
+                    <div class="no-selection-msg">
+                        <i class="fa-solid fa-hand-pointer" style="font-size: 28px; margin-bottom: 10px; display: block; color: #475569;"></i>
+                        Chưa chọn đối tượng nào.<br>Hãy click vào một phần tử trên màn hình hoặc chọn từ danh sách layer bên trái.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export / Import Modal -->
+    <div id="jsonModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="modalTitle">Xuất cấu hình JSON</div>
+            <textarea id="modalTextarea" class="modal-textarea"></textarea>
+            <div class="modal-actions">
+                <button class="btn-tool" onclick="closeModal()">Đóng</button>
+                <button class="btn-tool primary" id="modalConfirmBtn" onclick="confirmModalAction()">Áp dụng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        // List of project HTML pages (will also be dynamically enriched from /api/designer/pages)
+        let projectPages = [
+            { name: "controller.html", label: "📱 Bảng Điều Khiển (Controller)" },
+            { name: "projector.html", label: "🖥️ Màn Hình Chiếu (Projector)" },
+            { name: "graphic.html", label: "🎨 Màn Hình Graphic" },
+            { name: "host.html", label: "🎤 Màn Hình MC (Host)" },
+            { name: "Scoreboard.html", label: "📊 Màn Hình Bảng Điểm (Chính)" },
+            { name: "scoreboard1.html", label: "📊 Bảng Điểm Thí Sinh 1" },
+            { name: "scoreboard2.html", label: "📊 Bảng Điểm Thí Sinh 2" },
+            { name: "scoreboard3.html", label: "📊 Bảng Điểm Thí Sinh 3" },
+            { name: "scoreboard4.html", label: "📊 Bảng Điểm Thí Sinh 4" },
+            { name: "player.html", label: "⚡ Màn Hình Thí Sinh (Player)" },
+            { name: "playerLogin.html", label: "🔑 Đăng Nhập Thí Sinh" },
+            { name: "player_scene1.html", label: "⚡ Player Scene 1" },
+            { name: "player_scene2.html", label: "⚡ Player Scene 2" },
+            { name: "player_scene3.html", label: "⚡ Player Scene 3" },
+            { name: "answer.html", label: "📝 Màn Hình Đáp Án" },
+            { name: "index.html", label: "🏠 Trang Chủ Giới Thiệu" },
+            { name: "guide.html", label: "📖 Hướng Dẫn Sử Dụng" }
+        ];
+
+        // Load saved imported HTML pages from localStorage
+        try {
+            const savedImported = localStorage.getItem('ddvq_imported_pages');
+            if (savedImported) {
+                const imported = JSON.parse(savedImported);
+                imported.forEach(p => {
+                    if (!projectPages.some(existing => existing.name === p.name)) {
+                        projectPages.push(p);
+                    }
+                });
+            }
+        } catch(e) {}
+
+        let currentPage = "controller.html";
+        let currentZoom = 0.55; // default scale fit
+        let isGridEnabled = true;
+        let isPreviewMode = false;
+        let isInteractionMode = false; // Mode to interact normally with the page (click tabs, buttons)
+        let isAspectRatioLocked = false;
+        let selectedElement = null; // DOM element inside iframe
+        let selectedSelector = "";
+        let pageConfigs = {}; // loaded from localStorage
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_HISTORY = 30;
+        let hasUnsavedChanges = false;
+        let activePropTab = 'layout';
+
+        const pageSelectorEl = document.getElementById('pageSelector');
+
+        function populatePageSelector() {
+            pageSelectorEl.innerHTML = '';
+            projectPages.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = p.label;
+                pageSelectorEl.appendChild(opt);
+            });
+            pageSelectorEl.value = currentPage;
+        }
+
+        // Fetch dynamic list of HTML files from server
+        async function fetchProjectPagesFromServer() {
+            try {
+                const resp = await fetch('/api/designer/pages');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && data.success && Array.isArray(data.pages)) {
+                        data.pages.forEach(serverPage => {
+                            const existing = projectPages.find(p => p.name === serverPage.name);
+                            if (!existing) {
+                                projectPages.push(serverPage);
+                            } else if (serverPage.url && !existing.url) {
+                                existing.url = serverPage.url;
+                            }
+                        });
+                        populatePageSelector();
+                    }
+                }
+            } catch(e) {
+                console.warn("Could not fetch pages list from server:", e);
+            }
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        function markUnsaved(unsaved = true) {
+            hasUnsavedChanges = unsaved;
+            const badge = document.getElementById('saveStatusBadge');
+            if (unsaved) {
+                badge.className = "status-badge unsaved";
+                badge.textContent = "Chưa lưu thay đổi";
+            } else {
+                badge.className = "status-badge saved";
+                badge.textContent = "Đã lưu thay đổi";
+            }
+        }
+
+        function loadPageConfigs() {
+            try {
+                const saved = localStorage.getItem('ddvq_designer_configs');
+                if (saved) pageConfigs = JSON.parse(saved);
+            } catch(e) { pageConfigs = {}; }
+        }
+
+        function savePageConfigsToStorage() {
+            try {
+                localStorage.setItem('ddvq_designer_configs', JSON.stringify(pageConfigs));
+            } catch(e) {}
+        }
+
+        // Push current page element styling snapshot to Undo stack
+        function pushUndoState() {
+            try {
+                const snapshot = JSON.stringify(pageConfigs[currentPage] || { elements: {} });
+                undoStack.push(snapshot);
+                if (undoStack.length > MAX_HISTORY) undoStack.shift();
+                redoStack = []; // Clear redo on new action
+            } catch(e) {}
+        }
+
+        function undoAction() {
+            if (undoStack.length === 0) {
+                showToast("Không có thao tác nào để hoàn tác.");
+                return;
+            }
+            const currentSnapshot = JSON.stringify(pageConfigs[currentPage] || { elements: {} });
+            redoStack.push(currentSnapshot);
+
+            const prevSnapshot = undoStack.pop();
+            pageConfigs[currentPage] = JSON.parse(prevSnapshot);
+            applyConfigToIframe(currentPage);
+            updateCanvasOverlay();
+            renderPropertyPanel();
+            markUnsaved(true);
+            showToast("Đã hoàn tác (Undo)");
+        }
+
+        function redoAction() {
+            if (redoStack.length === 0) {
+                showToast("Không có thao tác nào để làm lại.");
+                return;
+            }
+            const currentSnapshot = JSON.stringify(pageConfigs[currentPage] || { elements: {} });
+            undoStack.push(currentSnapshot);
+
+            const nextSnapshot = redoStack.pop();
+            pageConfigs[currentPage] = JSON.parse(nextSnapshot);
+            applyConfigToIframe(currentPage);
+            updateCanvasOverlay();
+            renderPropertyPanel();
+            markUnsaved(true);
+            showToast("Đã làm lại (Redo)");
+        }
+
+        // Mode Switch: Design vs Interaction
+        function toggleInteractionMode() {
+            isInteractionMode = !isInteractionMode;
+            const btn = document.getElementById('interactionModeBtn');
+            const txt = document.getElementById('interactionModeText');
+            const overlay = document.getElementById('canvasOverlay');
+
+            if (isInteractionMode) {
+                btn.classList.add('active');
+                txt.textContent = "Chế độ Thao tác (Tab/Game)";
+                if (overlay) overlay.style.pointerEvents = 'none';
+                showToast("⚡ Chế độ Thao tác BẬT: Bạn có thể click chuyển tab hoặc bấm nút trên trang bình thường.");
+            } else {
+                btn.classList.remove('active');
+                txt.textContent = "Chế độ Thiết kế";
+                if (overlay && selectedElement) overlay.style.pointerEvents = 'auto';
+                showToast("🎯 Chế độ Thiết kế BẬT: Click để chọn layer, kéo thả vị trí và co giãn kích thước.");
+            }
+        }
+
+        // Import HTML File: Uploads to server for guaranteed 100% same-origin hosting, with robust local fallback
+        async function handleImportHtmlFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name;
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const content = e.target.result;
+                let pageUrl = null;
+
+                showToast(`Đang nhập file ${fileName}...`);
+
+                // 1. Send to server /api/designer/import for same-origin serving
+                try {
+                    const resp = await fetch('/api/designer/import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: fileName, content: content })
+                    });
+                    if (resp.ok) {
+                        const resData = await resp.json();
+                        if (resData && resData.success && resData.url) {
+                            pageUrl = resData.url;
+                        }
+                    }
+                } catch(err) {
+                    console.warn("Could not save to server import, using local fallback:", err);
+                }
+
+                // 2. Persist in localStorage
+                try {
+                    localStorage.setItem('ddvq_imported_html_' + fileName, content);
+                    if (pageUrl) {
+                        localStorage.setItem('ddvq_imported_url_' + fileName, pageUrl);
+                    }
+                    let imported = [];
+                    const saved = localStorage.getItem('ddvq_imported_pages');
+                    if (saved) imported = JSON.parse(saved);
+                    if (!imported.some(p => p.name === fileName)) {
+                        imported.push({ name: fileName, label: `📥 ${fileName} (Nhập)`, url: pageUrl });
+                        localStorage.setItem('ddvq_imported_pages', JSON.stringify(imported));
+                    }
+                } catch(e) {}
+
+                // 3. Register in projectPages and dropdown
+                const existing = projectPages.find(p => p.name === fileName);
+                if (!existing) {
+                    projectPages.push({ name: fileName, label: `📥 ${fileName} (Nhập)`, url: pageUrl });
+                    populatePageSelector();
+                } else if (pageUrl) {
+                    existing.url = pageUrl;
+                }
+
+                pageSelectorEl.value = fileName;
+                switchPage(fileName);
+                showToast(`Đã nhập file HTML thành công: ${fileName}`);
+            };
+
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function switchPage(pageName) {
+            if (hasUnsavedChanges && !confirm("Bạn có thay đổi chưa lưu. Bạn có muốn chuyển trang không?")) {
+                pageSelectorEl.value = currentPage;
+                return;
+            }
+            currentPage = pageName;
+            const openOrig = document.getElementById('openOriginalBtn');
+            if (openOrig) openOrig.href = pageName;
+            
+            const tabNav = document.getElementById('controllerTabNav');
+            if (tabNav) {
+                tabNav.style.display = (pageName === 'controller.html') ? 'flex' : 'none';
+            }
+
+            selectedElement = null;
+            selectedSelector = "";
+            updateCanvasOverlay();
+            renderPropertyPanel();
+            
+            const iframe = document.getElementById('designIframe');
+            const pageObj = projectPages.find(p => p.name === pageName);
+            const savedUrl = localStorage.getItem('ddvq_imported_url_' + pageName) || (pageObj ? pageObj.url : null);
+            const importedHtml = localStorage.getItem('ddvq_imported_html_' + pageName);
+
+            if (savedUrl) {
+                // High-performance same-origin URL from server
+                iframe.src = savedUrl + "?design=true&t=" + Date.now();
+            } else if (importedHtml) {
+                // Client-side fallback: write directly into same-origin about:blank iframe
+                iframe.src = 'about:blank';
+                iframe.onload = () => {
+                    try {
+                        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        iDoc.open();
+                        let processed = importedHtml;
+                        if (!processed.includes('<base ') && !processed.includes('<base>')) {
+                            if (processed.includes('<head>')) {
+                                processed = processed.replace('<head>', '<head><base href="/">');
+                            } else if (processed.includes('<head ')) {
+                                processed = processed.replace(/<head[^>]*>/i, '$&<base href="/">');
+                            }
+                        }
+                        if (!processed.includes('designer-runtime.js')) {
+                            if (processed.includes('</head>')) {
+                                processed = processed.replace('</head>', '<script src="/designer-runtime.js"></script></head>');
+                            } else {
+                                processed = '<script src="/designer-runtime.js"></script>' + processed;
+                            }
+                        }
+                        iDoc.write(processed);
+                        iDoc.close();
+                        setTimeout(() => onIframeLoaded(), 150);
+                    } catch(err) {
+                        console.error("Iframe write fallback error:", err);
+                        buildLayerTree();
+                    }
+                };
+            } else {
+                iframe.src = pageName + "?design=true&t=" + Date.now();
+            }
+            markUnsaved(false);
+        }
+
+        // Controller Tab Switching with Guaranteed Tab Activation and Layer Reload
+        function switchControllerTab(idx) {
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iWin = iframe.contentWindow;
+                const iDoc = iframe.contentDocument || iWin.document;
+
+                // 1. Highlight active button in toolbar
+                document.querySelectorAll('.controller-tab-btn').forEach((btn, i) => {
+                    if (i === idx) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+
+                // 2. Invoke controller page's native switchTab function
+                if (typeof iWin.switchTab === 'function') {
+                    iWin.switchTab(idx);
+                }
+
+                // 3. Guaranteed DOM tab activation fallback
+                const navItems = iDoc.querySelectorAll('.navbar .nav-item, .nav-item');
+                navItems.forEach((item, i) => {
+                    if (i === idx) item.classList.add('active');
+                    else item.classList.remove('active');
+                });
+
+                const tabContents = iDoc.querySelectorAll('.tab-content');
+                tabContents.forEach((c, i) => {
+                    if (i === idx) {
+                        c.classList.add('active');
+                        c.style.display = 'block';
+                    } else {
+                        c.classList.remove('active');
+                        c.style.display = 'none';
+                    }
+                });
+
+                // 4. Clear old selection and rebuild layer tree for the new tab
+                setTimeout(() => {
+                    selectElementInCanvas(null);
+                    buildLayerTree();
+                    showToast(`Đã chuyển sang tab Điều Khiển #${idx}`);
+                }, 150);
+            } catch(e) {
+                console.warn("switchControllerTab error:", e);
+            }
+        }
+
+        function onIframeLoaded() {
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iWindow = iframe.contentWindow;
+                const iDoc = iframe.contentDocument || iWindow.document;
+
+                // Apply saved custom styles into iframe
+                applyConfigToIframe(currentPage);
+
+                // Inject design helper styles into iframe
+                let styleEl = iDoc.getElementById('designer-helper-style');
+                if (!styleEl) {
+                    styleEl = iDoc.createElement('style');
+                    styleEl.id = 'designer-helper-style';
+                    iDoc.head.appendChild(styleEl);
+                }
+                styleEl.textContent = `
+                    .ddvq-designer-hover { outline: 2px dashed #38bdf8 !important; outline-offset: 1px; cursor: pointer !important; }
+                    .ddvq-designer-selected { outline: 3px solid #f59e0b !important; outline-offset: 2px; }
+                `;
+
+                // Hover outline listener
+                iDoc.body.addEventListener('mousemove', function(e) {
+                    if (isPreviewMode || isInteractionMode) return;
+                    let target = e.target;
+                    if (target === iDoc.body || target === iDoc.documentElement) return;
+                    
+                    const prevHover = iDoc.querySelectorAll('.ddvq-designer-hover');
+                    prevHover.forEach(h => { if (h !== target) h.classList.remove('ddvq-designer-hover'); });
+                    if (!target.classList.contains('ddvq-designer-selected')) {
+                        target.classList.add('ddvq-designer-hover');
+                    }
+                }, true);
+
+                iDoc.body.addEventListener('mouseleave', function() {
+                    const prevHover = iDoc.querySelectorAll('.ddvq-designer-hover');
+                    prevHover.forEach(h => h.classList.remove('ddvq-designer-hover'));
+                }, true);
+
+                // Click listener to select elements or switch tabs
+                iDoc.body.addEventListener('click', function(e) {
+                    if (isPreviewMode || isInteractionMode) return; // Allow normal gameplay / tab switching clicks!
+
+                    // If holding Alt or Ctrl, let click pass through to original page!
+                    if (e.altKey || e.ctrlKey) {
+                        return;
+                    }
+
+                    // Check if clicked element is a controller tab navbar item
+                    const navItem = e.target.closest('.nav-item');
+                    if (navItem) {
+                        const allNavs = Array.from(iDoc.querySelectorAll('.navbar .nav-item, .nav-item'));
+                        const tabIdx = allNavs.indexOf(navItem);
+                        if (tabIdx >= 0) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            switchControllerTab(tabIdx);
+                            selectElementInCanvas(navItem);
+                            return;
+                        }
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Find meaningful target
+                    let target = e.target;
+                    if (target === iDoc.body || target === iDoc.documentElement) return;
+
+                    selectElementInCanvas(target);
+                }, true);
+
+                buildLayerTree();
+                showToast(`Đã tải trang: ${currentPage}`);
+            } catch(e) {
+                console.warn("Iframe load cross-origin or access error:", e);
+                buildLayerTree();
+            }
+        }
+
+        function getUniqueSelector(el) {
+            if (!el || el === document.body) return 'body';
+            if (el.id) return '#' + CSS.escape(el.id);
+            
+            let path = [];
+            while (el && el !== document.body && el.nodeType === Node.ELEMENT_NODE) {
+                let selector = el.tagName.toLowerCase();
+                if (el.className && typeof el.className === 'string') {
+                    const classes = el.className.trim().split(/\s+/).filter(c => c && !c.startsWith('ddvq-'));
+                    if (classes.length > 0) {
+                        selector += '.' + classes.join('.');
+                    }
+                }
+                let sibling = el;
+                let nth = 1;
+                while ((sibling = sibling.previousElementSibling) !== null) {
+                    if (sibling.tagName === el.tagName) nth++;
+                }
+                selector += `:nth-of-type(${nth})`;
+                path.unshift(selector);
+                el = el.parentElement;
+            }
+            return path.join(' > ');
+        }
+
+        function generateStableId(el, index) {
+            if (el.id) return el.id;
+            const tag = el.tagName.toLowerCase();
+            const text = (el.innerText || '').trim().substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
+            return `${tag}_${index}${text ? '_' + text : ''}`;
+        }
+
+        function buildLayerTree() {
+            const container = document.getElementById('layerTreeContainer');
+            container.innerHTML = '';
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const body = iDoc.body;
+                if (!body) {
+                    container.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;">Đang tải nội dung...</div>';
+                    return;
+                }
+                
+                let count = 0;
+                function traverse(node, parentEl, depth) {
+                    if (node.nodeType !== Node.ELEMENT_NODE) return;
+                    if (node.id === 'designer-helper-style' || node.tagName === 'SCRIPT' || node.tagName === 'STYLE' || node.tagName === 'HEAD' || node.tagName === 'META' || node.tagName === 'LINK') return;
+
+                    count++;
+                    const idx = count;
+                    if (!node.getAttribute('data-designer-id')) {
+                        node.setAttribute('data-designer-id', generateStableId(node, idx));
+                    }
+                    const selector = getUniqueSelector(node);
+
+                    const nodeDiv = document.createElement('div');
+                    nodeDiv.className = 'layer-node';
+                    if (node === selectedElement) nodeDiv.classList.add('selected');
+                    nodeDiv.style.paddingLeft = (depth * 14 + 8) + 'px';
+
+                    const nameLabel = node.id ? `#${node.id}` : (node.className ? `.${node.className.split(' ')[0]}` : node.tagName.toLowerCase());
+                    const textSnippet = (node.innerText || '').trim();
+                    const displayName = textSnippet ? `${nameLabel} ("${textSnippet.substring(0, 12)}...")` : nameLabel;
+
+                    nodeDiv.innerHTML = `
+                        <div class="layer-node-left">
+                            <i class="fa-solid ${node.children.length > 0 ? 'fa-folder' : 'fa-tag'}"></i>
+                            <span title="${selector}">${displayName}</span>
+                        </div>
+                        <div class="layer-node-actions">
+                            <i class="fa-solid fa-eye" title="Ẩn/Hiện" onclick="event.stopPropagation(); toggleNodeVisibility('${selector}', this)"></i>
+                        </div>
+                    `;
+
+                    nodeDiv.onclick = () => {
+                        selectElementInCanvas(node);
+                    };
+
+                    parentEl.appendChild(nodeDiv);
+
+                    // Traverse children
+                    for (let child of node.children) {
+                        traverse(child, parentEl, depth + 1);
+                    }
+                }
+
+                const rootContainer = document.createElement('div');
+                rootContainer.className = 'layer-tree';
+                for (let child of body.children) {
+                    traverse(child, rootContainer, 0);
+                }
+                container.appendChild(rootContainer);
+                const badge = document.getElementById('layerCountBadge');
+                if (badge) badge.textContent = `${count} đối tượng`;
+
+            } catch(e) {
+                container.innerHTML = `<div style="color:#f87171; padding:10px; font-size:12px;">Không thể đọc danh sách layer: ${e.message}</div>`;
+            }
+        }
+
+        function toggleNodeVisibility(selector, iconEl) {
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const el = iDoc.querySelector(selector);
+                if (!el) return;
+
+                if (el.style.display === 'none') {
+                    el.style.display = '';
+                    iconEl.className = 'fa-solid fa-eye';
+                    updateProp('display', '');
+                } else {
+                    el.style.display = 'none';
+                    iconEl.className = 'fa-solid fa-eye-slash';
+                    updateProp('display', 'none');
+                }
+                updateCanvasOverlay();
+            } catch(e) {}
+        }
+
+        function selectElementInCanvas(el) {
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                // Clear previous selection
+                const prev = iDoc.querySelectorAll('.ddvq-designer-selected');
+                prev.forEach(p => p.classList.remove('ddvq-designer-selected'));
+
+                selectedElement = el;
+                selectedSelector = el ? getUniqueSelector(el) : "";
+                if (el) {
+                    el.classList.add('ddvq-designer-selected');
+                }
+
+                updateCanvasOverlay();
+                
+                // Highlight layer in left sidebar
+                const container = document.getElementById('layerTreeContainer');
+                container.querySelectorAll('.layer-node').forEach(node => {
+                    node.classList.remove('selected');
+                });
+                if (el) {
+                    const matchedNode = container.querySelector(`span[title="${selectedSelector}"]`);
+                    if (matchedNode) {
+                        const row = matchedNode.closest('.layer-node');
+                        if (row) {
+                            row.classList.add('selected');
+                            row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        }
+                    }
+                }
+
+                renderPropertyPanel();
+            } catch(e) {}
+        }
+
+        // Accurate overlay position matching element bounding box inside iframe
+        function updateCanvasOverlay() {
+            const overlay = document.getElementById('canvasOverlay');
+            if (!selectedElement || !overlay) {
+                if (overlay) overlay.style.display = 'none';
+                return;
+            }
+            try {
+                const iframe = document.getElementById('designIframe');
+                const iWin = iframe.contentWindow;
+                const iDoc = iframe.contentDocument || iWin.document;
+
+                const rect = selectedElement.getBoundingClientRect();
+                const scrollX = iWin.scrollX || iDoc.documentElement.scrollLeft || iDoc.body.scrollLeft || 0;
+                const scrollY = iWin.scrollY || iDoc.documentElement.scrollTop || iDoc.body.scrollTop || 0;
+
+                const left = Math.round(rect.left + scrollX);
+                const top = Math.round(rect.top + scrollY);
+                const width = Math.round(rect.width);
+                const height = Math.round(rect.height);
+
+                overlay.style.display = 'block';
+                overlay.style.pointerEvents = isInteractionMode ? 'none' : 'auto';
+                overlay.style.left = left + 'px';
+                overlay.style.top = top + 'px';
+                overlay.style.width = width + 'px';
+                overlay.style.height = height + 'px';
+
+                const badge = document.getElementById('overlayCoordBadge');
+                if (badge) {
+                    badge.textContent = `X: ${left}px | Y: ${top}px | W: ${width}px | H: ${height}px`;
+                }
+            } catch(e) {
+                overlay.style.display = 'none';
+            }
+        }
+
+        // High-speed Property Input updater during dragging (prevents expensive full DOM panel re-renders)
+        function updatePropertyInputsOnly() {
+            if (!selectedElement) return;
+            const leftInput = document.getElementById('prop_left');
+            const topInput = document.getElementById('prop_top');
+            const widthInput = document.getElementById('prop_width');
+            const heightInput = document.getElementById('prop_height');
+
+            if (leftInput) leftInput.value = selectedElement.style.left || '';
+            if (topInput) topInput.value = selectedElement.style.top || '';
+            if (widthInput) widthInput.value = selectedElement.style.width || '';
+            if (heightInput) heightInput.value = selectedElement.style.height || '';
+        }
+
+        // PowerPoint-style Mouse Drag to Move and 8-Handle Resize
+        let isDraggingElement = false;
+        let resizingHandle = null;
+        let startClientX = 0, startClientY = 0;
+        let startLeft = 0, startTop = 0, startWidth = 0, startHeight = 0;
+        let originalAspectRatio = 1;
+
+        function initCanvasDragAndResize() {
+            const overlay = document.getElementById('canvasOverlay');
+            if (!overlay) return;
+
+            // Handle mousedown on overlay (move) or on resize handles (resize)
+            overlay.addEventListener('mousedown', (e) => {
+                if (!selectedElement || isInteractionMode || isPreviewMode) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+
+                startClientX = e.clientX;
+                startClientY = e.clientY;
+
+                const iframe = document.getElementById('designIframe');
+                const iWin = iframe.contentWindow;
+                const computed = iWin.getComputedStyle(selectedElement);
+                
+                startWidth = selectedElement.offsetWidth || parseFloat(computed.width) || 100;
+                startHeight = selectedElement.offsetHeight || parseFloat(computed.height) || 50;
+                originalAspectRatio = (startWidth / (startHeight || 1)) || 1;
+
+                // Determine current element left and top
+                const currentLeftStyle = parseFloat(selectedElement.style.left);
+                const currentTopStyle = parseFloat(selectedElement.style.top);
+                
+                if (!isNaN(currentLeftStyle) && !isNaN(currentTopStyle)) {
+                    startLeft = currentLeftStyle;
+                    startTop = currentTopStyle;
+                } else {
+                    const rect = selectedElement.getBoundingClientRect();
+                    const iDoc = iWin.document;
+                    const scrollX = iWin.scrollX || iDoc.documentElement.scrollLeft || 0;
+                    const scrollY = iWin.scrollY || iDoc.documentElement.scrollTop || 0;
+                    startLeft = Math.round(rect.left + scrollX);
+                    startTop = Math.round(rect.top + scrollY);
+                    
+                    selectedElement.style.position = 'absolute';
+                    selectedElement.style.left = startLeft + 'px';
+                    selectedElement.style.top = startTop + 'px';
+                }
+
+                if (e.target.classList.contains('resize-handle')) {
+                    resizingHandle = e.target.getAttribute('data-handle');
+                    isDraggingElement = false;
+                } else {
+                    isDraggingElement = true;
+                    resizingHandle = null;
+                }
+
+                pushUndoState();
+            });
+
+            // Global mousemove to drag or resize smoothly
+            window.addEventListener('mousemove', (e) => {
+                if (!selectedElement) return;
+                if (!isDraggingElement && !resizingHandle) return;
+
+                const dx = (e.clientX - startClientX) / currentZoom;
+                const dy = (e.clientY - startClientY) / currentZoom;
+
+                if (isDraggingElement) {
+                    let newL = Math.round(startLeft + dx);
+                    let newT = Math.round(startTop + dy);
+
+                    // Snap to 10px grid if grid is enabled (hold Alt to bypass snap)
+                    if (isGridEnabled && e.altKey === false) {
+                        if (Math.abs(newL % 10) < 4) newL = Math.round(newL / 10) * 10;
+                        if (Math.abs(newT % 10) < 4) newT = Math.round(newT / 10) * 10;
+                    }
+
+                    selectedElement.style.position = 'absolute';
+                    selectedElement.style.left = newL + 'px';
+                    selectedElement.style.top = newT + 'px';
+
+                    updateCanvasOverlay();
+                    updatePropertyInputsOnly();
+                    markUnsaved(true);
+                } else if (resizingHandle) {
+                    let newW = startWidth;
+                    let newH = startHeight;
+                    let newL = startLeft;
+                    let newT = startTop;
+
+                    const lockRatio = isAspectRatioLocked || e.shiftKey;
+
+                    switch(resizingHandle) {
+                        case 'e':
+                            newW = Math.max(10, Math.round(startWidth + dx));
+                            if (lockRatio) newH = Math.round(newW / originalAspectRatio);
+                            break;
+                        case 'w':
+                            newW = Math.max(10, Math.round(startWidth - dx));
+                            newL = Math.round(startLeft + (startWidth - newW));
+                            if (lockRatio) newH = Math.round(newW / originalAspectRatio);
+                            break;
+                        case 's':
+                            newH = Math.max(10, Math.round(startHeight + dy));
+                            if (lockRatio) newW = Math.round(newH * originalAspectRatio);
+                            break;
+                        case 'n':
+                            newH = Math.max(10, Math.round(startHeight - dy));
+                            newT = Math.round(startTop + (startHeight - newH));
+                            if (lockRatio) newW = Math.round(newH * originalAspectRatio);
+                            break;
+                        case 'se':
+                            newW = Math.max(10, Math.round(startWidth + dx));
+                            newH = lockRatio ? Math.round(newW / originalAspectRatio) : Math.max(10, Math.round(startHeight + dy));
+                            break;
+                        case 'sw':
+                            newW = Math.max(10, Math.round(startWidth - dx));
+                            newL = Math.round(startLeft + (startWidth - newW));
+                            newH = lockRatio ? Math.round(newW / originalAspectRatio) : Math.max(10, Math.round(startHeight + dy));
+                            break;
+                        case 'ne':
+                            newW = Math.max(10, Math.round(startWidth + dx));
+                            newH = lockRatio ? Math.round(newW / originalAspectRatio) : Math.max(10, Math.round(startHeight - dy));
+                            newT = Math.round(startTop + (startHeight - newH));
+                            break;
+                        case 'nw':
+                            newW = Math.max(10, Math.round(startWidth - dx));
+                            newL = Math.round(startLeft + (startWidth - newW));
+                            newH = lockRatio ? Math.round(newW / originalAspectRatio) : Math.max(10, Math.round(startHeight - dy));
+                            newT = Math.round(startTop + (startHeight - newH));
+                            break;
+                    }
+
+                    selectedElement.style.width = newW + 'px';
+                    selectedElement.style.height = newH + 'px';
+                    selectedElement.style.left = newL + 'px';
+                    selectedElement.style.top = newT + 'px';
+
+                    updateCanvasOverlay();
+                    updatePropertyInputsOnly();
+                    markUnsaved(true);
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDraggingElement || resizingHandle) {
+                    isDraggingElement = false;
+                    resizingHandle = null;
+                    recordCurrentElementConfig();
+                    renderPropertyPanel();
+                }
+            });
+
+            // Arrow keys to nudge selected element
+            window.addEventListener('keydown', (e) => {
+                if (!selectedElement) return;
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+                const step = e.shiftKey ? 10 : 1;
+                let handled = false;
+
+                const curLeft = parseFloat(selectedElement.style.left) || selectedElement.offsetLeft || 0;
+                const curTop = parseFloat(selectedElement.style.top) || selectedElement.offsetTop || 0;
+
+                if (e.key === 'ArrowLeft') {
+                    selectedElement.style.position = 'absolute';
+                    selectedElement.style.left = (curLeft - step) + 'px';
+                    handled = true;
+                } else if (e.key === 'ArrowRight') {
+                    selectedElement.style.position = 'absolute';
+                    selectedElement.style.left = (curLeft + step) + 'px';
+                    handled = true;
+                } else if (e.key === 'ArrowUp') {
+                    selectedElement.style.position = 'absolute';
+                    selectedElement.style.top = (curTop - step) + 'px';
+                    handled = true;
+                } else if (e.key === 'ArrowDown') {
+                    selectedElement.style.position = 'absolute';
+                    selectedElement.style.top = (curTop + step) + 'px';
+                    handled = true;
+                } else if (e.key === 'Delete' || (e.key === 'Backspace' && e.ctrlKey)) {
+                    deleteSelectedElement();
+                    handled = true;
+                }
+
+                if (handled) {
+                    e.preventDefault();
+                    updateCanvasOverlay();
+                    updatePropertyInputsOnly();
+                    markUnsaved(true);
+                    recordCurrentElementConfig();
+                }
+            });
+        }
+
+        // Record all current inline styles of selectedElement into pageConfigs
+        function recordCurrentElementConfig() {
+            if (!selectedElement || !selectedSelector) return;
+            if (!pageConfigs[currentPage]) pageConfigs[currentPage] = { elements: {} };
+            if (!pageConfigs[currentPage].elements[selectedSelector]) {
+                pageConfigs[currentPage].elements[selectedSelector] = {};
+            }
+
+            const targetObj = pageConfigs[currentPage].elements[selectedSelector];
+            const props = ['left', 'top', 'width', 'height', 'position', 'display', 'opacity', 'zIndex', 'backgroundColor', 'backgroundImage', 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius', 'color', 'fontSize', 'fontWeight', 'textAlign', 'padding', 'margin', 'boxShadow'];
+
+            props.forEach(p => {
+                const val = selectedElement.style[p];
+                if (val !== undefined && val !== null && val !== '') {
+                    targetObj[p] = val;
+                }
+            });
+        }
+
+        function renderPropertyPanel() {
+            const body = document.getElementById('propertyPanelBody');
+            if (!selectedElement) {
+                body.innerHTML = `
+                    <div class="no-selection-msg">
+                        <i class="fa-solid fa-hand-pointer" style="font-size: 28px; margin-bottom: 10px; display: block; color: #475569;"></i>
+                        Chưa chọn đối tượng nào.<br>Hãy click vào một phần tử trên màn hình hoặc chọn từ danh sách layer bên trái.
+                    </div>
+                `;
+                return;
+            }
+
+            const iframe = document.getElementById('designIframe');
+            const iWin = iframe.contentWindow;
+            const computed = iWin.getComputedStyle(selectedElement);
+            
+            const getVal = (prop) => {
+                const inline = selectedElement.style[prop];
+                if (inline !== undefined && inline !== '') return inline;
+                return computed[prop] || '';
+            };
+
+            let html = '';
+
+            if (activePropTab === 'layout') {
+                html = `
+                    <div class="property-group">
+                        <div class="property-group-title">Vị trí & Kích thước</div>
+                        <div class="prop-row grid-2">
+                            <div><span class="prop-label">X:</span> <input type="text" class="prop-control" id="prop_left" value="${getVal('left')}" onchange="updateProp('left', this.value)"></div>
+                            <div><span class="prop-label">Y:</span> <input type="text" class="prop-control" id="prop_top" value="${getVal('top')}" onchange="updateProp('top', this.value)"></div>
+                        </div>
+                        <div class="prop-row grid-2">
+                            <div><span class="prop-label">Width:</span> <input type="text" class="prop-control" id="prop_width" value="${getVal('width')}" onchange="updateProp('width', this.value)"></div>
+                            <div><span class="prop-label">Height:</span> <input type="text" class="prop-control" id="prop_height" value="${getVal('height')}" onchange="updateProp('height', this.value)"></div>
+                        </div>
+                        <div class="prop-row" style="margin-top:6px;">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#cbd5e1; cursor:pointer;">
+                                <input type="checkbox" id="lockRatioCheckbox" ${isAspectRatioLocked ? 'checked' : ''} onchange="isAspectRatioLocked = this.checked">
+                                <span>Khóa tỷ lệ khung hình (Aspect Ratio)</span>
+                            </label>
+                        </div>
+                        <div class="prop-row grid-2" style="margin-top:10px;">
+                            <div><span class="prop-label">Opacity:</span> <input type="number" step="0.1" min="0" max="1" class="prop-control" id="prop_opacity" value="${getVal('opacity') || 1}" onchange="updateProp('opacity', this.value)"></div>
+                            <div><span class="prop-label">Z-Index:</span> <input type="text" class="prop-control" id="prop_zIndex" value="${getVal('zIndex') || 'auto'}" onchange="updateProp('zIndex', this.value)"></div>
+                        </div>
+                    </div>
+                    <div class="property-group">
+                        <div class="property-group-title">Hiển thị & Căn chỉnh</div>
+                        <div class="prop-row">
+                            <span class="prop-label">Display:</span>
+                            <select class="prop-control" onchange="updateProp('display', this.value)">
+                                <option value="block" ${getVal('display')==='block'?'selected':''}>block</option>
+                                <option value="flex" ${getVal('display')==='flex'?'selected':''}>flex</option>
+                                <option value="grid" ${getVal('display')==='grid'?'selected':''}>grid</option>
+                                <option value="inline-block" ${getVal('display')==='inline-block'?'selected':''}>inline-block</option>
+                                <option value="none" ${getVal('display')==='none'?'selected':''}>none</option>
+                            </select>
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Position:</span>
+                            <select class="prop-control" onchange="updateProp('position', this.value)">
+                                <option value="absolute" ${getVal('position')==='absolute'?'selected':''}>absolute</option>
+                                <option value="relative" ${getVal('position')==='relative'?'selected':''}>relative</option>
+                                <option value="fixed" ${getVal('position')==='fixed'?'selected':''}>fixed</option>
+                                <option value="static" ${getVal('position')==='static'?'selected':''}>static</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            } else if (activePropTab === 'style') {
+                html = `
+                    <div class="property-group">
+                        <div class="property-group-title">Màu sắc & Nền</div>
+                        <div class="prop-row">
+                            <span class="prop-label">Màu nền:</span>
+                            <input type="text" class="prop-control" id="prop_backgroundColor" value="${getVal('backgroundColor')}" onchange="updateProp('backgroundColor', this.value)">
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Ảnh nền:</span>
+                            <input type="text" class="prop-control" id="prop_backgroundImage" value="${getVal('backgroundImage')}" onchange="updateProp('backgroundImage', this.value)" placeholder="url('...')">
+                        </div>
+                    </div>
+                    <div class="property-group">
+                        <div class="property-group-title">Viền (Border)</div>
+                        <div class="prop-row">
+                            <span class="prop-label">Độ dày viền:</span>
+                            <input type="text" class="prop-control" value="${getVal('borderWidth')}" onchange="updateProp('borderWidth', this.value)">
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Kiểu viền:</span>
+                            <select class="prop-control" onchange="updateProp('borderStyle', this.value)">
+                                <option value="solid" ${getVal('borderStyle')==='solid'?'selected':''}>solid</option>
+                                <option value="dashed" ${getVal('borderStyle')==='dashed'?'selected':''}>dashed</option>
+                                <option value="dotted" ${getVal('borderStyle')==='dotted'?'selected':''}>dotted</option>
+                                <option value="none" ${getVal('borderStyle')==='none'?'selected':''}>none</option>
+                            </select>
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Màu viền:</span>
+                            <input type="text" class="prop-control" value="${getVal('borderColor')}" onchange="updateProp('borderColor', this.value)">
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Bo góc:</span>
+                            <input type="text" class="prop-control" value="${getVal('borderRadius')}" onchange="updateProp('borderRadius', this.value)">
+                        </div>
+                    </div>
+                `;
+            } else if (activePropTab === 'typography') {
+                html = `
+                    <div class="property-group">
+                        <div class="property-group-title">Định dạng văn bản</div>
+                        <div class="prop-row">
+                            <span class="prop-label">Nội dung:</span>
+                            <textarea class="prop-control" rows="3" oninput="updateTextContent(this.value)">${selectedElement.innerText || ''}</textarea>
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Màu chữ:</span>
+                            <input type="text" class="prop-control" value="${getVal('color')}" onchange="updateProp('color', this.value)">
+                        </div>
+                        <div class="prop-row grid-2">
+                            <div><span class="prop-label">Cỡ chữ:</span> <input type="text" class="prop-control" value="${getVal('fontSize')}" onchange="updateProp('fontSize', this.value)"></div>
+                            <div><span class="prop-label">Đậm chữ:</span> 
+                                <select class="prop-control" onchange="updateProp('fontWeight', this.value)">
+                                    <option value="normal" ${getVal('fontWeight')==='normal'?'selected':''}>normal</option>
+                                    <option value="bold" ${getVal('fontWeight')==='bold'?'selected':''}>bold</option>
+                                    <option value="600" ${getVal('fontWeight')==='600'?'selected':''}>600</option>
+                                    <option value="700" ${getVal('fontWeight')==='700'?'selected':''}>700</option>
+                                    <option value="900" ${getVal('fontWeight')==='900'?'selected':''}>900</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Căn lề:</span>
+                            <select class="prop-control" onchange="updateProp('textAlign', this.value)">
+                                <option value="left" ${getVal('textAlign')==='left'?'selected':''}>Trái</option>
+                                <option value="center" ${getVal('textAlign')==='center'?'selected':''}>Giữa</option>
+                                <option value="right" ${getVal('textAlign')==='right'?'selected':''}>Phải</option>
+                                <option value="justify" ${getVal('textAlign')==='justify'?'selected':''}>Đều</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            } else if (activePropTab === 'advanced') {
+                html = `
+                    <div class="property-group">
+                        <div class="property-group-title">Khoảng cách & Nâng cao</div>
+                        <div class="prop-row">
+                            <span class="prop-label">Padding:</span>
+                            <input type="text" class="prop-control" value="${getVal('padding')}" onchange="updateProp('padding', this.value)">
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Margin:</span>
+                            <input type="text" class="prop-control" value="${getVal('margin')}" onchange="updateProp('margin', this.value)">
+                        </div>
+                        <div class="prop-row">
+                            <span class="prop-label">Box Shadow:</span>
+                            <input type="text" class="prop-control" value="${getVal('boxShadow')}" onchange="updateProp('boxShadow', this.value)">
+                        </div>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = html;
+        }
+
+        function switchPropTab(tabName) {
+            activePropTab = tabName;
+            document.querySelectorAll('.property-tab').forEach((t, i) => {
+                const names = ['layout', 'style', 'typography', 'advanced'];
+                if (names[i] === tabName) t.classList.add('active');
+                else t.classList.remove('active');
+            });
+            renderPropertyPanel();
+        }
+
+        function updateProp(propName, value) {
+            if (!selectedElement) return;
+            pushUndoState();
+            selectedElement.style[propName] = value;
+            markUnsaved(true);
+
+            // Save to pageConfigs
+            if (!pageConfigs[currentPage]) pageConfigs[currentPage] = { elements: {} };
+            if (!pageConfigs[currentPage].elements[selectedSelector]) {
+                pageConfigs[currentPage].elements[selectedSelector] = {};
+            }
+            pageConfigs[currentPage].elements[selectedSelector][propName] = value;
+            updateCanvasOverlay();
+        }
+
+        function updateTextContent(val) {
+            if (!selectedElement) return;
+            pushUndoState();
+            selectedElement.innerText = val;
+            markUnsaved(true);
+            updateCanvasOverlay();
+        }
+
+        function applyConfigToIframe(pageName) {
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                let styleEl = iDoc.getElementById('ddvq-custom-designer-styles');
+                if (!styleEl) {
+                    styleEl = iDoc.createElement('style');
+                    styleEl.id = 'ddvq-custom-designer-styles';
+                    iDoc.head.appendChild(styleEl);
+                }
+
+                const config = pageConfigs[pageName];
+                if (!config || !config.elements) {
+                    styleEl.textContent = '';
+                    return;
+                }
+
+                let css = '';
+                for (const [selector, props] of Object.entries(config.elements)) {
+                    let rule = '';
+                    for (const [k, v] of Object.entries(props)) {
+                        const cssProp = k.replace(/([A-Z])/g, '-$1').toLowerCase();
+                        rule += `${cssProp}: ${v} !important; `;
+                    }
+                    if (rule) css += `${selector} { ${rule} }\n`;
+                }
+                styleEl.textContent = css;
+            } catch(e) {}
+        }
+
+        function saveCurrentConfig() {
+            savePageConfigsToStorage();
+            applyConfigToIframe(currentPage);
+            markUnsaved(false);
+            showToast(`Đã lưu cấu hình thiết kế cho trang: ${currentPage}`);
+        }
+
+        function resetPageConfig() {
+            if (confirm(`Bạn có chắc muốn khôi phục thiết kế gốc của trang ${currentPage}?`)) {
+                pushUndoState();
+                if (pageConfigs[currentPage]) {
+                    delete pageConfigs[currentPage];
+                    savePageConfigsToStorage();
+                }
+                switchPage(currentPage);
+                showToast("Đã khôi phục mặc định.");
+            }
+        }
+
+        // Zoom Canvas
+        function zoomCanvas(delta) {
+            currentZoom = Math.max(0.2, Math.min(2.0, currentZoom + delta));
+            document.getElementById('zoomLevelText').textContent = Math.round(currentZoom * 100) + '%';
+            document.getElementById('canvasWrapper').style.transform = `scale(${currentZoom})`;
+            updateCanvasOverlay();
+        }
+
+        function resetZoom() {
+            currentZoom = 0.55;
+            document.getElementById('zoomLevelText').textContent = Math.round(currentZoom * 100) + '%';
+            document.getElementById('canvasWrapper').style.transform = `scale(${currentZoom})`;
+            updateCanvasOverlay();
+        }
+
+        function toggleGrid() {
+            isGridEnabled = !isGridEnabled;
+            const btn = document.getElementById('gridToggleBtn');
+            const wrapper = document.getElementById('canvasWrapper');
+            if (isGridEnabled) {
+                btn.classList.add('active');
+                wrapper.classList.add('grid-bg');
+            } else {
+                btn.classList.remove('active');
+                wrapper.classList.remove('grid-bg');
+            }
+        }
+
+        function togglePreviewMode() {
+            isPreviewMode = !isPreviewMode;
+            const btn = document.getElementById('previewModeBtn');
+            const iframe = document.getElementById('designIframe');
+            try {
+                const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const helperStyle = iDoc.getElementById('designer-helper-style');
+                if (isPreviewMode) {
+                    btn.classList.add('active');
+                    if (helperStyle) helperStyle.disabled = true;
+                    if (selectedElement) selectElementInCanvas(null);
+                    showToast("Đã chuyển sang chế độ Xem trước");
+                } else {
+                    btn.classList.remove('active');
+                    if (helperStyle) helperStyle.disabled = false;
+                    showToast("Đã chuyển về chế độ Thiết kế");
+                }
+            } catch(e) {}
+        }
+
+        // Align tools
+        function alignSelected(type) {
+            if (!selectedElement) {
+                showToast("Chưa chọn đối tượng để căn chỉnh!");
+                return;
+            }
+            pushUndoState();
+            const parent = selectedElement.parentElement || selectedElement.offsetParent;
+            const pWidth = parent ? parent.clientWidth : 1920;
+            const pHeight = parent ? parent.clientHeight : 1080;
+            const elWidth = selectedElement.offsetWidth;
+            const elHeight = selectedElement.offsetHeight;
+
+            selectedElement.style.position = 'absolute';
+
+            if (type === 'left') updateProp('left', '0px');
+            else if (type === 'center') updateProp('left', Math.round((pWidth - elWidth) / 2) + 'px');
+            else if (type === 'right') updateProp('left', (pWidth - elWidth) + 'px');
+            else if (type === 'top') updateProp('top', '0px');
+            else if (type === 'middle') updateProp('top', Math.round((pHeight - elHeight) / 2) + 'px');
+            else if (type === 'bottom') updateProp('top', (pHeight - elHeight) + 'px');
+
+            updateCanvasOverlay();
+            renderPropertyPanel();
+            showToast(`Đã căn chỉnh: ${type}`);
+        }
+
+        function duplicateSelectedElement() {
+            if (!selectedElement) return;
+            pushUndoState();
+            const clone = selectedElement.cloneNode(true);
+            const curLeft = parseFloat(selectedElement.style.left) || selectedElement.offsetLeft || 0;
+            const curTop = parseFloat(selectedElement.style.top) || selectedElement.offsetTop || 0;
+            clone.style.left = (curLeft + 20) + 'px';
+            clone.style.top = (curTop + 20) + 'px';
+            selectedElement.parentElement.appendChild(clone);
+            selectElementInCanvas(clone);
+            buildLayerTree();
+            markUnsaved(true);
+            showToast("Đã nhân bản đối tượng");
+        }
+
+        function deleteSelectedElement() {
+            if (!selectedElement) return;
+            if (confirm("Bạn có chắc muốn xóa đối tượng này khỏi giao diện?")) {
+                pushUndoState();
+                selectedElement.remove();
+                selectElementInCanvas(null);
+                buildLayerTree();
+                markUnsaved(true);
+                showToast("Đã xóa đối tượng");
+            }
+        }
+
+        // JSON Export / Import Modals
+        function openExportModal() {
+            loadPageConfigs();
+            document.getElementById('modalTitle').textContent = "Xuất cấu hình JSON toàn bộ project";
+            document.getElementById('modalTextarea').value = JSON.stringify(pageConfigs, null, 2);
+            document.getElementById('modalConfirmBtn').style.display = 'none';
+            document.getElementById('jsonModal').style.display = 'flex';
+        }
+
+        function openImportModal() {
+            document.getElementById('modalTitle').textContent = "Nhập cấu hình JSON";
+            document.getElementById('modalTextarea').value = "";
+            document.getElementById('modalConfirmBtn').style.display = 'inline-block';
+            document.getElementById('jsonModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('jsonModal').style.display = 'none';
+        }
+
+        function confirmModalAction() {
+            const val = document.getElementById('modalTextarea').value;
+            try {
+                const parsed = JSON.parse(val);
+                pushUndoState();
+                pageConfigs = parsed;
+                savePageConfigsToStorage();
+                applyConfigToIframe(currentPage);
+                closeModal();
+                showToast("Đã nhập cấu hình JSON thành công!");
+            } catch(e) {
+                alert("JSON không hợp lệ: " + e.message);
+            }
+        }
+
+        function filterLayers(query) {
+            const container = document.getElementById('layerTreeContainer');
+            const nodes = container.querySelectorAll('.layer-node');
+            nodes.forEach(n => {
+                const text = n.textContent.toLowerCase();
+                if (text.includes(query.toLowerCase())) {
+                    n.style.display = 'flex';
+                } else {
+                    n.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize Everything
+        loadPageConfigs();
+        populatePageSelector();
+        initCanvasDragAndResize();
+        fetchProjectPagesFromServer();
+        switchPage(currentPage);
+    </script>
+</body>
+</html>

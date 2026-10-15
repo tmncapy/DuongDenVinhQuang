@@ -872,7 +872,7 @@ function isDuplicateGraphicMessage(data) {
         }
     }
     const now = Date.now();
-    const eventKey = `${data.type}_${data.questionIndex || ''}_${data.pack || ''}_${data.turnIndex || ''}_${data.deIndex || ''}_${data.row || ''}`;
+    const eventKey = `${data.type}_${data.questionIndex || ''}_${data.pack || ''}_${data.subject || ''}_${data.questionText || ''}_${data.turnIndex || ''}_${data.deIndex || ''}_${data.row || ''}`;
     if (lastGraphicEventKey === eventKey && (now - lastGraphicEventTime) < 180) {
         return true;
     }

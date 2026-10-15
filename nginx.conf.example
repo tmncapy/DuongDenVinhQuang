@@ -1,0 +1,48 @@
+# Nginx Reverse Proxy Configuration for Đường Đến Vinh Quang
+# Domain: acestudio.mooo.com
+# Backend Server: http://127.0.0.1:3000
+
+server {
+    listen 80;
+    server_name acestudio.mooo.com;
+
+    # Uncomment if SSL / Certbot is configured
+    # listen 443 ssl;
+    # ssl_certificate /etc/letsencrypt/live/acestudio.mooo.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/acestudio.mooo.com/privkey.pem;
+
+    client_max_body_size 500M;
+
+    # Frontend and general HTTP routes
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # API routes (/api/state, /api/action, /api/events, etc.)
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket connection endpoint (/ws) with HTTP Upgrade support
+    location /ws {
+        proxy_pass http://127.0.0.1:3000/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}
